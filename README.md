@@ -1,17 +1,25 @@
 # NAS油条工具箱
-
+由**NAS油条**一个人制作
 #### 介绍
-linux工具
+NAS油条Linux_Termux工具箱
 
 #### 软件架构
-软件架构说明
+软件架构shell
+
 
 
 #### 安装教程
+ **克隆仓库** 
+```
+git clone https://gitee.com/nasyt/nasyt-linux-tool.git
+```
+ **下载发行版**
+下载到home目录
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+```
+unzip nasyt-linux-tool.zip
+```
+
 
 #### 使用说明
 
@@ -21,15 +29,12 @@ linux工具
 
 #### 参与贡献
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+1.  NAS油条
 
 
-#### 特技
+#### 
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
+1.  
 2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
 3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
 4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
