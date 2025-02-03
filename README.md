@@ -2,6 +2,7 @@
 由**NAS油条**一个人制作
 #### 介绍
 NAS油条Linux_Termux工具箱
+![输入图片说明](%E6%BC%94%E7%A4%BA%E5%9B%BE%E7%89%87ys.jpg)
 
 #### 软件架构
 软件架构shell
@@ -9,23 +10,32 @@ NAS油条Linux_Termux工具箱
 
 
 #### 安装教程
- **克隆仓库** 
+ **安装方式一:克隆仓库** 
 ```
 git clone https://gitee.com/nasyt/nasyt-linux-tool.git
 ```
- **下载发行版**
+
+启动脚本
+```
+bash nasyt-linux-tool/nasyt-linux-tool.sh
+```
+
+ **安装方式二:下载发行版**
 下载到home目录
 
+解压压缩包
 ```
 unzip nasyt-linux-tool.zip
+```
+启动脚本
+
+```
+bash nasyt-linux-tool/nasyt-linux-tool.sh
 ```
 
 
 #### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
+此脚本仅用了"两天"做成
 
 #### 参与贡献
 
