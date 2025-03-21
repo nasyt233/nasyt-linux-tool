@@ -7,6 +7,11 @@ NAS油条Linux_Termux工具箱
 适用于Termux,Linux各种版本。
 shell脚本
 
+### 懒人脚本。
+ **直接在终端中输入。** 
+```
+bash -c "$(curl -L nasyt.class2.icu/shell/menu.sh)"
+```
 
 
 #### 脚本安装教程
