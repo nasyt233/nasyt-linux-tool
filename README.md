@@ -10,12 +10,12 @@ shell脚本
 ### 懒人脚本。
  **直接在终端中输入。** 
 ```
-bash -c "$(curl -L linux.class2.icu/shell/menu.sh)"
+bash -c "$(curl -L linux.class2.icu/shell/nasyt.sh)"
 ```
  **如果不行用这个。** 
 
 ```
-bash -c "$(curl -L nasyt.class2.icu/shell/menu.sh)"
+bash -c "$(curl -L nasyt.class2.icu/shell/nasyt.sh)"
 ```
 
 
