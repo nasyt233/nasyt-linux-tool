@@ -15,4 +15,5 @@ bash -c "$(curl -L linux.class2.icu/shell/linux.sh)"
 
 #### 参与贡献
 
-1.  NAS油条
+1.  NAS油条  作者
+2.  (๑•॒̀ ູ॒•́๑)啦啦  提供网站支持
