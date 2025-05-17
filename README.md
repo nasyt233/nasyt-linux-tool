@@ -2,7 +2,7 @@
 由**NAS油条**一个人制作
 #### 介绍
 NAS油条Linux_Termux工具箱
-![演示](1000004918.jpg)
+![演示](https://gitee.com/nasyt/nasyt-linux-tool/raw/master/1000008954.jpg)
 #### 软件架构
 适用于Termux,Linux各种发行版本。
 shell脚本
