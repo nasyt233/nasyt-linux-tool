@@ -1,13 +1,18 @@
 #!/bin/bash
 #本脚本由NAS油条制作
+#NAS油条的实用脚本
+#2025/6/19
 
+#主菜单
+menu_jc() {
 menu() {
 clear
 while true
 do
-clear
+clear;clear
 echo
-echo "NAS油条的实用脚本"
+echo "NAS油条的实用脚本v2.2.4"
+figlet N A S
 check_Script_Install
 echo "1) Termux_Linux工具箱(旧)"
 br
@@ -24,11 +29,7 @@ case $menu in
    git clone https://gitee.com/nasyt/nasyt-linux-tool.git
    bash nasyt-linux-tool/nasyt-linux-tool.sh;;
 2)
-   rm /bin/nasyt
-   curl -L -o /bin/nasyt https://linux.class2.icu/shell/nasyt.sh
-   chmod 777 /usr/bin/nasyt
-   read -p "(更新|安装)完成,输入nasyt进入"
-   exit 0;;
+   gx;esc;;
 3) 
    break;;
 default)
@@ -41,20 +42,29 @@ esac
 done
 }
 
+if command -v termux-info >/dev/null 2>&1; then
+    break
+else
+    menu
+fi
+}
 # 检查包管理器的函数
 check_package_manager() {
     clear
-    if command -v pkg >/dev/null 2>&1; then
+    if command -v termux-info >/dev/null 2>&1; then
         sys="(Termux 终端)"
         PACKAGE_MANAGER="pkg"
+        jc="1"
         USE_SUDO=
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
         PACKAGE_MANAGER="apt"
+        jc="0"
         USE_SUDO=sudo
     elif command -v yum >/dev/null 2>&1; then
         sys="(RHEL/CentOS 7 及更早版本)"
         PACKAGE_MANAGER="yum"
+        jc="0"
         USE_SUDO=sudo
     elif command -v dnf >/dev/null 2>&1; then
         sys="(Fedora/RHEL/CentOS 8 及更高版本)"
@@ -76,33 +86,67 @@ check_package_manager() {
     fi
 }
 
+#检查dialog figlet安装
+main_install() {
 dialog_install() {
 if command -v dialog &> /dev/null
 then
     echo "dialog 已经安装，跳过安装步骤。"
 else 
     echo "正在使用 $PACKAGE_MANAGER 安装dialog"
-    $PACKAGE_MANAGER install dialog -y
+    $USE_SUDO $PACKAGE_MANAGER install dialog -y
 fi
 
 }
+figlet_install() {
+if command -v figlet &> /dev/null
+then
+    echo "figlet 已经安装，跳过安装步骤。"
+else 
+    echo "正在使用 $PACKAGE_MANAGER 安装figlet"
+    $USE_SUDO $PACKAGE_MANAGER install figlet -y
+fi
+  }
+  dialog_install
+  figlet_install
+}
 
-#变量
+#全部变量
+all_variable() {
 tempfile=$(mktemp 2>/dev/null) || tempfile=/tmp/test$$
 uptime=$(uptime -p) #原版命令变量
 uptime_cn=$(echo $uptime | sed 's/up/已运行/; s/hour/时/; s/minutes/分/; s/day/天/; s/months/月/')
-server_ip=$(hostname -I)
-tmux_ls=$(tmux ls)
+server_ip=$(hostname -I) #服务器IP
+tmux_ls=$(tmux ls) #tmux转中文
 tmux_ls_cn=$(echo "$tmux_ls" | sed -E 's/windows//g; s/created/创建于/g; s/^( *)创建于 /\1创建于\\/; s/^/窗口名字: /')
 download_dir="$HOME/Downloads"
+OUTPUT_FILE="nasyt" #下载文件名
+TIMEOUT=10  # curl超时时间（秒）
+URLS=(
+  "https://linux.class2.icu/shell/nasyt.sh"    # 主链接
+  "https://nasyt.class2.icu/shell/nasyt.sh"  # 备用链接1
+  "https://nasyt2.class2.icu/shell/nasyt.sh"  # 备用链接2
+)
+}
 
+#定义颜色
+color_variable() {
+white='\033[0m'
+green='\033[0;32m'
+blue='\033[0;34m'
+red='\033[31m'
+yellow='\033[33m'
+grey='\e[37m'
+pink='\033[38;5;218m'
+cyan='\033[96m'
+}
 
 #函数
 server_ip() {
 echo "当前IP为: $server_ip"
 }
 uptime_cn() {
-echo "系统已运行: $uptime_cn"
+dialog --msgbox "系统已运行: $uptime_cn" 0 0
 }
 br() {
 echo -e "\e[1;34m--------------------------\e[0m"
@@ -110,11 +154,9 @@ echo -e "\e[1;34m--------------------------\e[0m"
 esc() {
 read -p "按回车键继续..."
 }
-
 cw() {
 echo "无效的输入。";esc
 }
-
 ts_bl_bl() {
 echo "暂无"
 }
@@ -131,11 +173,10 @@ br
 
 }
 
-
 #主菜单
 show_menu() {
 dialog --title "NAS油条Linux工具箱" \
---menu "当前版本:v2.2\n2025年5月16日更新\n本工具箱由NAS油条制作\nQQ群:610699712\n请选择你要启动的项目：" \
+--menu "当前版本:v2.2.4\n2025年6月21日更新\n本工具箱由NAS油条制作\nQQ群:610699712\n请选择你要启动的项目：" \
 0 0 10 \
 1 "查询菜单" \
 2 "系统工具" \
@@ -150,7 +191,6 @@ dialog --title "NAS油条Linux工具箱" \
 choice=$(cat $tempfile)
 #
 }
-
 
 #查看菜单
 look_menu() {
@@ -167,11 +207,13 @@ look_menu() {
 
 # 系统操作
 system_menu() {
+br
 echo "1) 软件包管理"
 echo "2) 更新软件包"
 echo "3) 文件解压缩"
 echo "4) ssh管理工具"
 echo "0) 返回"
+br
 }
 
 #安装常用工具。
@@ -195,6 +237,7 @@ echo "0) 返回上层菜单"
 br
 }
 
+#软件安装
 app_install() {
 echo "暂未开发。"
 br
@@ -235,6 +278,7 @@ br
 echo "1) 命令输出"
 echo "2) 函数输出"
 echo "3) 变量输出"
+echo "4) 补全文件"
 echo "0) 返回"
 br
 }
@@ -248,6 +292,7 @@ echo "0) 返回"
 br
 }
 
+#ssh工具
 ssh_tool_menu() {
 br
 echo "1) 连接SSH"
@@ -260,13 +305,13 @@ br
 #废弃
 csh() {
 clear
-echo 正在使用 $PACKAGE_MANAGER 安装curl git dialog中
-$PACKAGE_MANAGER install curl git dialog -y
+echo "正在使用 $PACKAGE_MANAGER 更新中"
+$PACKAGE_MANAGER update -y
+echo 正在使用 $PACKAGE_MANAGER 安装curl git dialog figlet中
+$PACKAGE_MANAGER install curl git dialog figlet -y
 echo 安装完成
 esc
 }
-
-
 
 #ping命令
 ping2() {
@@ -315,7 +360,6 @@ echo "Ctrl+b w：从列表中选择窗口。"
 echo "Ctrl+b ,：窗口重命名。"
 }
 
-
 #cpolar内网穿透一键安装。
 cpolar_instell() {
 echo "选择你的框架"
@@ -333,6 +377,7 @@ sleep 1s
 echo "脚本结束。"
 }
 
+#安装1panel面板
 1panel() {
 br
 echo "1) RedHat / CentOS系统"
@@ -358,6 +403,7 @@ br
 esc
 }
 
+#安装TRSS机器人
 TRSS() {
 br
 echo "1) 安装TRSS机器人docker版(Linux推荐)"
@@ -367,6 +413,7 @@ echo "0) 返回"
 br
 }
 
+#安装Astrbot机器人
 astrbot() {
 echo "官网: https://astrbot.app"
 echo "提示: 宝塔上面的docker应用上有现成的"
@@ -378,7 +425,7 @@ echo "0) 返回"
 br
 }
 
-
+#CC攻击
 cc() {
 echo -----CC攻击-----
 read -p "请输入攻击地址" cc_url
@@ -390,6 +437,7 @@ done
 echo "CC攻击完成"
 }
 
+#nmap扫描工具
 nmap_install() {
 if command -v nmap &> /dev/null
 then
@@ -399,8 +447,15 @@ else
   $PACKAGE_MANAGER install nmap -y
 fi
 }
+nmap_menu() {
+nmap_install
+echo "提示: 暂时只有一个功能";br
+echo "1) 扫描IP"
+echo "0) 返回"
+br
+}
 
-
+#deb软件包安装
 deb_install() {
 br
 echo "1) 安装网络软件包。"
@@ -409,7 +464,6 @@ echo "3) 卸载软件包。"
 echo "0) 返回"
 br
 }
-
 deb_install_Internet() {
 br
 read -p "请输入软件包名字: " deb_install_pkg
@@ -423,7 +477,6 @@ else
 fi
 br
 }
-
 deb_install_localhost() {
 echo "提示: 暂时只能安装deb软件包"
 br
@@ -431,7 +484,6 @@ read -p "请输入软件包地址: " deb_localhost_xz
 br
 dpkg -i $deb_localhost_xz
 }
-
 deb_remove() {
 echo "卸载但是保留配置文件。"
 br
@@ -443,21 +495,14 @@ br
 echo "使用 $PACKAGE_MANAGER 卸载 $deb_remove_xz 软件包成功"
 }
 
-nmap_menu() {
-nmap_install
-echo "提示: 暂时只有一个功能";br
-echo "1) 扫描IP"
-echo "0) 返回"
-br
-}
-
+#ranger文件管理工具
 ranger_install() {
 if command -v ranger &> /dev/null
 then
     read -p "ranger 已经安装。回车键进入。"
     ranger
 else 
-    echo "未安装ranger,正在安装。"
+    echo "未安装ranger正在安装。"
     $PACKAGE_MANAGER install ranger -y
     echo "ranger安装完成。"
     read-p "按回车键启动。"
@@ -465,6 +510,7 @@ else
 fi
 }
 
+#Mono编译工具
 Mono_install() {
 br
 if command -v mono-complete &> /dev/null
@@ -478,7 +524,6 @@ else
 fi
 br
 }
-
 Mono_menu() {
 echo "此页暂时不可用。"
 br
@@ -489,31 +534,62 @@ br
 }
 
 gx() {
+# 下载安装更新
+clear;br
 echo "正在删除原脚本。"
 rm /usr/bin/nasyt
 rm nasyt.sh
 echo "正在更新脚本。"
-if [ $PACKAGE_MANAGER = pkg ]; then
-   echo "检测到 Termux 环境，正在更新"
-   curl -o nasyt.sh http://nasyt.class2.icu/shell/nasyt.sh
-   chmod 777 nasyt.sh
-   read -p "更新完成"
-   bash nasyt.sh
-   clear
-else
-   echo "检测到 Linux 环境，正在更新"
-   echo "正在下载脚本。"
-   sudo curl -o -L /usr/bin/nasyt http://linux.class2.icu/shell/nasyt.sh
-   echo "正在给予脚本权限。"
-   sudo chmod 777 /usr/bin/nasyt
-   echo "启动命令为nasyt"
-   read -p "更新成功,请Ctrl+C重新进入"
-fi
+for url in "${URLS[@]}"; do
+  clear;br
+  echo "▶ 正在尝试从以下地址下载：$url"
+  if curl -L -o /usr/bin/nasyt --retry 3 --retry-delay 2 --max-time $TIMEOUT "$url"; then
+    br
+    echo "✓ 文件下载成功!"
+    echo "正在给予脚本权限。"
+    chmod 777 /usr/bin/nasyt
+    echo "启动命令为nasyt"
+    dialog --msgbox "更新|安装成功,请输入nasyt重新进入" 0 0
+    exit 0
+  else
+    echo "✗ 当前链接下载失败，3秒后尝试下一个链接..."
+    sleep 3
+  fi
+done
+echo "✗ 所有链接均下载失败，请检查网络或链接有效性"
+exit 1
 }
 
-#历史更新版本。
+#更新列表
 gx_log() {
 br
+echo "2025年6日21日更新v2.2.4版"
+echo "添加了三个备用安装更新链接"
+echo "以防安装或更新使用不了"
+echo "也以防了服务器那边出问题"
+echo "部分地方也采用了dialog图形化"
+echo "优化了更新日志。"
+br
+read
+echo "2025年6日19日更新v2.2.3版"
+echo "修复少量bug"
+echo "更新termux检查"
+echo "并自动跳过安装界面"
+br
+read
+echo "2025年6日18日更新v2.2.2版"
+echo "修复了部分bug"
+echo "优化了脚本布局"
+echo "提升了脚本效率"
+echo "更新figlet文字"
+echo "准备更新zsh终端美化"
+br
+read
+echo "2025年5日29日更新v2.2.1版"
+echo "更新变量颜色代码"
+echo "修复系统工具无法退出bug。"
+br
+read
 echo "2025年5日16日更新v2.2版"
 echo "需要定制版的联系NAS油条(免费)"
 echo "更新服务器地理位置查询。"
@@ -524,21 +600,26 @@ echo "更改了菜单的布局,更好分辨"
 echo "增加了小皮面板安装"
 echo "修复了系统启动文件bug"
 br
+read
 echo "2025年5日10日更新v2.19.4版"
 echo "更新像素工厂146服务器安装(无)"
 br
+read
 echo "2025年5日4日更新v2.19.3版"
 echo "更新自动将系统设为中文。"
 echo "各位有什么意见"
 br
+read
 echo "2025年5日3日更新v2.19.2版"
 echo "更新SFS服务器安装"
 br
+read
 echo "2025年4日25日更新v2.19.1版"
 echo "更新zip_7z文件解压"
 echo "更新tar.gz文件解压"
 echo "简单优化了一下脚本"
 br
+read
 echo "2025年4日20日更新v2.19版"
 echo "将脚本发布页融为一体(非常重要)"
 echo "删除了调试模式。(其实没有)"
@@ -546,12 +627,14 @@ echo "修复了部分bug(真的修了)"
 echo "更新ranger文件管理器(豪用)"
 echo "增加软件包更新功能。(有用吧)"
 br
+read
 echo "2025年4日18日更新v2.18.5版"
 echo "恢复了dialog的安装检测(忘记了)"
 echo "完善了deb软件包管理(可能有用吧)"
 echo "添加了deb软件包安装的检测。"
 echo "优化了脚本的体验。(可能吧!)"
 br
+read
 echo "2025年4日18日更新v2.18版"
 echo "优化了脚本的大小(似乎没啥用)"
 echo "增加了常用软件安装(摆设)"
@@ -562,35 +645,42 @@ echo "优化了引导菜单脚本(没有改啥)"
 echo "更新1panel面板安装(懒得整合了)"
 echo "修了部分bug。(真的吗？)"
 br
+read
 echo "2025年4日17日更新v2.17版"
 echo "修复DDOS攻击兼容问题"
 echo "更新Astrbot机器人安装"
 echo "更新TMOE工具"
 echo "修复已知bug"
 br
+read
 echo "2025年4日15日更新v2.16版"
 echo "更新TRSS机器人安装"
 echo "更新Secluded机器人安装"
 br
+read
 echo "2025年4日14日更新v2.15版"
 echo "更新调试模式"
 echo "更新tmux命令功能"
 echo "修理部分bug"
 echo "优化脚本结构"
 br
+read
 echo "2025年4日13日更新v2.14版"
 echo "增加了很多功能。"
 echo "修复了部分bug。"
 echo "修改了提示。"
 echo "增加了系统适配。"
 br
+read
 echo "2025年3日30日更新v2.13版"
 echo "增加更新功能。"
 br
+read
 echo "2025年3日22日更新v2.12版"
 echo "更新DDOS安装和CC攻击"
 echo "采用dialog图形形化菜单"
 br
+read
 echo "2025年3月21日更新v2.1 版"
 echo "全新的脚本。"
 echo "Bug很多。"
@@ -600,7 +690,7 @@ br
 #DDOS攻击安装
 ddos() {
 cd ddos;python ddos.py
-read "按回车后开始安装。";clear
+dialog --msgbox "确定开始安装。" 0 0;clear
 echo 切换清华下载源;sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list;clear
 echo 更新资源中;$PACKAGE_MANAGER update -y && apt upgrade -y;echo 更新完成;clear
 echo "正在安装 figlet";$PACKAGE_MANAGER install figlet;clear
@@ -613,7 +703,7 @@ cd ddos;python ddos.py
 }
 
 
-# 函数：显示服务器配置信息
+#显示服务器配置信息
 show_server_config() {
     clear
     echo "=== 服务器配置信息 ==="
@@ -643,7 +733,7 @@ show_server_config() {
     df -h
 }
 
-
+#neofetch工具
 ifneofetch(){
 if command -v neofetch &> /dev/null
 then
@@ -688,6 +778,7 @@ sync_shanghai_time() {
 
 # 获取操作系统信息的函数
 get_os_info() {
+clear
     br
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -705,26 +796,28 @@ get_os_info() {
     br
 }
 
+
 #提示
 point_out() {
 get_os_info # 获取操作系统信息的函数
 }
-
 
 #检查
 introduce() {
 export LANG=zh_CN.UTF-8 #设置编码为中文。
 source ~/.bashrc #更新启动文件
 check_package_manager #检查包管理器。
-dialog_install #检查dialog是否安装。
-point_out #提示
+main_install #检查dialog figlet是否安装。
 check_Script_Install #检查本脚本是否安装。
 }
 
-
 #开始
-menu #菜单发布页
+index_main() {
+all_variable #全部变量
+color_variable #定义颜色
 introduce #检查
+menu_jc #菜单发布页
+point_out #提示
 read -p "回车键启动脚本,Ctrl+C退出" ts_menu_start
 case $ts_menu_start in
 ts) 
@@ -757,11 +850,15 @@ ts)
                echo "$ts_bl 变量输出完毕。 "
                esc
                ;;
+           4)
+               csh
+               esc
+               ;;
             0)
                break
                ;;
             *) 
-               echo "无效的输入。"
+               dialog --msgbox "无效的输入。" 0 0
                esc
                ;;
            esac
@@ -831,14 +928,14 @@ case $choice in
                              ;;
                           *)
                              clear
-                             echo "无效的输入。"
+                             dialog --msgbox "无效的输入。" 0 0
                              esc
                              ;;
                        esac
                      done
                      ;;
                   2)
-                     echo "正在更新。"
+                     dialog --msgbox "确定开始更新。" 0 0
                      br
                      $PACKAGE_MANAGER upgrade -y
                      $PACKAGE_MANAGER update -y
@@ -907,13 +1004,17 @@ case $choice in
                                    break
                                    ;;
                                 *)
-                                   echo "无效的输入。"
+                                   dialog --msgbox "无效的输入。" 0 0
                                    esc;;
                              esac
                      done
                      ;;
+                  0)
+                     clear
+                     break
+                     ;;
                   *)
-                     echo "无效的输入。"
+                     dialog --msgbox "无效的输入。" 0 0
                      ;;
               esac
           done
@@ -995,7 +1096,7 @@ case $choice in
                         esc
                         ;;
                      *) 
-                     echo "无效的输入"
+                     dialog --msgbox "无效的输入。" 0 0
                      esc
                      ;;
                    esac
@@ -1024,7 +1125,7 @@ case $choice in
                   break
                   ;;
                *) 
-                  echo "无效的输入"
+                  dialog --msgbox "无效的输入。" 0 0
                   esc
                   ;;
              esac
@@ -1091,7 +1192,7 @@ case $choice in
                             ;;
                          *)
                             clear
-                            echo "无效的输入。"
+                            dialog --msgbox "无效的输入。" 0 0
                             esc
                             ;;
                       esac
@@ -1148,7 +1249,7 @@ case $choice in
                             ;;
                          *)
                             clear
-                            echo "无效的输入。"
+                            dialog --msgbox "无效的输入。" 0 0
                             esc
                             ;;
                       esac
@@ -1173,7 +1274,7 @@ case $choice in
                             break
                             ;;
                          *)
-                            echo "无效的输入"
+                            dialog --msgbox "无效的输入。" 0 0
                             esc
                             ;;
                       esac
@@ -1181,7 +1282,7 @@ case $choice in
                    ;;
 
                 11)
-                   echo "欢迎使用SFS服务器安装脚本"
+                   dialog --msgbox "欢迎使用SFS服务器安装脚本" 0 0
                    echo "脚本作者:NAS油条"
                    echo "感谢:"
                    echo "SFSGamer(QQ:3818483936)"
@@ -1212,7 +1313,7 @@ case $choice in
                    break
                    ;;                   
                 *) 
-                   echo "无效的输入。"
+                   dialog --msgbox "无效的输入。" 0 0
                    esc
                    ;;
               esac
@@ -1234,7 +1335,7 @@ case $choice in
                   ;;
                *)
                   clear
-                  echo "无效的输入。"
+                  dialog --msgbox "无效的输入。" 0 0
                   esc
                   ;;
              esac
@@ -1263,7 +1364,7 @@ case $choice in
                    break
                    ;;
                 *) 
-                   echo "无效的输入。"
+                   dialog --msgbox "无效的输入。" 0 0
                    esc
                    ;;
              esac
@@ -1293,3 +1394,8 @@ case $choice in
      esac
 done
 clear
+}
+#
+#
+#
+index_main
