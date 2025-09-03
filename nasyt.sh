@@ -1,8 +1,12 @@
 #!/bin/bash
 # 本脚本由NAS油条制作
 # NAS油条的实用脚本
-time_date="2025/8/13"
-version="v2.3.6"
+time_date="2025/8/23"
+version="v2.3.9"
+nasyt_dir="$HOME/.nasyt" #脚本工作目录
+source $nasyt_dir/.config # 加载脚本配置
+bin_dir="usr/bin" #bin目录
+
 # 主菜单
 menu_jc() {
     menu() {
@@ -17,7 +21,7 @@ menu_jc() {
             echo "1) Termux_Linux工具箱(旧)"
             if command -v nasyt &> /dev/null
             then
-               br
+               echo "2) 更新"
             else
                echo "2) Linux工具箱(安装|更新|Linux)"
             fi
@@ -43,17 +47,17 @@ menu_jc() {
             esac
         done
     }
-
-    if command -v termux-info >/dev/null 2>&1; then
-        break
-    else
-        menu
-    fi
+    
+    menu
 }
 
 # 检查包管理器的函数
 check_pkg_install() {
     clear
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release #加载变量
+    fi
+    
     if command -v termux-info >/dev/null 2>&1; then
         sys="(Termux 终端)"
         sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
@@ -109,6 +113,13 @@ check_pkg_install() {
         deb_sys="emerge"
         yes_tg="-y"
         
+    elif command -v brew >/dev/null 2>&1; then
+        sys="(MacOS 系统)"
+        pkg_install="sudo brew install"
+        deb_sys="brew"
+        yes_tg="-y"
+        read -p "抱歉，目前没有适配MacOS系统"
+        
     else
         echo ">_<未检测到支持的系统。"
         read -p "但是脚本依然可以运行。"
@@ -160,13 +171,7 @@ main_install() {
 
 # 全部变量
 all_variable() {
-    nasyt_dir="$HOME/.nasyt" #脚本工作目录
-    uptime=$(uptime -p) # 原版命令变量
-    uptime_cn=$(echo $uptime | sed 's/week/周/; s/up/已运行\n/; s/hour/时/; s/minutes/分/; s/day/天/; s/months/月/')
-    server_ip=$(hostname -i) # 服务器IP
-    tmux_ls=$(tmux ls) # tmux转中文
-    tmux_ls_cn=$(echo "$tmux_ls" | sed -E 's/windows//g; s/created/创建于/g; s/^( *)创建于 /\1创建于\\/; s/^/窗口名字: /')
-    download_dir="$HOME/Downloads"
+
     OUTPUT_FILE="nasyt" # 下载文件名
     TIMEOUT=10  # curl超时时间（秒）
     URLS=(
@@ -174,6 +179,7 @@ all_variable() {
       "https://nasyt.class2.icu/shell/nasyt.sh"  # 备用链接1
       "https://nasyt2.class2.icu/shell/nasyt.sh"  # 备用链接2
     )
+    
 }
 
 # 定义颜色变量
@@ -190,6 +196,7 @@ color_variable() {
 
 # 函数
 server_ip() {
+    server_ip=$(hostname -i) # 服务器IP
     echo "当前IP为: $server_ip"
 }
 uptime_cn() {
@@ -201,12 +208,14 @@ br() {
 esc() {
     read -p "按回车键继续..."
 }
+
+#错误处理
 cw() {
     if [ $? -ne 0 ]; then
-       $habit --msgbox "退出" 0 0
        break
     fi
 }
+
 test_python() {
     if command -v python >/dev/null 2>&1; then
        echo -e "$green ◉ python已安装,跳过安装$color"
@@ -339,12 +348,13 @@ fi
 # 检查脚本文件夹。
 check_script_folder () {
    if [ -d "$nasyt_dir" ]; then
-      echo -p "工作文件夹已创建"
+      br
+      echo "◉ 工作文件夹已创建"
    else
       mkdir -p "$nasyt_dir"
    fi
    if [ -e "$nasyt_dir/nasyt" ]; then
-      echo
+      echo "◉ 检测脚本安装"
    else
       gx
    fi
@@ -352,13 +362,15 @@ check_script_folder () {
 
 # 检查本脚本是否已安装
 check_Script_Install() {
-    if command -v nasyt &> /dev/null
-    then
-        echo "nasyt 已安装,可直接输入nasyt进入本界面"
+    if command -v nasyt >/dev/null 2>&1; then
+        echo "◉ nasyt 已安装,可直接输入nasyt进入本界面"
     else 
-        echo "nasyt 未安装 (无影响)"
+        if [ -e "$nasyt_dir/nasyt" ]; then
+            echo "◉ 变量环境已安装,可直接输入nasyt进入本界面"
+        else
+            gx
+        fi
     fi
-    br
 }
 
 # 菜单使用习惯选择
@@ -499,6 +511,7 @@ app_install() {
     --menu "请选择" 0 0 10 \
     1 "安装桌面中文输入法" \
     2 "安装Blender建模软件" \
+    3 "安装linux系统应用商店" \
     0 "返回" \
     2>&1 1>/dev/tty)
     }
@@ -551,6 +564,7 @@ Linux_shell() {
     --menu "请选择" 0 0 10 \
     3 " MC 压力测试 脚本工具" \
     5 "赤石脚本" \
+    6 "Termux版kali油条安装脚本" \
     9 "欢迎联系作者添加" \
     0 "返回上层菜单" \
     2>&1 1>/dev/tty)
@@ -610,7 +624,7 @@ ssh_tool_menu() {
 #java安装
 java_install_menu () {
     java_install_xz=$($habit --title "jvav安装" \
-    --menu "Ubuntu用,请选择🤓jvav版本" 0 0 5 \
+    --menu "Debian/Ubuntu用,请选择🤓jvav版本" 0 0 5 \
     21 "java21" \
     17 "java17" \
     11 "java11" \
@@ -622,15 +636,31 @@ java_install_menu () {
     2>&1 1>/dev/tty)
 }
 
+termux_kali_install() {
+  termux_kali_install_xz=$($habit --title "安装源选择" \
+  --menu "采用proot运行rootfs并且构建\n请选择kali的安装方式\n官方源:kali官方rootfs镜像（完整 最新）\n国内源:来自国内大佬整合出来的kali优化版(速度快 推荐) \n注意两者安装出来的镜像都不一样。" 0 0 3 \
+  1 "官方源(kali.download)" \
+  2 "国内源(gitee.com/zhang-955/clone)" \
+  3 "如果有更多安装方式可以提交给我们。" \
+  0 "返回" \
+  2>&1 1>/dev/tty)
+  if [ $? -ne 0 ]; then
+    break
+  fi
+}
 # 废弃
 csh() {
     clear
     echo "正在使用 $pkg_install 更新中"
-    $deb_sys upgrade $yes_tg
-    echo 正在使用 $pkg_install 安装curl git dialog figlet中
-    $pkg_install curl git dialog figlet $yes_tg
-    echo 安装完成
-    esc
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -Syyu
+    else
+        $deb_sys upgrade $yes_tg
+        echo 正在使用 $pkg_install 安装curl git dialog figlet中
+        $pkg_install curl git dialog figlet $yes_tg
+        $habit --msgbox "更新完成" 0 0
+        esc
+    fi
 }
 
 # ping命令
@@ -642,18 +672,6 @@ ping2() {
 # CC攻击命令
 cc() {
     echo "无"
-}
-
-# tmux安装
-tmux_install() {
-    if command -v tmux &> /dev/null
-    then
-        echo "tmux 已安装，跳过安装步骤。"
-    else 
-        echo "tmux 未安装 正在使用 $pkg_install 进行安装"
-        $pkg_install tmux $yes_tg
-        read -p " tmux安装完成,回车键继续。"
-    fi
 }
 
 # tmux命令
@@ -1102,6 +1120,76 @@ ddos() {
     cd ddos; python ddos.py
 }
 
+#tmux工具
+tmux_tool_index() {
+  while true
+  do
+  tmux_ls=$(tmux ls)        # tmux转中文
+  tmux_ls_cn=$(echo "$tmux_ls" | sed -E 's/windows//g; s/created/创建于/g; s/^( *)创建于 /\1创建于\\/; s/^/窗口名字: /')
+  clear
+  test_tmux
+  tmux_tool
+  case $tmuxtool in
+    1) 
+        clear
+        new_tmux=$($habit --title "窗口名字" \
+        --inputbox "请输入窗口名字" 0 0 \
+        2>&1 1>/dev/tty)
+            echo "创建 $new_tmux 窗口成功。"
+            echo "Ctrl+B D离开窗口"
+        read -p "回车键进入。"
+            tmux new -s "$new_tmux"
+        esc ;;
+    2) 
+        clear; br
+            echo "$tmux_ls_cn"; br
+        esc
+        ;;
+    3)
+        clear; br
+            echo "$tmux_ls_cn"; br
+        read -p "请输入要重命名的窗口: " rename_tmux_1
+        read -p "重命名为: " rename_tmux_2
+            tmux rename-session -t $rename_tmux_1 $rename_tmux_2
+            echo "将 $rename_tmux_1 重命名 $rename_tmux_2 成功"
+        esc
+        ;;
+    4)
+        clear; br
+            echo "$tmux_ls_cn"; br
+        read -p "请输入要进入的窗口号: " join_tmux
+            tmux attach-session -t $join_tmax
+        esc
+        ;;
+    5)
+        clear; br
+            echo "$tmux_ls_cn"; br
+        read -p "请输入要杀死的窗口: " kill_tmux
+            tmux kill-session -t $kill_tmux
+        echo "杀死 $kill_tmux 窗口成功"
+        esc
+        ;;
+    7)
+        tmux list-commands; br
+        esc
+        ;;
+    6)
+        clear
+        tmux_keys
+        esc
+        ;;
+    0)
+        break
+        read
+        ;;
+    *)
+        $habit --msgbox "无效的输入。" 0 0
+        esc
+        ;;
+  esac
+done
+}
+
 # 显示服务器配置信息
 show_server_config() {
     clear
@@ -1165,15 +1253,14 @@ sync_shanghai_time() {
 
 # 获取操作系统信息的函数
 get_os_info() {
-    clear
     br
     if [ -f /etc/os-release ]; then
-        . /etc/os-release
+        source /etc/os-release
         echo -e "操作系统: $green $PRETTY_NAME$ color"
         echo "ID: $ID"
         echo "版本: $VERSION_ID"
         echo "$sys"
-        echo "安装软件包方式: $pkg_install"
+        echo "软件包管理方式: $deb_sys"
     elif command -v termux-info >/dev/null 2>&1; then
         echo -e "操作系统: $green Android (Termux) $color"
         echo "当前系统: $sys"
@@ -1194,71 +1281,26 @@ introduce() {
     PATH_set #环境变量设置
     source $nasyt_dir/.config # 加载脚本配置
     check_pkg_install # 检查包管理器。
-    main_install # 检查dialog figlet whiptail是否安装。
     check_script_folder # 检查脚本文件夹。
+    main_install # 检查dialog figlet whiptail是否安装。
     check_Script_Install # 检查本脚本是否安装。
-
 }
 
 # 开始
 index_main() {
-    all_variable # 全部变量
-    color_variable # 定义颜色变量
     introduce # 检查
-    menu_jc # 菜单发布页
-    get_os_info # 获取操作系统
-    ad_gg #广告
-    habit_xz #选择使用习惯。
+    if [[ $shell_skip == 1 ]]; then
+        echo "已跳过"
+    else
+        menu_jc # 菜单发布页
+        get_os_info # 获取操作系统
+        ad_gg #广告
+        habit_xz #选择使用习惯。
+        br
+        read -p "回车键启动脚本,Ctrl+C退出" 
+    fi
     source $nasyt_dir/.config & # 加载脚本配置
-    br
-    read -p "回车键启动脚本,Ctrl+C退出" ts_menu_start
-    source $HOME/.bashrc;source $nasyt_dir/config & # 更新启动文件
-    case $ts_menu_start in
-        ts) 
-            while true
-            do
-                clear
-                ts_menu
-                read -p "请选择调试模式。" ts_xz
-                case $ts_xz in
-                    1)
-                        clear
-                        br
-                        read -p "请输入命令:" ts_ml; clear
-                        echo "正在执行 $ts_ml 执行结果:"; br
-                        bash -c "$ts_ml"; br
-                        echo "$ts_ml 命令执行完毕。 "
-                        esc
-                        ;;
-                    2) 
-                        clear
-                        read -p "请输入函数:" ts_hs
-                        br
-                        ts_hs
-                        echo "$ts_hs 函数输出完毕。 "
-                        esc
-                        ;;
-                    3)
-                        read -p "请输入变量:" ts_bl; br
-                        bash -c "echo $(echo $ts_bl)"; br
-                        echo "$ts_bl 变量输出完毕。 "
-                        esc
-                        ;;
-                    4)
-                        csh
-                        esc
-                        ;;
-                    0)
-                        break
-                        ;;
-                    *)
-                        dialog --msgbox "无效的输入。" 0 0
-                        esc
-                        ;;
-                esac
-            done
-            ;;
-    esac
+    source $HOME/.bashrc & # 加载用户启动文件
     clear
     while true
     do
@@ -1451,7 +1493,7 @@ index_main() {
                                   sudo yum groupinstall "Chinese Support"
                                   ;;
                                *)
-                                  $habit --msgbox "检测到当前系统为$sys \n有可能安装不起\n但是可以尝试一下。" 0 0
+                                  $habit --msgbox "检测到当前系统为$sys \n有可能\n但是可以尝试一下。" 0 0
                                   $pkg_install dpkg-reconfigure locales $yes_tg
                                   export LANG=zh_CN.UTF-8
                                   esc
@@ -1471,7 +1513,8 @@ index_main() {
                                           echo "无法配置语言环境，请手动配置。"
                                        fi
                                   fi
-                                  $habit --msgbox "设置成功,请重启系统" 0 0
+                            esc
+                            $habit --msgbox "脚本执行结束" 0 0
                             }
                             language_menu
                             ;;
@@ -1504,69 +1547,7 @@ index_main() {
                             ;;
                         3)
                             # tmux工具
-                            while true
-                            do
-                                clear
-                                tmux_install
-                                tmux_tool
-                                case $tmuxtool in
-                                    1) 
-                                        clear
-                                        read -p "请输入窗口名字: " new_tmux
-                                        echo "创建 $new_tmux 窗口成功。"
-                                        echo "Ctrl+B D离开窗口"
-                                        read -p "回车键进入。"
-                                        tmux new -s "$new_tmux"
-                                        esc ;;
-                                        
-                                    2) 
-                                        clear; br
-                                        echo "$tmux_ls_cn"; br
-                                        esc
-                                        ;;
-                                    3)
-                                        clear; br
-                                        echo "$tmux_ls_cn"; br
-                                        read -p "请输入要重命名的窗口: " rename_tmux_1
-                                        read -p "重命名为: " rename_tmux_2
-                                        tmux rename-session -t $rename_tmux_1 $rename_tmux_2
-                                        echo "将 $rename_tmux_1 重命名 $rename_tmux_2 成功"
-                                        esc
-                                        ;;
-                                    4)
-                                        clear; br
-                                        echo "$tmux_ls_cn"; br
-                                        read -p "请输入要进入的窗口号: " join_tmux
-                                        tmux attach-session -t $join_tmax
-                                        esc
-                                        ;;
-                                    5)
-                                        clear; br
-                                        echo "$tmux_ls_cn"; br
-                                        read -p "请输入要杀死的窗口: " kill_tmux
-                                        tmux kill-session -t $kill_tmux
-                                        echo "杀死 $kill_tmux 窗口成功"
-                                        esc
-                                        ;;
-                                        
-                                    7)
-                                        tmux list-commands; br
-                                        esc
-                                        ;;
-                                    6)
-                                        clear
-                                        tmux_keys
-                                        esc
-                                        ;;
-                                    0)
-                                        break
-                                        ;;
-                                    *)
-                                        $habit --msgbox "无效的输入。" 0 0
-                                        esc
-                                        ;;
-                                esac
-                            done
+                            tmux_tool_index
                             ;;
                         4)
                             awk -f <(curl -L gitee.com/mo2/linux/raw/2/2.awk)
@@ -1811,7 +1792,7 @@ index_main() {
                                         break
                                         ;;
                                     *)
-                                        dialog --msgbox "无效的输入。" 0 0
+                                        $habit --msgbox "无效的输入。" 0 0
                                         esc
                                         ;;
                                 esac
@@ -1833,10 +1814,12 @@ index_main() {
                             echo "SFSGamer(QQ:3818483936)"
                             echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
                             echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
-                            read -p "按回车键开始安装。"
+                            $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
+                            if [ $? -ne 0 ]; then
+                                break
+                            fi
                             curl --progress-bar --output sfs -o /$HOME/sfs https://linux.class2.icu/shell/sfs_server
                             mv sfs /usr/bin
-                            clear
                             chmod +x /usr/bin/sfs
                             echo "快捷启动命令为: sfs"
                             clear; echo "正在运行。"; br
@@ -1881,6 +1864,14 @@ index_main() {
                             echo "正在安装Blender建模软件"
                             $pkg_install Blender $yes_tg
                             ;;
+                        3)
+                            $habit --title "确认操作" --yesno "你确定要安装linux应用商店吗？" 0 0
+                            if [ $? -ne 0 ]; then
+                                break
+                            else
+                                sudo $pkg_install gnome-software $yes_tg
+                                
+                            fi
                         0)
                             cw
                             break
@@ -1963,6 +1954,48 @@ index_main() {
                             ;;
                         5)
                             bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/cs_shell.sh)"
+                            ;;
+                        6)
+                            while true
+                            do
+                            termux_kali_install
+                            case $termux_kali_install_xz in
+                                1)
+                                    wget https://raw.githubusercontent.com/EXALAB/AnLinux-Resources/master/Scripts/Installer/Kali/kali.sh
+                                    if [ $? -ne 0 ]; then
+                                        $habit --msgbox "网络错误" 0 0
+                                        exit
+                                    fi
+                                    $habit --title "确认操作" --yesno "脚本下载完成是否启动？" 0 0
+                                    if [ $? -ne 0 ]; then
+                                        break
+                                    fi
+                                    bash kali.sh
+                                    ;;
+                                2)
+                                    test_git #git检查函数
+                                    if [ -e $nasyt_dir/kali_install/AutoInstallKali/kalinethunter ]; then
+                                        $habit --title "确认操作" --yesno "当前脚本已安装是否直接启动？" 0 0
+                                        if [ $? -ne 0 ]; then
+                                            break
+                                        fi
+                                        chmod 777 $nasyt_dir/kali_install/AutoInstallKali/*
+                                        bash $nasyt_dir/kali_install/AutoInstallKali/kalinethunter
+                                        read -p "按回车键返回"
+                                        $habit --msgbox "脚本执行完毕" 0 0
+                                    else
+                                        git clone https://gitee.com/zhang-955/clone.git $nasyt_dir/kali_install
+                                        chmod 777 $nasyt_dir/kali_install/AutoInstallKali/*
+                                        bash $nasyt_dir/kali_install/AutoInstallKali/kalinethunter
+                                        read -p "按回车键返回"
+                                        $habit --msgbox "脚本执行完毕" 0 0
+                                    fi
+                                    ;;
+                                0)
+                                    break
+                                    ;;
+                            esac
+                            done
                             ;;
                         0) 
                             break
@@ -2047,4 +2080,47 @@ index_main() {
 #
 #
 #
-index_main
+all_variable # 全部变量
+color_variable # 定义颜色变量
+# 启动参数
+if [ $# -ne 0 ]; then
+    case $1 in
+    -t|--tmux)
+      tmux_tool
+      tmux_tool_index
+      echo "执行完毕。"
+      exit
+      ;;
+    -s|--skip)
+      shell_skip=1
+      ;;
+    -v|-version|--version)
+      echo
+      echo "名称: $0"
+      echo "版本: $version"
+      echo "操作系统: $PRETTY_NAME"
+      echo "位于目录: "
+      command -v nasyt
+      echo
+      exit
+      ;;
+    -h|-help|--help)
+      echo
+      echo "用法:"
+      echo "  nasyt [参数]"
+      echo "参数:"
+      echo "  -t, --tmux 快捷进入tmux管理"
+      echo "  -s, --skip 直接进入菜单部分"
+      echo "  -v, --version 输出脚本版本"
+      echo "  -h, --help  输出命令帮助"
+      echo
+      echo "有关更多详细信息，请参见https://gitee.com/nasyt/nasyt-linux-tool"
+      exit
+      ;;
+    *)
+      echo "无效的参数"
+      echo "$@"
+      exit
+    esac
+fi
+index_main # 脚本主程序
