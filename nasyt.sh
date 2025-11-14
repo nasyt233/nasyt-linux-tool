@@ -1,10 +1,14 @@
 #!/bin/bash
 # 本脚本由NAS油条制作
 # NAS油条的实用脚本
-time_date="2025/8/23"
-version="v2.3.9"
+#欢迎加入NAS油条赤石技术交流群
+#有什么赤石技术可以进来交流
+#赤石群号:610699712
+
+time_date="2025/11/1"
+version="v2.4.1.7"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
-source $nasyt_dir/.config # 加载脚本配置
+source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 bin_dir="usr/bin" #bin目录
 
 # 主菜单
@@ -15,31 +19,39 @@ menu_jc() {
         do
             clear; clear
             echo
-            echo "◉NAS油条的实用脚本$version"
-            figlet N A S
-            check_Script_Install
-            echo "1) Termux_Linux工具箱(旧)"
-            if command -v nasyt &> /dev/null
-            then
-               echo "2) 更新"
-            else
-               echo "2) Linux工具箱(安装|更新|Linux)"
+            # 根据时间返回问候语
+            get_greeting
+            version_update >/dev/null 2>&1
+            if command -v figlet >/dev/null 2>&1; then
+                figlet N A S
             fi
-            echo "3) Linux工具箱(在线|启动|通用)"
+            check_Script_Install
             br
             echo "感谢QQ:2738136724做出贡献。"
             br
+            if command -v nasyt &> /dev/null
+            then
+               echo "1) Linux工具箱 (更新)"
+               echo "2) Linux工具箱 (启动)"
+            else
+               echo "1) Linux工具箱 (安装)"
+               echo "2) Linux工具箱 (启动)"
+            fi
+            if command -v nasyt >/dev/null 2>&1; then
+                echo "3) Linux工具箱 (卸载)"
+            fi
             echo "0) 退出"
             br
+            gx_show 
             read -p "请选择(回车键默认): " menu
+            clear
             case $menu in
                 1)
-                    git clone https://gitee.com/nasyt/nasyt-linux-tool.git
-                    bash nasyt-linux-tool/nasyt-linux-tool.sh ;;
-                2)
                     gx; esc ;;
-                3) 
+                2) 
                     break ;;
+                3)
+                    shell_uninstall;esc ;;
                 0) 
                     exit 0 ;;
                 *)
@@ -53,16 +65,16 @@ menu_jc() {
 
 # 检查包管理器的函数
 check_pkg_install() {
-    clear
     if [ -f /etc/os-release ]; then
         source /etc/os-release #加载变量
     fi
-    
     if command -v termux-info >/dev/null 2>&1; then
         sys="(Termux 终端)"
-        sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+        PRETTY_NAME="Termux终端"
+        sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
         pkg_install="pkg install"
         pkg_remove="pkg remove"
+        pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
         
@@ -70,118 +82,78 @@ check_pkg_install() {
         sys="(Debian/Ubuntu 系列)"
         pkg_install="sudo apt install"
         pkg_remove="sudo apt remove"
+        pkg_update="sudo apt update"
+        sudo_setup="sudo"
         deb_sys="apt"
-        yes_tg="-y"
-        
-    elif command -v yum >/dev/null 2>&1; then
-        sys="(RHEL/Rocky/CentOS 7 及更早版本)"
-        pkg_install="sudo yum install"
-        pkg_remove="sudo yum remove"
-        deb_sys="yum"
         yes_tg="-y"
         
     elif command -v dnf >/dev/null 2>&1; then
         sys="(Fedora/RHEL/CentOS 8 及更高版本)"
         pkg_install="sudo dnf install"
         pkg_remove="sudo dnf remove"
+        pkg_update="sudo dnf update"
+        sudo_setup="sudo"
         deb_sys="dnf"
+        yes_tg="-y"
+        
+    elif command -v yum >/dev/null 2>&1; then
+        sys="(Fedora/RHEL/Rocky/CentOS 7 及更早版本)"
+        pkg_install="sudo yum install"
+        pkg_remove="sudo yum remove"
+        pkg_update="sudo yum update"
+        sudo_setup="sudo"
+        deb_sys="yum"
         yes_tg="-y"
         
     elif command -v pacman >/dev/null 2>&1; then
         sys="(Arch Linux 系列)"
         pkg_install="sudo pacman -S"
         pkg_remove="sudo pacman -R"
+        sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
         
     elif command -v zypper >/dev/null 2>&1; then
         sys="(openSUSE 系列)"
-        pkg_install="sudo zypper install"
-        pkg_remove="sudo zypper remove"
+        pkg_install="sudo zypper in -y"
+        pkg_remove="sudo zypper rm"
+        sudo_setup="sudo"
         deb_sys="zypper"
         yes_tg="-y"
         
     elif command -v apk >/dev/null 2>&1; then
         sys="(Alpine/PostmarketOS系统)"
+        sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
         pkg_install="sudo apk add"
+        pkg_remove="sudo apk del"
+        sudo_setup="sudo"
         deb_sys="apk"
         yes_tg=""
         
     elif command -v emerge >/dev/null 2>&1; then
-        sys="(gentoo 系统)"
+        sys="(gentoo/funtoo 系统)"
         pkg_install="sudo emerge -avk"
+        pkg_remove="sudo emerge -C"
+        sudo_setup="sudo"
         deb_sys="emerge"
         yes_tg="-y"
         
     elif command -v brew >/dev/null 2>&1; then
         sys="(MacOS 系统)"
         pkg_install="sudo brew install"
+        sudo_setup="sudo"
         deb_sys="brew"
         yes_tg="-y"
-        read -p "抱歉，目前没有适配MacOS系统"
+        read -p "抱歉，目前没有完全适配MacOS系统"
         
     else
-        echo ">_<未检测到支持的系统。"
+        echo -e "$(info) >_<未检测到支持的系统。"
         read -p "但是脚本依然可以运行。"
         br
     fi
 }
 
-# 检查dialog whiptail figlet安装
-main_install() {
-    dialog_install() {
-        if command -v dialog &> /dev/null
-        then
-            echo "◉ dialog 已经安装，跳过安装步骤。"
-        else 
-            echo "正在安装dialog"
-            $pkg_install dialog $yes_tg
-        fi
-    }
-    figlet_install() {
-        if command -v figlet &> /dev/null
-        then
-            echo "◉ figlet 已经安装，跳过安装步骤。"
-        else 
-            echo "正在安装figlet"
-            $pkg_install figlet $yes_tg
-        fi
-    }
-    whiptail_install () {
-    if command -v whiptail &> /dev/null
-    then
-        echo "◉ whiptail已安装, 跳过安装步骤。"
-    else
-        echo "whiptail未安装，正在安装。"
-        if command -v pacman >/dev/null 2>&1; then
-            echo "检测到Arch系统，正在安装libnewt软件包"
-            $pkg_install libnewt $yes_tg
-        else
-            $pkg_install whiptail $yes_tg
-        fi
-    fi
-    }
-    dialog_install
-    whiptail_install
-    figlet_install
-}
-
-
-
-
 # 全部变量
-all_variable() {
-
-    OUTPUT_FILE="nasyt" # 下载文件名
-    TIMEOUT=10  # curl超时时间（秒）
-    URLS=(
-      "https://gitee.com/nasyt/nasyt-linux-tool/raw/master/nasyt.sh"    # 主链接
-      "https://nasyt.class2.icu/shell/nasyt.sh"  # 备用链接1
-      "https://nasyt2.class2.icu/shell/nasyt.sh"  # 备用链接2
-    )
-    
-}
-
 # 定义颜色变量
 color_variable() {
     color='\033[0m'
@@ -194,25 +166,180 @@ color_variable() {
     cyan='\033[96m'
 }
 
+all_variable() {
+    
+    OUTPUT_FILE="nasyt" # 下载文件名
+    time_out=10  # curl超时时间（秒）
+    urls=(
+      "https://gitee.com/nasyt/nasyt-linux-tool/raw/master/nasyt.sh"   # 主链接
+      "https://linux.class2.icu/shell/nasyt.sh"  # 备用链接1
+      "https://nasyt.hoha.top/shell/nasyt.sh" # 备用链接2
+      "https://nasyt2.class2.icu/shell/nasyt.sh"  # 备用链接3
+      
+    )
+    
+}
+
+
+
 # 函数
 server_ip() {
     server_ip=$(hostname -i) # 服务器IP
-    echo "当前IP为: $server_ip"
+    $habit --msgbox "当前IP为: $server_ip" 0 0
+}
+
+info() {
+    echo -e "$cyan[$(date +"%r")]$color $green[INFO]$color" $*
 }
 uptime_cn() {
-    $habit --msgbox "系统已运行: $uptime_cn" 0 0
+    uptime_sc=$(uptime | sed 's/up/运行/; s/days/天/; s/day/天/; s/hours/小时/; s/hour/小时/; s/minutes/分钟/; s/minute/分钟/; s/users/用户/; s/user/用户/; s/load average/平均负载/')
+    $habit --msgbox "系统: $uptime_sc" 0 0
 }
+
 br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
+
 esc() {
-    read -p "按回车键继续..."
+    echo -e "$(info) 按$green回车键$color$blue返回$color,按$yellow Ctrl+C$color$red退出$color"
+    read
 }
 
 #错误处理
 cw() {
-    if [ $? -ne 0 ]; then
+    if [ $cw_test -ne 0 ]; then
        break
+    fi
+}
+
+#监控服务器资源
+resources_show() {
+    if command -v termux-info >/dev/null 2>&1; then
+        resources_show_notermux="termux不支持查看CPU占用"
+    fi
+    echo -e "$(info) 正在读取随机中"
+    cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*,*([-9.)* id.*/\1/" | awk '{print 100}' >/dev/null 2>&1)
+    mem_usage=$(free | awk '/Mem/ {print $3/$2*100.0}') >/dev/null 2>&1
+    ps_quantity=$(ps -e --no-headers | wc -l) >/dev/null 2>&1
+    echo -e "$(info) $green 读取数据完毕$color"
+    $habit --msgbox "操作系统: $PRETTY_NAME \n$resources_show_notermux \nCPU使用率：$cpu_usage% \n内存使用率：$mem_usage% \n进程数量: $ps_quantity" 0 0
+}
+
+# 根据时间返回问候语
+get_greeting() {
+    local hour=$(date +"%H")
+    case $hour in
+        05|06|07|08|09|10|11)
+            echo "🌅 早上好！欢迎使用Linux工具箱"
+            ;;
+        12|13|14|15|16|17|18)
+            echo "☀️ 下午好！欢迎使用Linux工具箱"
+            ;;
+        *)
+            echo "🌙 晚上好！欢迎使用Linux工具箱"
+            ;;
+    esac
+}
+
+test_termux() {
+    if command -v termux-info >/dev/null 2>&1; then
+        $habit --msgbox "不支持termux终端" 0 0
+        break
+    fi
+}
+
+# 检查dialog whiptail figlet安装
+test_install_jc() {
+    if [ $? -ne 0 ]; then
+        echo -e "$(info) $red 安装失败。$color"
+    else
+        echo -e "$(info) $green 安装成功。$color"
+    fi
+}
+
+test_dialog() {
+        if command -v dialog &> /dev/null
+        then
+            echo -e "$green ◉ dialog 已经安装，跳过安装步骤。 $color"
+        else 
+            echo "$(info) 正在安装dialog"
+            $pkg_install dialog $yes_tg
+            if [ $? -ne 0 ]; then
+                echo -e "$(info) 安装完成"
+            fi
+            echo -e "$red 安装失败。 $color"
+        fi
+}
+
+test_figlet() {
+    if command -v figlet >/dev/null 2>&1; then
+        echo -e "$green ◉ figlet 已经安装，跳过安装步骤。$color"
+    else 
+        echo "$(info) 正在安装figlet"
+        $pkg_install figlet $yes_tg
+        if [ $? -ne 0 ]; then
+            echo -e "$(info) 安装完成"
+        fi
+            echo -e "$red 安装失败。 $color"
+    fi
+}
+test_toilet() {
+    if command -v toilet >/dev/null 2>&1; then
+        echo -e "$green ◉ toilet已安装，跳过安装步骤 $color"
+    else
+        echo "$(info) toilet未安装，正在安装"
+        $pkg_install toilet $yes_tg
+    fi
+}
+
+test_whiptail() {
+    if command -v whiptail &> /dev/null
+    then
+        echo -e "$(info) ◉ whiptail已安装, 跳过安装步骤。"
+    else
+        echo -e "$(info) whiptail未安装，正在安装。"
+        if command -v pacman >/dev/null 2>&1; then
+            echo -e "$(info) 检测到Arch系统，正在安装libnewt软件包"
+            $pkg_install libnewt $yes_tg
+        else
+            $pkg_install whiptail $yes_tg
+                if [ $? -ne 0 ]; then
+                    echo "$(info) 安装完成"
+                fi
+                echo -e "$red 安装失败。 $color"
+        fi
+    fi
+}
+    
+test_curl() {
+    if command -v curl >/dev/null 2>&1; then
+        echo -e "$green ◉ curl已安装,跳过安装$color"
+    else
+        echo "$(info) 正在安装curl"
+        $pkg_install curl $yes_tg >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo -e "$red curl安装失败 $color"
+        else
+            echo "$(info) curl安装成功"
+        fi
+    fi
+}
+
+test_wget() {
+    if command -v wget >/dev/null 2>&1; then
+        echo -e "$green ◉ wget已安装，跳过安装 $color"
+    else
+        echo "$(info) 正在安装wget"
+        $pkg_install wget $yes_tg
+    fi
+}
+
+test_eatmydata() {
+    if command -v eatmydata >/dev/null 2>&1; then
+        echo -e "$green ◉ eatmydata已安装,跳过安装$color"
+    else
+        echo -e "$(info) 正在安装eatmydata"
+        $pkg_install eatmydata $yes_tg
     fi
 }
 
@@ -220,7 +347,7 @@ test_python() {
     if command -v python >/dev/null 2>&1; then
        echo -e "$green ◉ python已安装,跳过安装$color"
     else
-       echo "正在安装python"
+       echo -e "$(info) 正在安装python"
        $pkg_install python $yes_tg
     fi
 }
@@ -229,7 +356,8 @@ test_pip() {
     if command -v pip >/dev/null 2>&1; then
        echo -e "$green ◉ pip已安装,跳过安装$color"
     else
-       $pkg_install pip $yes_tg
+        echo -e "$(info) 正在安装pip"
+        $pkg_install pip $yes_tg
     fi
 }
 
@@ -237,6 +365,7 @@ test_git() {
     if command -v git >/dev/null 2>&1; then
         echo -e "$green ◉ git已安装,跳过安装$color"
     else
+        echo -e "$(info) 正在安装git"
         $pkg_install git $yes_tg
     fi
 }
@@ -245,7 +374,7 @@ test_tmux() {
     if command -v tmux >/dev/null 2>&1; then
         echo -e "$green ◉ tmux已安装,跳过安装$color"
     else
-        echo "正在安装tmux工具"
+        echo -e "$(info) 正在安装tmux工具"
         $pkg_install tmux $yes_tg
     fi
 }
@@ -254,7 +383,7 @@ test_neofetch() {
     if command -v neofetch >/dev/null 2>&1; then
         echo -e "$green ◉ neofetch已安装,跳过安装$color"
     else
-        echo "正在安装neofetch工具"
+        echo -e "$(info) 正在安装neofetch工具"
         $pkg_install neofetch $yes_tg
     fi
 }
@@ -263,7 +392,7 @@ test_fastfetch() {
     if command -v fastfetch >/dev/null 2>&1; then
         echo -e "$green ◉ fastfetch已安装,跳过安装$color"
     else
-        echo "正在安装 fastfetch"
+        echo -e "$(info) 正在安装 fastfetch"
         $pkg_install fastfetch $yes_tg
     fi
 }
@@ -272,7 +401,7 @@ test_hashcat() {
     if command -v hashcat >/dev/null 2>&1; then
         echo -e "$green ◉ hashcat已安装,跳过安装$color"
     else
-        echo "正在安装hashcat工具"
+        echo -e "$(info) 正在安装hashcat工具"
         $pkg_install hashcat $yes_tg
     fi
 }
@@ -281,8 +410,55 @@ test_burpsuite() {
     if command -v burpsuite >/dev/null 2>&1; then
         echo -e "$green ◉ burpsuite已安装,跳过安装$color"
     else
-        echo "正在安装burpsuite工具"
+        echo -e "$(info) 正在安装burpsuite工具"
         $pkg_install burpsuite $yes_tg
+    fi
+}
+
+test_nmap() {
+    if command -v nmap >/dev/null 2>&1; then
+        echo -e "$green ◉ nmap已安装，跳过安装。$color"
+    else
+        echo -e "$(info) 正在安装nmap"
+        $pkg_install nmap $yes_tg
+    fi
+}
+
+test_htop() {
+    if command -v htop >/dev/null 2>&1; then
+        echo -e "$green ◉ htop已安装,跳过安装$color"
+    else
+        echo -e "$(info) 正在安装htop"
+        $pkg_install htop $yes_tg
+    fi
+}
+
+test_ncdu() {
+    if command -v ncdu >/dev/null 2>&1; then
+        echo -e "$green ◉ ncdu已安装,跳过安装$color"
+    else
+        echo -e "$(info) 正在安装curl"
+        $pkg_install ncdu $yes_tg
+    fi
+}
+
+test_bastet() {
+    echo "111"
+}
+#通用安装
+test_install() {
+    if command -v $* >/dev/null 2>&1; then
+        echo -e "$green ◉ $*已安装,跳过安装$color"
+    else
+        echo -e "$(info) 正在安装$*"
+        $pkg_install $* $yes_tg
+        install_error=$?
+        if [ $install_error -ne 0 ]; then
+            echo -e "$(info) $red $*安装失败。$color"
+            echo -e "$(info) 正在处理软件包"
+        else
+            echo -e "$(info) $green $*安装成功。$color"
+        fi
     fi
 }
 
@@ -290,15 +466,16 @@ pip_mcstatus() {
     if pip show "mcstatus" > /dev/null 2>&1; then
        echo -e "$green ◉ mcstatus已安装,跳过安装$color"
     else
-       echo "正在使用pip安装mcstatus"
-       pip install mcstatus
+       echo -e "$(info) 正在使用pip安装mcstatus"
+       pip install mcstatus -y
     fi
 }
+
 pip_colorama() {
     if pip show "colorama" > /dev/null 2>&1; then
        echo -e "$green ◉ colorama已安装,跳过安装$color"
     else
-       echo "正在使用pip安装mcstatus"
+       echo -e "$(info) 正在使用pip安装mcstatus"
        pip install colorama
     fi
 }
@@ -307,123 +484,125 @@ ad_gg () {
     echo -e "$pink金牌cpu云服务器9.9元起 ^o^$color"
     echo "国内高配服务器99元   云电脑4元起"
     echo "虚拟主机免费送 >_<"
-    echo -e "地址 - $pink coyun.cc$color  百度 - $pink创欧云$color"
+    echo -e "地址 - $pink coyjs.cn $color  百度 - $pink创欧云$color"
 }
 
 #错误函数处理
 error() {
     echo -e "\e[31m错误: $1\e[0m"
-    echo "错误代码为: $?"
+    echo -e "$(info) 错误代码为: $?"
     exit 1
 }
 
 #工作环境
 termux_PATH () {
-if command -v termux-info >/dev/null 2>&1; then
-  if ! grep -q "^export PATH=/data/data/com.termux/files/home/.nasyt:" $HOME/.bashrc; then
-      echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
-      chmod 777 $nasyt_dir/nasyt #给予权限
-  else
-      echo "PATH 已存在于 $nasyt_dir，跳过添加"
-      chmod 777 $nasyt_dir/nasyt #给予权限
-  fi
-else
-  if ! grep -q "^export PATH="$nasyt_dir:"" $HOME/.bashrc; then
-      echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
-  else
-      echo "PATH 已存在于 .bashrc  跳过添加"
-  fi
-fi
+    if command -v termux-info >/dev/null 2>&1; then
+        if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.bashrc; then
+            echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
+        else
+            echo -e "$(info) PATH 已存在于 $nasyt_dir，跳过添加"
+        fi
+        chmod 777 $nasyt_dir/nasyt #给予权限
+    else
+        if ! grep -q "^export PATH="$nasyt_dir:"" $HOME/.bashrc; then
+            echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
+        else
+            echo -e "$(info) PATH 已存在于 .bashrc  跳过添加"
+        fi
+    fi
 }
 
 PATH_set () {
 # PATH 行变量
-if ! grep -q "^export PATH=" $nasyt_dir/.config; then
-    echo "export PATH="$nasyt_dir:$PATH"" >> $nasyt_dir/.config
+if ! grep -q "^export PATH=" $nasyt_dir/config.txt; then
+    echo "export PATH="$nasyt_dir:$PATH"" >> $nasyt_dir/config.txt
 else
-    echo "PATH 已存在于 $nasyt_dir，跳过添加"
+    echo -e "$(info) PATH 已存在于 $nasyt_dir，跳过添加"
 fi
 }
 
 # 检查脚本文件夹。
 check_script_folder () {
    if [ -d "$nasyt_dir" ]; then
-      br
-      echo "◉ 工作文件夹已创建"
+      echo -e "$(info) 工作文件夹已创建"
    else
       mkdir -p "$nasyt_dir"
-   fi
-   if [ -e "$nasyt_dir/nasyt" ]; then
-      echo "◉ 检测脚本安装"
-   else
-      gx
    fi
 }
 
 # 检查本脚本是否已安装
 check_Script_Install() {
     if command -v nasyt >/dev/null 2>&1; then
-        echo "◉ nasyt 已安装,可直接输入nasyt进入本界面"
+        echo "◉ 可直接输入nasyt进入本界面"
     else 
         if [ -e "$nasyt_dir/nasyt" ]; then
             echo "◉ 变量环境已安装,可直接输入nasyt进入本界面"
         else
-            gx
+            echo "$(info) 脚本未安装"
         fi
     fi
 }
 
 # 菜单使用习惯选择
 habit_menu () {
-        habit_menu_xz=$(dialog --title "个性化" \
-        --menu "请选择菜单使用习惯" 0 0 10 \
-        1 "dialog点击式" \
-        2 "whiptail滑动式" \
-        3 "重置选择" \
-        0 "返回" \
-        2>&1 1>/dev/tty )
+    clear
+    echo "功能都支持使用箭头进行选择"
+    br
+    echo "1) dialog屏幕点击(适合鼠标)"
+    echo "2) whiptail屏幕滑动（适合触屏)"
+    echo "3) 重置选择"
+    br
+    read -p "请选择菜单使用习惯: " habit_menu_xz
 }
 
+#习惯选择
 habit_xz () {
     if [ -z "$habit" ]; then
         habit_menu
         case $habit_menu_xz in
-           1) echo "export habit="dialog"" >  $nasyt_dir/.config ;;
+           1)
+               test_dialog
+               echo "export habit="dialog"" >  $nasyt_dir/config.txt
+               ;;
            2) 
-              if command -v whiptail &> /dev/null
-              then
-                 echo "export habit="whiptail"" > $nasyt_dir/.config
-              else
-                 echo "检测到你未安装whiptail，正在安装"
-                 $pkg_install whiptail $yes_tg
-              fi
-              ;;
-           3) sed -i '/^export=*/d' $nasyt_dir/.config ;;
+               test_whiptail
+               echo "export habit="whiptail"" > $nasyt_dir/config.txt
+               ;;
+           3) sed -i '/^export=*/d' $nasyt_dir/config.txt ;;
            0) cw;break ;;
         esac
-        
     elif [ -n "$habit" ]; then
         echo -e "菜单方式为: $yellow$habit$color"
     fi
+    if command -v $habit >/dev/null 2>&1; then
+        echo -e "$green $habit 已安装，跳过安装步骤$color"
+    else
+        echo "$habit 未安装，正在安装。"
+        $pkg_install $habit $yes_tg
+        if [ $? -ne 0 ]; then
+            echo -e "$red 安装失败 $color"
+        fi
+    fi
+    
 }
 
 # 主菜单
 show_menu() {
     choice=$($habit --title "NAS油条Linux工具箱" \
-    --menu "当前版本:$version $time_date\n本工具箱由NAS油条制作\nQQ群:610699712\n请选择你要启动的项目：" \
+    --menu "当前版本:$version $time_date\n本工具箱由NAS油条制作\nQQ群:610699712\n请使用方向键+回车键进行操作\n请选择你要启动的项目：" \
     0 0 10 \
-    1 "查询菜单" \
+    1 "本机信息" \
     2 "系统工具" \
     3 "网络工具" \
-    4 "安装工具" \
+    4 "基础工具" \
     5 "软件安装" \
     6 "其它脚本" \
     7 "更新脚本" \
-    8 "更新日志" \
+    8 "更新历史" \
     9 "脚本设置" \
     0 "退出脚本" \
     2>&1 1>/dev/tty) 
-    cw
+    cw_test=$?;cw
     
     
 }
@@ -433,13 +612,17 @@ look_menu() {
     
     look_choice=$($habit --title "查询菜单" \
     --menu "请选择" 0 0 10 \
-    1 "运行时间time" \
-    2 "配置信息sysinfo" \
-    3 "当前IP地址" \
-    4 "neofetch/fastfetch" \
+    1 "当前时间" \
+    2 "配置信息" \
+    3 "当前 IP" \
+    4 "本机logo" \
     5 "地理位置" \
-    0 "返回" \
+    6 "进程列表" \
+    7 "运行时间" \
+    8 "监控资源" \
+    0 "◀返回" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
 }
 
 # 系统操作
@@ -447,14 +630,18 @@ system_menu() {
     system_choice=$($habit --title "系统菜单" \
     --menu "请选择" 0 0 10 \
     1 "软件包管理" \
-    2 "更换镜像源(全系统)" \
+    2 "更换镜像源(大多数系统)" \
     3 "更新软件包" \
     4 "文件解压缩" \
     5 "ssh管理工具" \
-    6 "安装jvav（debian/Ubuntu)" \
-    7 "language" \
-    0 "返回" \
-    2>&1 1>/dev/tty)  
+    6 "安装jvav（debian系列)" \
+    7 "系统语言设置" \
+    8 "磁盘挂载设置" \
+    9 "虚拟内存设置" \
+    10 "清理系统日志"  \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    cw_test=$?;cw
 }
 
 # 安装常用工具。
@@ -462,41 +649,38 @@ often_tool() {
    often_tool_linux() {
     often_tool_choice=$($habit --title "安装linux常用工具" \
     --menu "请选择" 0 0 10 \
-    1 "安装Alist多储存资源盘" \
-    2 "安装BT宝塔面板" \
-    3 "安装AMH面板" \
-    4 "安装1panel面板" \
-    5 "安装MCSManager面板" \
-    6 "安装cpolar内网穿透" \
-    7 "安装DDOS攻击(请勿非法用途。)" \
-    8 "安装Secluded机器人" \
-    9 "安装TRSS机器人" \
-    10 "安装Astrbot机器人" \
-    11 "安装Napcat机器人" \
-    12 "安装OneBot机器人" \
-    13 "安装SFS游戏服务器" \
-    14 "安装小皮面板" \
-    0 "返回上层菜单" \
+    2 "🖥各种面板" \
+    3 "🤖bot机器人" \
+    4 "👾娱乐游戏" \
+    5 "🚀各种服务端" \
+    6 "🌍穿透工具" \
+    7 "其他工具" \
+    0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
     }
     
    often_tool_termux() {
     often_tool_choice=$($habit --title "安装termux常用工具" \
     --menu "请选择" 0 0 10 \
-    1 "安装Alist多储存资源盘" \
-    6 "安装cpolar内网穿透" \
-    7 "安装DDOS攻击(请勿非法用途)" \
-    8 "安装Secluded机器人" \
-    10 "安装Astrbot机器人" \
-    12 "安装OneBot机器人" \
-    0 "返回上层菜单" \
+    3 "🤖bot机器人相关" \
+    4 "👾娱乐相关" \
+    6 "🌍穿透工具" \
+    7 "其他工具" \
+    0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
     }
     
     #检查当前系统
     often_tool_main() {
     if command -v termux-info >/dev/null 2>&1; then
-       often_tool_termux
+        if [[ $shell_skip == 1 ]]; then
+            echo -e "$(info) 已跳过"
+            often_tool_linux
+        else
+            often_tool_termux
+        fi
     else
        often_tool_linux
     fi
@@ -512,8 +696,10 @@ app_install() {
     1 "安装桌面中文输入法" \
     2 "安装Blender建模软件" \
     3 "安装linux系统应用商店" \
-    0 "返回" \
+    4 "安装bleachbit清理工具" \
+    0 "◀返回" \
     2>&1 1>/dev/tty)
+    cw
     }
    app_install_termux() {
       $habit --msgbox "此区域只支持linux系统\n抱歉,不支持Termux终端>_<" 0 0
@@ -531,47 +717,64 @@ app_install() {
 
 # 网络常用工具
 Internet_tool() {
-    Internet_tool=$($habit --title "网络常用工具" \
+    Internet_tool_xz=$($habit --title "网络常用工具" \
     --menu "请选择" 0 0 10 \
-    1 "ping工具" \
+    1 "Ping工具" \
     2 "CC攻击" \
-    3 "tmux终端工具" \
-    4 "TMOE工具" \
+    3 "Tmux终端工具" \
+    4 "TMOE实用工具" \
     5 "nmap端口扫描工具" \
     6 "ranger文件管理工具" \
     7 "hashcat暴力破解工具" \
     8 "burpsuite渗透工具" \
     0 "返回上层菜单" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
 }
 
-# 各种服务器脚本。
+# 各种脚本。
 Linux_shell() {
     linux_shell_linux() {
-    Linux_shell_xz=$($habit --title "各种服务器脚本" \
+    Linux_shell_xz=$($habit --title "各种脚本" \
     --menu "请选择" 0 0 10 \
     1 "亚洲云LinuxTool脚本工具" \
     2 "木空云LinuxTool脚本工具" \
     3 "MC 压力测试 脚本工具" \
     4 "Docker 安装与换源脚本" \
-    5 "赤石脚本" \
-    9 "欢迎联系作者添加" \
-    0 "返回上层菜单" \
+    5 "赤石脚本 (⁎⚈᷀᷁ᴗ⚈᷀᷁⁎)" \
+    7 "TMOE脚本工具" \
+    8 "git管理脚本" \
+    9 "kejilion脚本工具" \
+    10 "v2ray一键安装脚本" \
+    91 "欢迎联系作者添加" \
+    0 "返回" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
+    
     }
     linux_shell_termux() {
     Linux_shell_xz=$($habit --title "各种termux脚本" \
     --menu "请选择" 0 0 10 \
     3 " MC 压力测试 脚本工具" \
-    5 "赤石脚本" \
-    6 "Termux版kali油条安装脚本" \
-    9 "欢迎联系作者添加" \
-    0 "返回上层菜单" \
+    5 "赤石脚本good" \
+    6 "Termux版kali一键安装脚本" \
+    7 "TMOE脚本工具" \
+    8 "git管理脚本" \
+    9 "kejilion脚本工具" \
+    91 "欢迎联系作者添加" \
+    0 "返回" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
+    
     }
-    linux_shell_main() {
+    linux_shell_main() {    
     if command -v termux-info >/dev/null 2>&1; then
-       linux_shell_termux
+        if [[ $shell_skip == 1 ]]; then
+            echo -e "$(info) 已跳过"
+            linux_shell_linux
+        else
+            linux_shell_termux
+        fi
     else
        linux_shell_linux
     fi
@@ -579,16 +782,48 @@ Linux_shell() {
    linux_shell_main
 }
 
+panel_menu() {
+    panel_menu_xz=$($habit --title "各种服务器面板" \
+    --menu "请选择" 0 0 10 \
+    1 "安装宝塔(bt.cn)面板" \
+    2 "安装AMH面板" \
+    3 "安装1panel面板" \
+    4 "安装MCSManager面板" \
+    5 "安装小皮面板" \
+    6 "安装GMSSH面板" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    cw
+}
+
+bot_install_menu() {
+    bot_install_xz=$($habit --title "bot安装" \
+    --menu "请选择:" 0 0 10 \
+    1 "安装Secluded机器人" \
+    2 "安装TRSS机器人" \
+    3 "安装Astrbot机器人" \
+    4 "安装Napcat适配器" \
+    5 "安装OneBot适配器" \
+    6 "安装Easybot机器人" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    cw_test=$?;cw
+}
+
 # 脚本设置
 nasyt_setup_menu () {
    nasyt_setup_choice=$($habit --title "脚本设置" \
    --menu "脚本设置" 0 0 10 \
    1 ">_<个性化" \
-   2 "卸载脚本" \
+   2 "remove卸载脚本" \
    3 "github加速(暂未开发)" \
+   4 "脚本空间占用" \
+   5 "脚本备份/恢复" \
+   8 "补全完整功能" \
    9 "删除脚本配置文件" \
-   0 "返回" \
+   0 "◀返回" \
    2>&1 1>/dev/tty)
+   cw_test=$?;cw
 }
 
 # 调试模式
@@ -598,8 +833,31 @@ ts_menu() {
     echo "2) 函数输出"
     echo "3) 变量输出"
     echo "4) 补全文件"
-    echo "0) 返回"
+    echo "0) ◀返回"
     br
+}
+server_install_menu() {
+    server_install_xz=$($habit --title "各种服务端" \
+    --menu "请选择" 0 0 10 \
+    1 "安装SFS服务端" \
+    2 "安装phira服务端" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    cw_test=$?;cw
+}
+
+game_menu() {
+    game_menu_xz=$($habit --title "娱乐菜单" \
+    --menu "请选择" 0 0 10 \
+    1 "⬜俄罗斯方块" \
+    2 "🐍贪吃蛇" \
+    3 "🌌太空入侵" \
+    4 "黑客帝国屏保" \
+    5 "🪴盆栽艺术" \
+    6 "可视化音频" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    cw_test=$?;cw
 }
 
 # 文件解压缩
@@ -607,7 +865,7 @@ zip_menu() {
     br
     echo "1) zip文件"
     echo "2) tar.gz文件"
-    echo "0) 返回"
+    echo "0) ◀返回"
     br
 }
 
@@ -617,32 +875,34 @@ ssh_tool_menu() {
     echo "1) 连接SSH"
     echo "2) 启动SSH"
     echo "3) 修改密码"
-    echo "0) 返回"
+    echo "0) ◀返回"
     br
 }
 
 #java安装
 java_install_menu () {
     java_install_xz=$($habit --title "jvav安装" \
-    --menu "Debian/Ubuntu用,请选择🤓jvav版本" 0 0 5 \
+    --menu "Debian系列用,请选择🤓jvav版本" 0 0 5 \
+    22 "java22" \
     21 "java21" \
+    20 "java20" \
+    19 "java19" \
     17 "java17" \
     11 "java11" \
     8 "java8" \
-    22 "java22" \
-    20 "java20" \
-    19 "java19" \
-    0 "返回" \
+    0 "◀返回" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
 }
 
 termux_kali_install() {
   termux_kali_install_xz=$($habit --title "安装源选择" \
-  --menu "采用proot运行rootfs并且构建\n请选择kali的安装方式\n官方源:kali官方rootfs镜像（完整 最新）\n国内源:来自国内大佬整合出来的kali优化版(速度快 推荐) \n注意两者安装出来的镜像都不一样。" 0 0 3 \
+  --menu "采用proot运行rootfs并且构建\n请选择kali的安装方式\n官方源:kali官方rootfs镜像（完整|最新|可能速度慢）\n国内源:来自国内大佬整合出来的kali优化版(速度快|已停更) \n官方修改:作者自己维护的脚本（同步官方|汉化|安全|自定义)\n" 0 0 5 \
   1 "官方源(kali.download)" \
   2 "国内源(gitee.com/zhang-955/clone)" \
-  3 "如果有更多安装方式可以提交给我们。" \
-  0 "返回" \
+  3 "官方修改 (推荐|方便)" \
+  4 "如果有更多安装方式可以提交给我们。" \
+  0 "◀返回" \
   2>&1 1>/dev/tty)
   if [ $? -ne 0 ]; then
     break
@@ -651,27 +911,29 @@ termux_kali_install() {
 # 废弃
 csh() {
     clear
-    echo "正在使用 $pkg_install 更新中"
+    echo -e "$(info) 正在使用 $deb_sys 更新中"
     if command -v pacman >/dev/null 2>&1; then
         sudo pacman -Syyu
     else
         $deb_sys upgrade $yes_tg
-        echo 正在使用 $pkg_install 安装curl git dialog figlet中
+        echo 正在使用 $deb_sys 安装curl git dialog figlet中
         $pkg_install curl git dialog figlet $yes_tg
-        $habit --msgbox "更新完成" 0 0
+        $habit --msgbox "安装完成" 0 0
         esc
     fi
 }
 
 # ping命令
 ping2() {
-    read -p "请输入ping地址: " ping
-    ping $ping
+    ping_sr=$($habit --title "请输入地址" \
+    --inputbox "ip" 0 0 \
+    2>&1 1>/dev/tty)
+    ping $ping_sr
 }
 
 # CC攻击命令
 cc() {
-    echo "无"
+    echo -e "$(info) 无"
 }
 
 # tmux命令
@@ -687,43 +949,51 @@ tmux_tool() {
     7 "全部tmux命令" \
     0 "退出" \
     2>&1 1>/dev/tty)
+    cw_test=$?;cw
 }
 
 # tmux快捷键
 tmux_keys() {
-    echo "Ctrl+b c：创建一个新窗口，状态栏会显示多个窗口的信息。"
-    echo "Ctrl+b p：切换到上一个窗口（按照状态栏上的顺序）。"
-    echo "Ctrl+b n：切换到下一个窗口。"
-    echo "Ctrl+b <number>：切换到指定编号的窗口，其中的<number>是状态栏上的窗口编号。"
-    echo "Ctrl+b w：从列表中选择窗口。"
-    echo "Ctrl+b ,：窗口重命名。"
+    echo -e "$(info) Ctrl+b c：创建一个新窗口，状态栏会显示多个窗口的信息。"
+    echo -e "$(info) Ctrl+b p：切换到上一个窗口（按照状态栏上的顺序）。"
+    echo -e "$(info) Ctrl+b n：切换到下一个窗口。"
+    echo -e "$(info) Ctrl+b <number>：切换到指定编号的窗口，其中的<number>是状态栏上的窗口编号。"
+    echo -e "$(info) Ctrl+b w：从列表中选择窗口。"
+    echo -e "$(info) Ctrl+b ,：窗口重命名。"
 }
 
 # cpolar内网穿透一键安装。
 cpolar_instell() {
-    echo "选择你的框架"
-    echo "1) AMD通用安装"
-    echo "2) Aarch64(无)"
-    echo "0) 退出"
-    read -p "请输入选项（1-2）: " opt
-    case $opt in
+    while true
+    do
+    cpolar_install_xz=$($habit --title "cpolar.com" \
+    --menu "选择你的框架" 0 0 10\
+    1 "x86_64通用安装" \
+    2 "Termux安装" \
+    3 "卸载cpolar" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    cw
+    case $cpolar_install_xz in
         1) curl --progress-bar -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash ;;
-        2) bash nasyt-linux-tool/cpolar/aarch64.sh ;;
-        0) exit 1 ;;
-        *) echo "无效的输入。"; esc ;;
+        2) test_install dnsutils;bash https://gitee.com/nasyt/nasyt-linux-tool/raw/master/cpolar/aarch64.sh ;;
+        3) curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash -s -- --remove ;;
+        0) break;;
+        *) echo -e "$(info) 无效的输入"; esc;;
     esac
+    esc
     sleep 1s
-    echo "脚本结束。"
+    done
 }
 
 # 安装1panel面板
-1panel() {
+1panel_menu() {
     br
     echo "1) RedHat / CentOS系统"
     echo "2) Ubuntu系统"
     echo "3) Debian系统"
-    echo "4) openEuler / 其他"
-    echo "0) 返回"
+    echo "4) OpenEuler / 其他"
+    echo "0) ◀返回"
     br
 }
 
@@ -731,13 +1001,13 @@ cpolar_instell() {
 Secluded_menu() {
     Secluded_menu_xz=$($habit --title "Secluded菜单" \
     --menu "欢迎使用Secluded机器人\n本脚本由NAS油条制作" 0 0 5 \
-    1 "安装Secluded" \
-    2 "启动Secluded" \
-    3 "卸载Secluded" \
-    4 "Secluded问题" \
-    0 "返回上层菜单" \
+    1 "安装" \
+    2 "启动" \
+    3 "卸载" \
+    4 "问题" \
+    0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw
+    cw_test=$?;cw
 }
 
 # 安装TRSS机器人
@@ -745,8 +1015,8 @@ TRSS() {
     br
     echo "1) 安装TRSS机器人docker版(Linux推荐)"
     echo "2) 安装tmoe_proot/chroot容器(Termux推荐)"
-    echo "d) docker打开TRSS机器人"
-    echo "0) 返回"
+    echo "d) docker打开TRSS机器人(前提1)"
+    echo "0) ◀返回"
     br
 }
 
@@ -754,13 +1024,13 @@ TRSS() {
 astrbot() {
     echo "官网: https://astrbot.app"
     echo "提示: 宝塔上面的docker应用上有现成的"
-    echo "注意: Astrbot是通过Python运行"
+    echo "注意: Astrbot以Python为主体"
     br
     echo "1) CentOS系统安装"
     echo "2) Debian/Ubuntu安装"
     echo "3) python手动安装(兼容)"
     echo "4) 启动Astrbot(前提3)"
-    echo "0) 返回"
+    echo "0) ◀返回"
     br
 }
 
@@ -775,356 +1045,249 @@ cc() {
     2>&1 1>/dev/tty)
     echo 正在攻击ing...
     for ((i=0; i<$cc_sl; i++)); do
-        echo "正在攻击$i"
+        echo -e "$(info) 正在攻击$i"
         curl -s $cc_url > /dev/null     
     done
-    echo "CC攻击完成"
+    echo -e "$(info) CC攻击完成"
 }
 
-# nmap扫描工具
-nmap_install() {
-    if command -v nmap &> /dev/null
-    then
-        echo "nmap已安装，正在进入工具界面。"
-    else
-        $habit --msgbox "nmap未安装，是否安装。" 0 0 
-        $pkg_install nmap $yes_tg
-    fi
-}
+
 nmap_menu() {
-    nmap_install
+    tsab_nmap
     echo "提示: 暂时只有一个功能"; br
-    echo "1) 扫描IP"
-    echo "0) 返回"
+    echo "1) 扫描IP开发端口"
+    echo "0) ◀返回"
     br
 }
 
 # deb软件包安装
 deb_install() {
-    br
-    echo "1) 安装网络软件包。"
-    echo "2) 安装本地软件包。"
-    echo "3) 卸载软件包。"
-    echo "0) 返回"
-    br
+    deb_install_xz=$($habit --title "软件包管理" \
+    --menu "软件包管理" 0 0 10 \
+    1 "安装网络软件包" \
+    2 "安装本地软件包" \
+    3 "卸载本地软件包" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
 }
+
+#软件包安装
 deb_install_Internet() {
     br
     read -p "请输入软件包名字: " deb_install_pkg
     br
     if command -v $deb_install_pkg &> /dev/null
     then
-        echo "软件包 $deb_install_pkg 已安装。"
+        echo -e "$(info) 软件包 $deb_install_pkg 已安装。"
     else 
-        echo "正在使用 $pkg_install 安装 $deb_install_pkg 中"
+        echo -e "$(info) 正在使用 $pkg_install 安装 $deb_install_pkg 中"
         $pkg_install $deb_install_pkg $yes_tg
     fi
     br
 }
+
+#本地软件包安装
 deb_install_localhost() {
-    echo "提示: 暂时只能安装deb软件包"
+    echo -e "$(info) 提示: 暂时只能安装deb软件包"
     br
     read -p "请输入软件包地址: " deb_localhost_xz
     br
     dpkg -i $deb_localhost_xz
+    esc
 }
+
+#软件包卸载
 deb_remove() {
-    echo "卸载但是保留配置文件。"
+    echo -e "$(info) 卸载但是保留配置文件。"
     br
-    read -p "请输入软件包: " deb_remove_xz
+    deb_remove_xz=$($habit --title "请输入软件包" \
+    --inputbox "请输入软件包" 0 0 \
+    2>&1 1>/dev/tty)
     clear
     br
     $pkg_install remove $deb_remove_xz $yes_tg
-    br
-    echo "使用 $pkg_install 卸载 $deb_remove_xz 软件包成功"
+    if [ $? -ne 0 ]; then
+        echo -e "$(info) $red 安装失败$color"
+    else
+        echo -e "$(info) $green 安装成功$color"
+    fi
+    esc
 }
 
 # ranger文件管理工具
 ranger_install() {
     if command -v ranger &> /dev/null
     then
-        read -p "ranger 已经安装。回车键进入。"
+        read -p "ranger 已安装。按回车键进入。"
         ranger
     else 
-        echo "未安装ranger正在安装。"
+        echo -e "$(info) 未安装ranger正在安装。"
         $pkg_install ranger $yes_tg
-        echo "ranger安装完成。"
+        echo -e "$(info) ranger安装完成。"
         read-p "按回车键启动。"
         ranger
     fi
 }
 
+#脚本卸载
+shell_uninstall() {
+    $habit --yesno "此操作会删除本脚本\n以及本脚本目录下的工具\n你确定要删除(>_<)本脚本吗？" 0 0
+    rm $PREFIX/bin/nasyt >/dev/null 2>&1
+    rm -rf /usr/bin/nasyt >/dev/null 2>&1
+    rm -rf $nasyt_dir
+    $habit --msgbox "删除完成\n再见，感谢你的支持。" 0 0
+}
+
+#更新查看
+gx_show() {
+    if [ $new_version == $version ]; then
+        echo -e "$green 当前版本已是最新。 $color"
+    else
+        echo -e "$red 有新版本更新$new_version $color"
+    fi
+}
+
+#更新链接来源
+version_update() {
+    new_version=$(curl "https://gitee.com/nasyt/nasyt-linux-tool/raw/master/version.txt") 
+}
+
+#更新以及安装
 gx() {
     # 下载安装更新
-    clear; br
-    echo "正在删除原脚本。"
-    rm /usr/bin/nasyt
-    rm $nasyt_dir/nasyt
-    echo "正在更新脚本。"
-    for url in "${URLS[@]}"; do
-        clear; br
-        echo "正在下载脚本：$url"
-        if curl --progress-bar -L -o "$HOME/nasyt" --retry 3 --retry-delay 2 --max-time $TIMEOUT "$url" ; then
-            br
-            echo "✓ 脚本下载成功!"
-            cp nasyt /usr/bin/
-            mv nasyt $nasyt_dir/nasyt;clear
-            echo "正在给予脚本权限。"
+    br
+    shell_backup
+    echo "$(info) 正在获取脚本"
+    for url in "${urls[@]}"; do
+        echo "$(info) 正在下载脚本"
+        if curl --progress-bar -L -o "$HOME/nasyt" --retry 3 --retry-delay 2 --max-time $time_out "$url" >/dev/null 2>&1 ; then
+            echo -e "$(info)$green 脚本下载成功! $color"
+            cp nasyt /usr/bin/ >/dev/null 2>&1
+            cp nasyt $PREFIX/bin >/dev/null 2>&1
+            mv nasyt $nasyt_dir/nasyt >/dev/null 2>&1
+            echo -e "$(info) 正在给予脚本权限 $color"
             chmod 777 $nasyt_dir/nasyt
-            chmod 777 /usr/bin/nasyt;
-            source $HOME/.bashrc;clear
-            $habit --msgbox "更新|安装成功,请输入nasyt重新进入" 0 0
-            echo "请重新连接终端"
-            echo "启动命令为nasyt"
+            chmod 777 /usr/bin/* >/dev/null 2>&1
+            chmod 777 $PREFIX/bin/* >/dev/null 2>&1
+            echo -e "$(info) 正在写入启动文件 $color"
+            source $HOME/.bashrc >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo -e "$red [✗] 写入失败 $color"
+            fi
+            if command -v nasyt >/dev/null 2>&1; then
+                echo -e "$(info)$green 脚本更新成功 $color"
+                #rm $nasyt_dir/nasyt.bak >/dev/null 2>&1
+                #rm /usr/bin/nasyt.bak >/dev/null 2>&1
+                #rm $PREFIX/bin/nasyt.bak >/dev/null 2>&1
+            else
+                echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
+                shell_
+            fi
+            echo -e "$(info) 正在安装必要文件"
+            test_install figlet >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo -e "$(info) $red figlet软件包安装失败，请手动安装figlet软件包$color"
+                
+            fi
+            echo "$(info) 如果不行请重新连接终端"
+            echo -e "$(info) 启动命令为$yellow nasyt$color"
+            source $HOME/.bashrc >/dev/null 2>&1
             exit 0
         else
-            echo "✗ 当前链接下载失败，3秒后尝试下一个链接..."
+            echo "$(info)✗ 当前链接下载失败，3秒后尝试下一个链接..."
             sleep 3
         fi
     done
-    echo "✗ 所有链接均下载失败，请检查网络或链接有效性"
-    dialog --msgbox "跳过下载本地,使用在线模式。" 0 0
+    echo -e "$(info) $red 所有链接均下载失败，请检查网络或链接有效性$color"
+    echo "跳过下载本地,使用在线模式。" 0 0
 }
 
-# 更新列表
-gx_log() {
-    br
-    echo "2025年8日5日更新v2.3.5版"
-    echo "对Secluded制作了独立的脚本"
-    echo "修复已知bug。"
-    br
-    read
-    echo "2025年8日4日更新v2.3.4版"
-    echo "其他脚本更新 MC压力测试工具"
-    echo "不出所料应该没什么问题(精心制作)"
-    echo "个性化 github加速地址 制作完成"
-    echo "添加部分函数,以及各种检测"
-    echo "修复已知bug"
-    br
-    read
-    echo "2025年8日3日更新v2.3.3版"
-    echo "各系统已适配列表改变!!!"
-    echo "对Alpine Linux系统进行适配"
-    br
-    read
-    echo "2025年7日31日更新v2.3.2版"
-    echo "修复pkg_install变量致命错误"
-    br
-    read
-    echo "2025年7日21日更新v2.3.1版"
-    echo "添加在线模式运行脚本"
-    echo "更新fastfetch显示系统信息"
-    echo "更新termux手动选择源"
-    echo "更新Napcat机器人安装"
-    echo "更新OneBot机器人安装"
-    echo "图形界面添加更加适配"
-    echo "增加对Rocky系统的部分适配"
-    echo "添加对Gentoo系统的部分适配"
-    echo "未来将适配更多linux系统"
-    echo "修复已知bug"
-    br
-    read
-    echo "2025年7日15日更新v2.3.0版"
-    echo "添加部分文件在后台加载"
-    echo "修复BUG,并且增加适配"
-    echo "为工作目录设置工作环境"
-    echo "支持termux通过nasyt命令启动脚本"
-    echo "已对termux进行了大量适配"
-    echo "添加termux终端自动换源"
-    echo "添加了运行脚本的两个目录"
-    echo "添加了卸载脚本功能"
-    echo "优化的安装结构"
-    echo "优化安装脚本检测"
-    br
-    read
-    echo "2025年7日12日更新v2.2.9版"
-    echo "正在适配postmarketos系统"
-    echo "修复下载安装bug"
-    br
-    read
-    echo "2025年7日11日更新v2.2.8版"
-    echo "修复本脚本乱码的问题。"
-    echo "添加了curl下载显示进度。"
-    echo "添加系统LANG变量中文检测"
-    echo "更新系统一键换国内源"
-    echo "添加了对whiptail的安装与检测"
-    echo "更新Astrbot机器人手动安装"
-    br
-    read
-    echo "2025年7日3日更新v2.2.7版"
-    echo "解压zip文件界面进行优化"
-    echo "图形界面适配更多"
-    echo "文字说明更加易懂"
-    echo "已支持桌面输入法安装"
-    echo "修复已知bug"
-    echo "CC攻击脚本优化"
-    echo "中文汉化内容更加完善"
-    echo "对中文汉化的CentOS适配"
-    echo "系统信息更加详细"
-    br
-    read
-    echo "2025年6日30日更新v2.2.6版"
-    echo "大部分地方已采用图形化"
-    echo "添加查看服务器地理位置"
-    echo "修复大量bug→_→"
-    echo "添加了工作目录(.nasyt)"
-    echo "添加了大量的变量"
-    echo "已添加工作环境变量"
-    echo "更新 个性化菜单(喜好)"
-    echo "更新 清除配置文件↑"
-    echo "添加脚本设置选项"
-    echo "优化脚本逻辑(非常多)"
-    echo "太肝了>﹏<,赞助点吧"
-    br
-    read
-    echo "2025年6日22日更新v2.2.5版"
-    echo "在系统工具中增加切换中文选项"
-    br
-    read
-    echo "2025年6日21日更新v2.2.4版"
-    echo "添加了三个备用安装更新链接"
-    echo "以防安装或更新使用不了"
-    echo "也以防了服务器那边出问题"
-    echo "部分地方也采用了dialog图形化"
-    echo "优化了更新日志。"
-    br
-    read
-    echo "2025年6日19日更新v2.2.3版"
-    echo "修复少量bug"
-    echo "更新termux检查"
-    echo "并自动跳过安装界面"
-    br
-    read
-    echo "2025年6日18日更新v2.2.2版"
-    echo "修复了部分bug"
-    echo "优化了脚本布局"
-    echo "提升了脚本效率"
-    echo "更新figlet文字"
-    echo "准备更新zsh终端美化"
-    br
-    read
-    echo "2025年5日29日更新v2.2.1版"
-    echo "更新变量颜色代码"
-    echo "修复系统工具无法退出bug。"
-    br
-    read
-    echo "2025年5日16日更新v2.2版"
-    echo "需要定制版的联系NAS油条(免费)"
-    echo "更新服务器地理位置查询。"
-    echo "增加了ssh的连接管理工具"
-    echo "增加了发布页回车键默认选项"
-    echo "大改了发部页面,更简单明了"
-    echo "更改了菜单的布局,更好分辨"
-    echo "增加了小皮面板安装"
-    echo "修复了系统启动文件bug"
-    br
-    read
-    echo "2025年5日10日更新v2.19.4版"
-    echo "更新像素工厂146服务器安装(无)"
-    br
-    read
-    echo "2025年5日4日更新v2.19.3版"
-    echo "更新自动将系统设为中文。"
-    echo "各位有什么意见"
-    br
-    read
-    echo "2025年5日3日更新v2.19.2版"
-    echo "更新SFS服务器安装"
-    br
-    read
-    echo "2025年4日25日更新v2.19.1版"
-    echo "更新zip_7z文件解压"
-    echo "更新tar.gz文件解压"
-    echo "简单优化了一下脚本"
-    br
-    read
-    echo "2025年4日20日更新v2.19版"
-    echo "将脚本发布页融为一体(非常重要)"
-    echo "删除了调试模式。(其实没有)"
-    echo "修复了部分bug(真的修了)"
-    echo "更新ranger文件管理器(豪用)"
-    echo "增加软件包更新功能。(有用吧)"
-    br
-    read
-    echo "2025年4日18日更新v2.18.5版"
-    echo "恢复了dialog的安装检测(忘记了)"
-    echo "完善了deb软件包管理(可能有用吧)"
-    echo "添加了deb软件包安装的检测。"
-    echo "优化了脚本的体验。(可能吧?)"
-    br
-    read
-    echo "2025年4日18日更新v2.18版"
-    echo "优化了脚本的大小(似乎没啥用)"
-    echo "增加了常用软件安装(摆设)"
-    echo "增加了deb软件包安装(可能有用吧)"
-    echo "增加了nmap扫描功能(没更新完)"
-    echo "更改了系统常用菜单(删了一点东西)"
-    echo "优化了引导菜单脚本(没有改啥)"
-    echo "更新1panel面板安装(懒得整合了)"
-    echo "修了部分bug。(真的吗？)"
-    br
-    read
-    echo "2025年4日17日更新v2.17版"
-    echo "修复DDOS攻击兼容问题"
-    echo "更新Astrbot机器人安装"
-    echo "更新TMOE工具"
-    echo "修复已知bug"
-    br
-    read
-    echo "2025年4日15日更新v2.16版"
-    echo "更新TRSS机器人安装"
-    echo "更新Secluded机器人安装"
-    br
-    read
-    echo "2025年4日14日更新v2.15版"
-    echo "更新调试模式"
-    echo "更新tmux命令功能"
-    echo "修理部分bug"
-    echo "优化脚本结构"
-    br
-    read
-    echo "2025年4日13日更新v2.14版"
-    echo "增加了很多功能。"
-    echo "修复了部分bug。"
-    echo "修改了提示。"
-    echo "增加了系统适配。"
-    br
-    read
-    echo "2025年3日30日更新v2.13版"
-    echo "增加更新功能。"
-    br
-    read
-    echo "2025年3日22日更新v2.12版"
-    echo "更新DDOS安装和CC攻击"
-    echo "采用dialog图形形化菜单"
-    br
-    read
-    echo "2025年3月21日更新v2.1 版"
-    echo "全新的脚本。"
-    echo "Bug很多。"
-    br
+shell_backup_menu() {
+    shell_backup_xz=$($habit --title "备份/恢复" \
+    --menu "请选择" 0 0 5 \
+    1 "脚本备份" \
+    2 "脚本恢复" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#脚本备份
+shell_backup() {
+    echo "$(info) 正在备份脚本文件";sleep 0.5s
+    cp $nasyt_dir/nasyt $nasyt_dir/nasyt.bak >/dev/null 2>&1
+    if command -v termux-info >/dev/null 2>&1; then
+        cp $PREFIX/bin/nasyt $PREFIX/bin/nasyt.bak >/dev/null 2>&1
+    else
+        cp /usr/bin/nasyt /usr/bin/nasyt.bak>/dev/null 2>&1 >/dev/null 2>&1
+    fi
+    if [ $? -ne 0 ]; then
+        echo -e "$(info) $red 脚本备份失败，跳过备份环节$color"
+    else
+        echo -e "$(info) $green 脚本备份成功$color"
+    fi
+}
+
+#脚本恢复功能
+shell_recover() {
+    cp $nasyt_dir/nasyt.bak $nasyt_dir/nasyt >/dev/null 2>&1
+    chmod 777 $nasyt_dir/*
+    if command -v termux-info >/dev/null 2>&1; then
+        cp $PREFIX/bin/nasyt.bak $PREFIX/bin/nasyt
+        chmod 777 $PREFIX/bin/*
+    else
+        cp /usr/bin/nasyt.bak /usr/bin/nasyt
+        chmod 777 /usr/bin/* >/dev/null 2>&1
+    fi
+    if [ $? -ne 0 ]; then
+        echo -e "$(info) $red 脚本恢复失败$color"
+    else
+        echo -e "$(info) $green 脚本恢复成功$color"
+    fi
 }
 
 # DDOS攻击安装
 ddos() {
     cd ddos; python ddos.py
-    dialog --msgbox "确定开始安装。" 0 0; clear
-    echo 切换清华下载源; sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list; clear
-    echo 更新资源中; $pkg_install update $yes_tg && apt upgrade $yes_tg; echo 更新完成; clear
-    echo "正在安装 figlet"; $pkg_install figlet; clear
-    echo "正在安装 python"; echo 途中可能会停止请输入y继续
-    echo "等的时间可能有点长,请耐心等待。"; $pkg_install python $yes_tg; clear
-    echo "正在安装 ddos"; curl --progress-bar -o ddos.zip https://cccimg.com/down.php/576c81c114e3a3c1b3e702bd19117594.zip; unzip ddos.zip; clear
+    dialog --msgbox "按回车开始安装。" 0 0; clear
+    test_figlet; clear
+    echo "$(info) 正在安装 python"; echo 途中可能会停止请输入y继续
+    echo "等的时间可能有点长,请耐心等待。"; test_python; clear
+    echo "正在安装下载 ddos"; curl --progress-bar -o ddos.zip https://cccimg.com/down.php/576c81c114e3a3c1b3e702bd19117594.zip; unzip ddos.zip; clear
     echo "清理安装包中"; rm ddos.zip
-    echo "以后请输入以下命令启动"; echo python ddos/ddos.py; read -p "回车键继续"
+    echo "以后请输入以下命令启动"; echo "python ddos/ddos.py"; read -p "回车键继续"
     cd ddos; python ddos.py
+    
+}
+
+upsource() {
+    read -p "$(info) 确定更换下载源(y/n)" upsource_sz
+    if [ $upsource_sz == n ]; then
+        exit
+    fi
+    if command -v termux-change-repo >/dev/null 2>&1; then
+        termux-change-repo
+    else
+        if [ -d $nasyt_dir/mirrors.sh ];then
+            echo -e "$(info) 正在下载脚本文件。"
+            curl -sSLo $nasyt_dir/mirrors.sh https://linuxmirrors.cn/main.sh >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo -e "$(info) $red 下载文件失败。$color"
+            else
+                echo -e "$(info) $green 下载文件成功。$color"
+            fi
+        else
+            chmod 777 $nasyt_dir/*
+            bash $nasyt_dir/mirrors.sh
+        fi
+    fi
+    esc
 }
 
 #tmux工具
 tmux_tool_index() {
   while true
   do
-  tmux_ls=$(tmux ls)        # tmux转中文
+  tmux_ls=$(tmux ls) >/dev/null 2>&1 # tmux转中文
   tmux_ls_cn=$(echo "$tmux_ls" | sed -E 's/windows//g; s/created/创建于/g; s/^( *)创建于 /\1创建于\\/; s/^/窗口名字: /')
   clear
   test_tmux
@@ -1137,12 +1300,12 @@ tmux_tool_index() {
         2>&1 1>/dev/tty)
             echo "创建 $new_tmux 窗口成功。"
             echo "Ctrl+B D离开窗口"
-        read -p "回车键进入。"
-            tmux new -s "$new_tmux"
+            read -p "回车键进入。"
+            tmux new -t "$new_tmux"
         esc ;;
     2) 
         clear; br
-            echo "$tmux_ls_cn"; br
+        echo "$tmux_ls_cn"; br
         esc
         ;;
     3)
@@ -1158,7 +1321,7 @@ tmux_tool_index() {
         clear; br
             echo "$tmux_ls_cn"; br
         read -p "请输入要进入的窗口号: " join_tmux
-            tmux attach-session -t $join_tmax
+            tmux attach-session -t $join_tmux
         esc
         ;;
     5)
@@ -1211,13 +1374,12 @@ show_server_config() {
     elif [ -f /etc/centos-release ]; then
         CENTOS_VERSION=$(cat /etc/centos-release)
         echo "CentOS $CENTOS_VERSION"
-    else
-        echo "无法识别的系统类型"
     fi
     echo "内存信息:"
     free -h
     echo "硬盘信息:"
     df -h
+    esc
 }
 
 # neofetch工具
@@ -1238,14 +1400,14 @@ ifneofetch() {
 change_password() {
     username=$(whoami)
     sudo passwd "$username"
-    echo "密码已成功修改。"
+    echo "$(info) 密码已成功修改。"
 }
 
 
 # 同步上海时间函数
 sync_shanghai_time() {
     install_ntpdate
-    echo "正在同步上海时间..."
+    echo "$(info) 正在同步上海时间..."
     sudo timedatectl set-timezone Asia/Shanghai
     sudo ntpdate cn.pool.ntp.org
     echo "时间同步完成。"
@@ -1256,16 +1418,17 @@ get_os_info() {
     br
     if [ -f /etc/os-release ]; then
         source /etc/os-release
-        echo -e "操作系统: $green $PRETTY_NAME$ color"
+        echo -e "操作系统: $green $PRETTY_NAME $color"
         echo "ID: $ID"
         echo "版本: $VERSION_ID"
-        echo "$sys"
         echo "软件包管理方式: $deb_sys"
     elif command -v termux-info >/dev/null 2>&1; then
+        set PRETTY_NAME="Termux终端"
         echo -e "操作系统: $green Android (Termux) $color"
         echo "当前系统: $sys"
-        echo "通过 termux-info 获取更多信息:"
-        echo "请输入termux-info查看"
+        if command -v neofetch >/dev/null 2>&1; then
+            neofetch -l
+        fi
     else
         echo "-_-无法获取操作系统信息。"
     fi
@@ -1279,10 +1442,10 @@ introduce() {
     #export LANG=zh_CN.UTF-8 # 设置编码为中文。
     termux_PATH #termux环境变量设置
     PATH_set #环境变量设置
-    source $nasyt_dir/.config # 加载脚本配置
-    check_pkg_install # 检查包管理器。
+    source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
+    #check_pkg_install # 检查包管理器。
     check_script_folder # 检查脚本文件夹。
-    main_install # 检查dialog figlet whiptail是否安装。
+    #test_figlet # 检查figletl是否安装。
     check_Script_Install # 检查本脚本是否安装。
 }
 
@@ -1299,8 +1462,8 @@ index_main() {
         br
         read -p "回车键启动脚本,Ctrl+C退出" 
     fi
-    source $nasyt_dir/.config & # 加载脚本配置
-    source $HOME/.bashrc & # 加载用户启动文件
+    source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
+    source $HOME/.bashrc >/dev/null # 加载用户启动文件
     clear
     while true
     do
@@ -1316,13 +1479,15 @@ index_main() {
                 do
                     clear
                     look_menu
-                    cw
                     case $look_choice in
-                        1) uptime_cn;;
+                        1) $habit --msgbox "$(date +"%r")" 0 0;;
                         2) show_server_config;;
                         3) dialog --msgbox "$(curl iplark.com)" 0 0 ;;
                         4) ifneofetch ;;
                         5) $habit --msgbox "$(curl -sSL https://slow-api.class2.icu/ip.php)" 0 0;;
+                        6) test_htop;htop ;;
+                        7) uptime_cn;;
+                        8) resources_show;esc;;
                         0) break ;;
                         *) break ;;
                     esac
@@ -1360,20 +1525,14 @@ index_main() {
                                         break
                                         ;;
                                     *)
-                                        cw
+                                        cw_test=$?;cw
                                         break
                                         ;;
                                 esac
                             done
                             ;;
                         2)
-                            $habit --msgbox "确定更换下载源" 0 0
-                            if command -v termux-change-repo >/dev/null 2>&1; then
-                               $habit --msgbox "检测到termux环境,是否启动termux-change-repo工具" 0 0
-                               termux-change-repo
-                            else
-                            bash <(curl -sSL https://linuxmirrors.cn/main.sh)
-                            fi
+                            upsource
                             ;;
                         3)
                             $habit --title "确认操作" --yesno "确定更新软件包及系统吗？" 0 0
@@ -1381,10 +1540,16 @@ index_main() {
                                 break
                             fi
                             br
+                            echo -e "$(info) $green 正在获取更新 $color"
+                            $pkg_install update $yes_tg >/dev/null 2>&1
+                            echo -e "$(info) 正在开始更新软件包"
                             $pkg_install upgrade $yes_tg
-                            $pkg_install update $yes_tg
-                            br
+                            if [ $? -ne 0 ]; then
+                                echo -e "$(info) $red 软件包更新失败$color"
+                            else
+                                echo -e "$(info) $green 软件包更新成功$color"
                             esc
+                            fi
                             ;;
                         4)
                             while true
@@ -1404,7 +1569,7 @@ index_main() {
                                         2>&1 1>/dev/tty)
                                         echo $zip_zip
                                         unzip $zip_zip; br
-                                        echo "解压文件成功"; esc
+                                        echo "$(info) 解压文件成功"; esc
                                         ;;
                                     2)
                                         clear; br; ls; br
@@ -1417,7 +1582,6 @@ index_main() {
                                         break
                                         ;;
                                     *)
-                                        cw
                                         break
                                         ;;
                                 esac
@@ -1460,7 +1624,6 @@ index_main() {
                                         break
                                         ;;
                                     *)
-                                        cw
                                         break
                                         ;;
                                 esac
@@ -1480,51 +1643,110 @@ index_main() {
                             case $deb_sys in
                                apt)
                                   echo "正在使用 $deb_sys 下载中文汉化包。"
-                                  sudo apt install task-chinese-s task-chinese-t
+                                  sudo apt install task-chinese-s task-chinese-t >/dev/null 2>&1
+                                  if [ $? -ne 0 ]; then
+                                    echo -e "$(info) $red 汉化包下载失败$color"
+                                  else
+                                    echo -e "$(info) $green 汉化包下载成功$color"
+                                  fi;sleep 1s
                                   $habit --msgbox "请在接下来的页面内\n切换到zh_CN.UTF-8选项" 0 0
                                   sudo dpkg-reconfigure locales
                                   ;;
                                dnf)
-                                  $habit --msgbox "检测到当前系统为CentOS8以上" 0 0
+                                  $habit --msgbox "确定安装" 0 0
+                                  sudo dnf install glibc-all-langpacks glibc-langpack-zh -y
+                                  sudo dnf install google-noto-sans-cjk-*.noarch -y
                                   sudo dnf groupinstall "Chinese Support"
                                   ;;
                                yum)
-                                  $habit --msgbox "检测到当前系统为CentOS" 0 0
-                                  sudo yum groupinstall "Chinese Support"
+                                  $habit --msgbox "确定安装" 0 0
+                                  sudo yum install glibc-common glibc-langpack-zh -y
                                   ;;
+                               pacman)
+                                    sudo pacman -S glibc
+                                    sudo pacman -S glibc-locales
+                                    sudo locale-gen
+                                    sudo sed -i '/^#zh_CN.UTF-8 UTF-8/s/^#//' /etc/locale.gen && sudo locale-gen && sudo tee /etc/locale.conf <<< 'LANG=zh_CN.UTF-8'
+                                    echo -e "$(info) 正在设置gnome桌面语言"
+                                    gsettings set org.gnome.desktop.interface region 'zh_CN.UTF-8' >/dev/null 2>&1
+                                    gsettings set org.gnome.desktop.interface language 'zh_CN:en_US' >/dev/null 2>&1
+                                    ;;
                                *)
-                                  $habit --msgbox "检测到当前系统为$sys \n有可能\n但是可以尝试一下。" 0 0
-                                  $pkg_install dpkg-reconfigure locales $yes_tg
-                                  export LANG=zh_CN.UTF-8
-                                  esc
+                                  $habit --msgbox "不支持的系统" 0 0
                                   ;;
                             esac
-                               # 配置语言环境
-                                  echo "配置语言环境..."
-                                  if [[ "$OS" == "ubuntu" || "$OS" == "debian" || "$OS" == "kali" || "$OS" == "linuxmint" ]]; then
-                                       update-locale LANG=zh_CN.UTF-8
-                                  elif [[ "$OS" == "centos" || "$OS" == "rhel" || "$OS" == "fedora" || "$OS" == "ol" ]]; then
-                                       localectl set-locale LANG=zh_CN.UTF-8
-                                  else
-                                       echo "无法识别发行版，尝试使用update-locale。"
-                                       if command -v update-locale &> /dev/null; then
-                                          update-locale LANG=zh_CN.UTF-8
-                                       else
-                                          echo "无法配置语言环境，请手动配置。"
-                                       fi
-                                  fi
+                                echo -e "$(info) 正在设置语言"
+                                sudo localectl set-locale LANG=zh_CN.UTF-8 >/dev/null 2>&1
+                                update-locale LANG=zh_CN.UTF-8
+                                echo -e "$(info) $green语言设置完成$color"
                             esc
                             $habit --msgbox "脚本执行结束" 0 0
+                            $habit --title "确认操作" --yesno "是否现在重启系统" 0 0
+                                    if [ $? -ne 0 ]; then
+                                        break
+                                    else
+                                        reboot
+                                    fi
                             }
                             language_menu
                             ;;
                             
+                        8)
+                            if command -v termux-info >/dev/null 2>&1; then
+                                $habit --msgbox "不支持termux设置" 0 0
+                            else
+                                test_wget #检查wget函数
+                                $habit --title "确认操作" --yesno "本服务由宝塔面板（bt.cn)提供挂载服务\n默认挂载到/www目录\n数据丢失作者不提供任何赔偿" 0 0
+                                if [ $? -ne 0 ]; then
+                                    break
+                                fi
+                                wget -O auto_disk.sh http://download.bt.cn/tools/auto_disk.sh
+                                sudo bash auto_disk.sh
+                                esc
+                                exit
+                            fi
+                            ;;
+                        9)
+                            if command -v termux-info >/dev/null 2>&1; then
+                                $habit --msgbox "不支持termux设置" 0 0
+                            else
+                                  clear;br
+                                  echo "1) 安装虚拟内存"
+                                  echo "2) 卸载虚拟内存"
+                                  echo "0) 退出"
+                                  br
+                                  read -p "请选择: " swap_shell
+                                  case $swap_shell in
+                                     1)
+                                        sudo bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/swap-install.sh)"
+                                        esc
+                                        ;;
+                                     2) 
+                                        sudo bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/swap-uninstall.sh)"
+                                        esc
+                                        ;;
+                                     0) 
+                                        break
+                                        ;;
+                                     *) 
+                                        break
+                                        ;;
+                                  esac
+                            fi
+                            ;;
+                        10)
+                            if command -v termux-info >/dev/null 2>&1; then
+                                echo -e "$(info) 检测到termux终端正在清理日志文件"
+                                find $PREFIX/var/log/ -type f -mtime +30 -exec rm -f {}
+                            else
+                                find /var/log/ -type f -mtime +30 -exec rm -f {}
+                            fi
+                            ;;
                         0)
                             clear
                             break
                             ;;
                         *)
-                            cw
                             break
                             ;;
                     esac
@@ -1534,9 +1756,8 @@ index_main() {
             3)
                 while true
                 do
-                    clear
                     Internet_tool
-                    case $Internet_tool in
+                    case $Internet_tool_xz in
                         1) 
                             ping2
                             esc
@@ -1548,6 +1769,7 @@ index_main() {
                         3)
                             # tmux工具
                             tmux_tool_index
+                            esc
                             ;;
                         4)
                             awk -f <(curl -L gitee.com/mo2/linux/raw/2/2.awk)
@@ -1566,17 +1788,18 @@ index_main() {
                         7)
                             $habit --msgbox "目前只有安装服务" 0 0
                             test_hashcat
+                            esc
                             ;;
                         8)
                             $habit --msgbox "目前只有安装服务" 0 0
                             test_burpsuite
+                            esc
                             ;;
                         0) 
                             break
                             ;;
                         *)
-                            $habit --msgbox "无效的输入。" 0 0
-                            esc
+                            break
                             ;;
                     esac
                 done
@@ -1593,250 +1816,402 @@ index_main() {
                             bash v3.sh
                             esc
                             ;;
-                        2) 
-                            clear
-                            if [ -f /usr/bin/curl ]; then
-                                curl -sSO https://download.bt.cn/install/install_panel.sh
-                            else
-                                wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh
-                            fi
-                            bash install_panel.sh ed8484bec
-                            read -p "安装bt完成 回车键返回。"
+                        2)
+                            while true
+                            do
+                            panel_menu
+                            case $panel_menu_xz in
+                                1)
+                                    if [ -f /usr/bin/curl ];then
+                                        curl -sSO https://download.bt.cn/install/install_panel.sh
+                                    else
+                                        wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh
+                                    fi
+                                    bash install_panel.sh ed8484bec
+                                    read -p "$(info) 安装bt完成 回车键返回。"
+                                    ;;
+                                2) 
+                                    wget http://dl.amh.sh/amh.sh
+                                    bash amh.sh acc 48677
+                                    esc
+                                    ;;
+                                3)
+                                    while true
+                                    do
+                                        test_termux
+                                        clear
+                                        1panel_menu
+                                        read -p "请选择你的系统: " 1panel_xz
+                                        case $1panel_xz in
+                                            1)
+                                                curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh && sh quick_start.sh
+                                                esc
+                                                ;;
+                                            2)
+                                                curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh
+                                                sudo bash quick_start.sh
+                                                esc
+                                                ;;
+                                            3)
+                                                curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh
+                                                bash quick_start.sh
+                                                esc
+                                                ;;
+                                            4)
+                                                echo "$(info) 安装 docker中"
+                                                bash <(curl -sSL https://linuxmirrors.cn/docker.sh)
+                                                clear; echo "$(info) 安装 1Panel中"
+                                                curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh && sh quick_start.sh
+                                                esc
+                                                ;;
+                                            0)
+                                                break
+                                                ;;
+                                            *)
+                                                clear
+                                                $habit --msgbox "无效的输入。" 0 0
+                                                esc
+                                                ;;
+                                        esac
+                                    done
+                                    ;;
+                                4)
+                                    sudo su -c "wget -qO- https://script.mcsmanager.com/setup_cn.sh | bash"
+                                    esc
+                                    ;;
+                                5)
+                                    habit --title "确认操作" --yesno "你确定要安装小皮面板吗？" 0 0
+                                    if [ $? -ne 0 ]; then
+                                        break
+                                    fi
+                                    if [ -f /usr/bin/curl ]; then
+                                        curl --progress-bar -O https://dl.xp.cn/dl/xp/install.sh
+                                    else
+                                        wget --progress-bar -O install.sh https://dl.xp.cn/dl/xp/install.sh
+                                    fi
+                                    bash install.sh
+                                    esc
+                                    ;;
+                                6)
+                                    $habit --title "确认操作" --yesno "你确定要安装GMSSH面板吗？" 0 0
+                                    if [ $? -ne 0 ]; then
+                                        break
+                                    fi
+                                    test_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                                    DATA_DIR="$HOME/gmssh_data"
+                                    mkdir -p "$DATA_DIR/config" "$DATA_DIR/logs"
+                                    docker pull docker-rep.gmssh.com/gmssh/gs-main-x86:latest
+                                    docker run -d --name gm-service-latest -p 8090:80 --restart always docker-rep.gmssh.com/gmssh/gs-main-x86:latest
+                                    docker cp gm-service-latest:/app/config/config.json "$DATA_DIR/config"
+                                    docker stop gm-service-latest
+                                    docker rm gm-service-latest
+                                    docker run -d --name gm-service -p 8090:80 --restart always -v "$DATA_DIR/logs:/gs_logs" -v "$DATA_DIR/config:/app/config" docker-rep.gmssh.com/gmssh/gs-main-x86:latest
+                                    esc
+                                    ;;
+                                0)
+                                    break
+                                    ;;
+                            esac
+                            done
                             ;;
-                        3) 
-                            clear
-                            wget http://dl.amh.sh/amh.sh
-                            bash amh.sh acc 48677
-                            esc
+                        3)
+                            while true
+                            do
+                                bot_install_menu
+                                case $bot_install_xz in
+                                    1)
+                                        while true
+                                        do
+                                            test_termux
+                                            Secluded_menu
+                                            case $Secluded_menu_xz in
+                                            1)
+                                                test_git #检查git是否安装函数
+                                                if [ -e "$nasyt_dir/Secluded/SecludedLauncher.out.sh" ]; then
+                                                    $habit --msgbox "Secluded已安装>_<" 0 0
+                                                else
+                                                    $habit --title "确认操作" --yesno "确定安装Secluded吗？\nSecluded将会安装到以下目录\n$nasyt_dir/Secluded" 0 0
+                                                    if [ $? -ne 0 ]; then
+                                                        $habit --msgbox "取消操作" 0 0
+                                                        break
+                                                    fi
+                                                    cd $HOME #切换到根目录。
+                                                    $habit --title "确认操作" --yesno "你的服务器位于 <国外>还是<国内>？\n国内请选择yes 国外请选择no" 0 0
+                                                    if [ $? -ne 0 ]; then
+                                                        git clone https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
+                                                    else
+                                                        git clone https://ghfast.top/https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
+                                                    fi
+                                                    echo "chmod 777 "$nasyt_dir/Secluded/SecludedLauncher.out"" > $nasyt_dir/sec
+                                                    echo "LD_LIBRARY_PATH=$HOME/.nasyt/Secluded; cd $nasyt_dir/Secluded && ./SecludedLauncher.out" >> $nasyt_dir/sec
+                                                    chmod 777 "$nasyt_dir/sec"
+                                                    $habit --msgbox "Secluded安装完成,请重启终端以生效\n启动命令为sec" 0 0
+                                                fi
+                                                ;;
+                                            2)
+                                                bash sec
+                                                br
+                                                esc
+                                                ;;
+                                            3)
+                                                $habit --title "确认操作" --yesno "你确定要删除Secluded吗？" 0 0
+                                                if [ $? -ne 0 ]; then
+                                                    break
+                                                fi
+                                                echo "正在删除Secluded"
+                                                rm $nasyt_dir/sec
+                                                rm -rf $nasyt_dir/Secluded
+                                                if [ $? -ne 0 ]; then
+                                                    $habit --msgbox "删除失败,请手动删除。" 0 0
+                                                else
+                                                    $habit --msgbox "Secluded删除成功>_<" 0 0
+                                                fi
+                                                ;;
+                                            4)
+                                                $habit --msgbox "fp命令设置端口\n推荐使用tmux工具后台启动" 0 0
+                                                ;;
+                                            0)
+                                                break
+                                                ;;
+                                            *)
+                                                break
+                                                ;;
+                                        esac
+                                        done
+                                        ;;
+                                    2)
+                                        while true
+                                        do
+                                            clear
+                                            TRSS
+                                            read -p "请选择: " TRSS_xz
+                                            case $TRSS_xz in
+                                                1)
+                                                    echo "正在安装中..."
+                                                    bash <(curl -L gitee.com/TimeRainStarSky/TRSS_AllBot/raw/main/Install-Docker.sh)
+                                                    esc
+                                                    ;;
+                                                2)
+                                                    clear
+                                                    echo "请到官方查看食用教程"
+                                                    echo "https://trss.me/Install/TMOE.html"
+                                                    read -p "回车键继续。"
+                                                    awk -f <(curl -L gitee.com/mo2/linux/raw/2/2.awk)
+                                                    esc
+                                                    ;;
+                                                3)
+                                                    clear
+                                                    tsab
+                                                    esc
+                                                    ;;
+                                                0)
+                                                    clear
+                                                    break
+                                                    ;;
+                                                *)
+                                                    clear
+                                                    dialog --msgbox "无效的输入。" 0 0
+                                                    esc
+                                                    ;;
+                                            esac
+                                        done
+                                        ;;
+                                    3)
+                                        while true
+                                        do
+                                            clear
+                                            astrbot
+                                            read -p "请选择你的系统: " astrbot_xz
+                                            case $astrbot_xz in
+                                                1)
+                                                    bash <(curl -sSL https://gitee.com/mc_cloud/mccloud_bot/raw/master/mccloud_install.sh)
+                                                    esc
+                                                    ;;
+                                                2)
+                                                    wget -O - https://gitee.com/mc_cloud/mccloud_bot/raw/master/mccloud_install_u.sh | bash
+                                                    esc
+                                                    ;;
+                                                3)
+                                                    clear;echo "正在克隆github仓库。"
+                                                    git clone https://github.com/AstrBotDevs/AstrBot
+                                                    cd AstrBot
+                                                    echo "添加python环境"
+                                                    python3 -m venv ./venv
+                                                    source venv/bin/activate
+                                                    br;echo "正在安装依赖。"
+                                                    python3 -m pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+                                                    clear;br;echo "正在启动astrbot";python main.py
+                                                    ;;
+                                                4)
+                                                    cd AstrBot
+                                                    source venv/bin/activate
+                                                    clear;br;echo "正在启动astrbot";python3 main.py
+                                                    ;;
+                                                0)
+                                                    break
+                                                    ;;
+                                                *)
+                                                    $habit --msgbox "无效的输入。" 0 0
+                                                    esc
+                                                    ;;
+                                            esac
+                                        done
+                                        ;;
+                                    4)
+                                        curl -o napcat.sh https://nclatest.znin.net/NapNeko/NapCat-Installer/main/script/install.sh
+                                        bash napcat.sh --docker n --cli y
+                                        esc
+                                        ;;
+                                    5)
+                                        bash <(curl -L gitee.com/TimeRainStarSky/TRSS_OneBot/raw/main/Install.sh)
+                                        esc
+                                        ;;
+                                    6)
+                                        test_termux
+                                        if [ $(uname -m) == x86_64 ]; then
+                                            if [ -e $nasyt_dir/easybot/EasyBot ]; then
+                                                $habit --msgbox "Easybot已安装" 0 0
+                                            else
+                                                test_wget
+                                                test_unzip
+                                                wget https://files.inectar.cn/d/ftp/easybot/1.4.0-c5859/linux-x64/easybot-1.4.0-c5859.zip -O easybot.zip
+                                                unzip easybot.zip -d $nasyt_dir/easybot
+                                            fi
+                                            sudo chmod +x $nasyt_dir/easybot/*
+                                            cd $nasyt_dir/easybot
+                                            ./EasyBot
+                                            read -p "脚本运行结束"
+                                            exit
+                                        else
+                                            $habit --msgbox "不支持当前系统框架$(uname -m)" 0 0
+                                        fi
+                                        ;;
+                                    0)
+                                        cw
+                                        break
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                            esac
+                            done
                             ;;
                         4)
                             while true
                             do
-                                clear
-                                1panel
-                                read -p "请选择你的系统: " 1panel_xz
-                                case $1panel_xz in
+                                game_menu
+                                case $game_menu_xz in
                                     1)
-                                        curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh && sh quick_start.sh
+                                        test_install bastet
+                                        bastet
                                         esc
                                         ;;
                                     2)
-                                        curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh
-                                        sudo bash quick_start.sh
+                                        test_install nsnake
+                                        nsnake
                                         esc
                                         ;;
                                     3)
-                                        curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh
-                                        bash quick_start.sh
+                                        test_install ninvaders
+                                        ninvaders
                                         esc
                                         ;;
                                     4)
-                                        echo "安装 docker中"
-                                        bash <(curl -sSL https://linuxmirrors.cn/docker.sh)
-                                        clear; echo "安装 1Panel中"
-                                        curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh && sh quick_start.sh
+                                        test_install cmatrix
+                                        cmatrix
+                                        esc
+                                        ;;
+                                    5)
+                                        test_install cbonsai
+                                        cbonsai -l
+                                        esc
+                                        ;;
+                                    6)
+                                        test_install cava
+                                        cava
                                         esc
                                         ;;
                                     0)
                                         break
-                                        ;;
-                                    *)
-                                        clear
-                                        dialog --msgbox "无效的输入。" 0 0
-                                        esc
                                         ;;
                                 esac
                             done
                             ;;
                         5)
-                            sudo su -c "wget -qO- https://script.mcsmanager.com/setup_cn.sh | bash"
-                            esc
-                            ;;
-                        6) 
-                            clear
-                            cpolar_instell
-                            esc
-                            ;;
-                        7)
-                            clear
-                            ddos
-                            esc
-                            ;;
-                        8)
                             while true
                             do
-                               Secluded_menu
-                               case $Secluded_menu_xz in
-                                  1)
-                                      test_git #检查git是否安装函数
-                                      if [ -e "$nasyt_dir/Secluded/SecludedLauncher.out.sh" ]; then
-                                        $habit --msgbox "Secluded已安装>_<" 0 0
-                                      else
-                                        $habit --title "确认操作" --yesno "确定安装Secluded吗？\nSecluded将会安装到以下目录\n$nasyt_dir/Secluded" 0 0
-                                            if [ $? -ne 0 ]; then
-                                                $habit --msgbox "取消操作" 0 0
-                                                break
-                                            fi
-                                        cd $HOME #切换到根目录。
-                                        $habit --title "确认操作" --yesno "你的服务器位于 <国外>还是<国内>？\n国内请选择yes 国外请选择no" 0 0
-                                            if [ $? -ne 0 ]; then
-                                                git clone https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
-                                            else
-                                                git clone https://ghfast.top/https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
-                                            fi
-                                        echo "chmod 777 "$nasyt_dir/Secluded/SecludedLauncher.out"" > $nasyt_dir/sec
-                                        echo "LD_LIBRARY_PATH=$HOME/.nasyt/Secluded; cd $nasyt_dir/Secluded && ./SecludedLauncher.out" >> $nasyt_dir/sec
-                                        chmod 777 "$nasyt_dir/sec"
-                                        $habit --msgbox "Secluded安装完成,请重启终端以生效\n启动命令为sec" 0 0
-                                      fi
-                                    ;;
-                                 2)
-                                    bash sec
-                                    br
-                                    read -p "按回车键返回。"
-                                    $habit --msgbox "脚本执行完毕" 0 0
-                                    ;;
-                                 3)
-                                    $habit --title "确认操作" --yesno "你确定要删除Secluded吗？" 0 0
+                                server_install_menu
+                                case $server_install_xz in
+                                    1)
+                                        $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
+                                        echo "脚本作者:NAS油条"
+                                        echo "感谢:"
+                                        echo "SFSGamer(QQ:3818483936)"
+                                        echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
+                                        echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
+                                        $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
                                         if [ $? -ne 0 ]; then
                                             break
                                         fi
-                                    echo "正在删除Secluded"
-                                    rm $nasyt_dir/sec
-                                    rm -rf $nasyt_dir/Secluded
-                                        if [ $? -ne 0 ]; then
-                                            $habit --msgbox "删除失败,请手动删除。" 0 0
+                                        curl --progress-bar --output sfs -o /$HOME/sfs https://linux.class2.icu/shell/sfs_server
+                                        mv sfs /usr/bin
+                                        chmod +x /usr/bin/sfs
+                                        echo "$(info) 快捷启动命令为: sfs"
+                                        clear; echo "$(info) 正在运行。"; br
+                                        sfs; br
+                                        esc
+                                        ;;
+                                    2)
+                                        if [ -e $nasyt_dir/phira/phira_linux_server_amd64 ]; then
+                                            echo "$(info) 正在给予文件权限"
+                                            chmod 777 $nasyt_dir/phira >/dev/null 2>&1
+                                            if [ $? -ne 0 ]; then
+                                                echo -e "$(info)$red 给予权限失败 $color"
+                                                exit
+                                            fi
+                                            echo -e "$(info)$green phira已安装,正在启动 $color"
+                                            phira
+                                            esc
                                         else
-                                            $habit --msgbox "Secluded删除成功>_<" 0 0
+                                            $habit --title "确认操作" --yesno "你确定要安装phira服务端吗？" 0 0
+                                            if [ $? -ne 0 ]; then
+                                                break
+                                            fi
+                                            test_curl #curl安装检测
+                                            echo "$(info) 正在下载服务端文件(48.35MB)"
+                                            echo -e "$pink 感谢 创欧云(coyjs.cn) 提供直链支持 $color"
+                                            echo -e "$green 请耐心等待 $color"
+                                            mkdir -p "$nasyt_dir/phira_server"
+                                            curl --progress-bar -L -o "$nasyt_dir/phira_server/phira_linux_server_amd64" "http://api-lxtu.hydun.com/phira-mp-server-Linux_AMD64"
+                                            if [ $? -ne 0 ]; then
+                                                echo -e "$red 文件下载失败 $color"
+                                                echo "[x] 请检查你的网络后重试"
+                                                exit
+                                            else
+                                                echo -e "$(info)$green 文件下载成功 $color"
+                                                echo "$(info) 正在给予权限"
+                                                chmod 777 $nasyt_dir/phira_server/*
+                                                if [ $? -ne 0 ]; then
+                                                    echo -e "$(info) $red 给予失败 $color"
+                                                    exit
+                                                fi
+                                                echo "$(info) 正在制作启动脚本"
+                                                echo "cd $nasyt_dir/phira_server; chmod 777 phira_linux_server_amd64; ./phira_linux_server_amd64" > $nasyt_dir/phira
+                                                chmod 777 $nasyt_dir/*
+                                                echo -e "$(info)$green 请输入phira启动服务端 $color"
+                                                echo -e "$(info) 推荐搭配tmux工具使用"
+                                                exit
+                                            fi
                                         fi
-                                    ;;
-                                 4)
-                                    $habit --msgbox "暂未开发" 0 0
-                                    ;;
-                                 0)
-                                    break
-                                    ;;
-                              esac
-                            done
-                            ;;
-                        9)
-                            while true
-                            do
-                                clear
-                                TRSS
-                                read -p "请选择: " TRSS_xz
-                                case $TRSS_xz in
-                                    1)
-                                        clear
-                                        echo "正在安装中..."
-                                        bash <(curl -L gitee.com/TimeRainStarSky/TRSS_AllBot/raw/main/Install-Docker.sh)
-                                        esc
-                                        ;;
-                                    2)
-                                        clear
-                                        echo "请到官方查看食用教程"
-                                        echo "https://trss.me/Install/TMOE.html"
-                                        read -p "回车键继续。"
-                                        awk -f <(curl -L gitee.com/mo2/linux/raw/2/2.awk)
-                                        esc
-                                        ;;
-                                    3)
-                                        clear
-                                        tsab
-                                        esc
-                                        ;;
-                                    0)
-                                        clear
-                                        break
-                                        ;;
-                                    *)
-                                        clear
-                                        dialog --msgbox "无效的输入。" 0 0
-                                        esc
-                                        ;;
-                                esac
-                            done
-                            ;;
-                        10)
-                            while true
-                            do
-                                clear
-                                astrbot
-                                read -p "请选择你的系统: " astrbot_xz
-                                case $astrbot_xz in
-                                    1)
-                                        bash <(curl -sSL https://gitee.com/mc_cloud/mccloud_bot/raw/master/mccloud_install.sh)
-                                        esc
-                                        ;;
-                                    2)
-                                        wget -O - https://gitee.com/mc_cloud/mccloud_bot/raw/master/mccloud_install_u.sh | bash
-                                        esc
-                                        ;;
-                                    3)
-                                        clear;echo "正在克隆github仓库。"
-                                        git clone https://github.com/AstrBotDevs/AstrBot
-                                        cd AstrBot
-                                        echo "添加python环境"
-                                        python3 -m venv ./venv
-                                        source venv/bin/activate
-                                        br;echo "正在安装依赖。"
-                                        python3 -m pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-                                        clear;br;echo "正在启动astrbot";python main.py
-                                        ;;
-                                    4)
-                                        cd AstrBot
-                                        source venv/bin/activate
-                                        clear;br;echo "正在启动astrbot";python3 main.py
                                         ;;
                                     0)
                                         break
                                         ;;
-                                    *)
-                                        $habit --msgbox "无效的输入。" 0 0
-                                        esc
-                                        ;;
                                 esac
                             done
                             ;;
-                        11)
-                            
-                            curl -o napcat.sh https://nclatest.znin.net/NapNeko/NapCat-Installer/main/script/install.sh
-                            sudo bash napcat.sh --docker n --cli y
-                            ;;
-                        12)
-                            
-                            bash <(curl -L gitee.com/TimeRainStarSky/TRSS_OneBot/raw/main/Install.sh)
-                            ;;
-                        13)
-                            $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
-                            echo "脚本作者:NAS油条"
-                            echo "感谢:"
-                            echo "SFSGamer(QQ:3818483936)"
-                            echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
-                            echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
-                            $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
-                            if [ $? -ne 0 ]; then
-                                break
-                            fi
-                            curl --progress-bar --output sfs -o /$HOME/sfs https://linux.class2.icu/shell/sfs_server
-                            mv sfs /usr/bin
-                            chmod +x /usr/bin/sfs
-                            echo "快捷启动命令为: sfs"
-                            clear; echo "正在运行。"; br
-                            sfs; br
-                            echo "脚本结束。"
-                            esc
-                            ;;
-                        14)
-                            $habit --title "确认操作" --yesno "你确定要安装小皮面板吗？" 0 0
-                            if [ $? -ne 0 ]; then
-                                break
-                            fi
-                            if [ -f /usr/bin/curl ]; then
-                                curl --progress-bar -O https://dl.xp.cn/dl/xp/install.sh
-                            else
-                                wget --progress-bar -O install.sh https://dl.xp.cn/dl/xp/install.sh
-                            fi; bash install.sh
+                        6) 
+                            cpolar_instell
                             esc
                             ;;
                         0)
@@ -1857,12 +2232,14 @@ index_main() {
                     case $app_install_xz in
                         1)
                             $habit --msgbox "检测到当前系统为 $sys 是否开始安装？" 0 0
-                            sudo $pkg_install ibus-libpinyin $yes_tg
-                            $habit --msgbox "输入法安装完成\n请打开桌面查看。" 0 0
+                            $pkg_install ibus-libpinyin $yes_tg
+                            $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
                             ;;
                         2)
-                            echo "正在安装Blender建模软件"
+                            echo -e "$(info) 正在安装Blender建模软件"
                             $pkg_install Blender $yes_tg
+                            $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
+                            esc
                             ;;
                         3)
                             $habit --title "确认操作" --yesno "你确定要安装linux应用商店吗？" 0 0
@@ -1870,8 +2247,15 @@ index_main() {
                                 break
                             else
                                 sudo $pkg_install gnome-software $yes_tg
-                                
                             fi
+                            $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
+                            esc
+                            ;;
+                        4)
+                            test_install bleachbit
+                            bleachbit
+                            esc
+                            ;;
                         0)
                             cw
                             break
@@ -1932,16 +2316,16 @@ index_main() {
                                read -p "按回车键返回。"
                                $habit --msgbox "脚本运行结束" 0 0
                             else
-                               read
-                               echo "正在克隆github仓库"
-                               read
-                               git clone https://github.com/konsheng/MinecraftMotdStressTest.git $nasyt_dir/MinecraftMotdStressTest
-                               read
-                               echo "正在检查,脚本所需资源"
-                               read
+                               echo -e "$(info) 正在克隆github仓库"
+                               git clone https://github.com/konsheng/MinecraftMotdStressTest.git $nasyt_dir/MinecraftMotdStressTest 
+                               if [ $? -ne 0 ]; then
+                               echo -e "$(info) $red 克隆失败$color"
+                               else
+                               echo -e "$(info) $green 克隆成功$color"
+                               fi
+                               echo -e "$(info) 正在检查,脚本所需资源"
                                test_python;test_pip #调用函数安装/检测
                                pip_mcstatus;pip_colorama  #调用函数安装/检测
-                               read
                                $habit --msgbox "安装完成,请重新打开脚本" 0 0
                             fi
                             ;;
@@ -1981,21 +2365,61 @@ index_main() {
                                         fi
                                         chmod 777 $nasyt_dir/kali_install/AutoInstallKali/*
                                         bash $nasyt_dir/kali_install/AutoInstallKali/kalinethunter
-                                        read -p "按回车键返回"
+                                        esc
                                         $habit --msgbox "脚本执行完毕" 0 0
                                     else
                                         git clone https://gitee.com/zhang-955/clone.git $nasyt_dir/kali_install
                                         chmod 777 $nasyt_dir/kali_install/AutoInstallKali/*
                                         bash $nasyt_dir/kali_install/AutoInstallKali/kalinethunter
-                                        read -p "按回车键返回"
+                                        esc
                                         $habit --msgbox "脚本执行完毕" 0 0
                                     fi
+                                    ;;
+                                3)
+                                    bash -c "$(curl -L https://gitee.com/nasyt/termux_install_kali/raw/master/termux_install_kali.sh)"
+                                    esc
                                     ;;
                                 0)
                                     break
                                     ;;
                             esac
                             done
+                            ;;
+                        7)
+                            awk -f <(curl -L gitee.com/mo2/linux/raw/2/2.awk)
+                            esc
+                            ;;
+                        8)
+                            echo -e "$(info) $blue 正在从Github拉取脚本文件$color"
+                            bash -c "$(curl -L "https://ghfast.top/https://raw.githubusercontent.com/mohong-furry/mohong-furry/refs/heads/main/Tool_%E5%B7%A5%E5%85%B7/Utility_%E8%BE%85%E5%8A%A9%E7%AE%A1%E7%90%86/Git.sh")"
+                            esc
+                            ;;
+                        9)
+                            echo -e "$(info) 正在下载脚本"
+                            curl -sS -O https://kejilion.pro/kejilion.sh >/dev/null 2>&1
+                            if [ $? -ne 0 ]; then
+                                echo -e "$(info) $red 脚本下载失败$color"
+                            else
+                                echo -e "$(info) $green 脚本下载成功$color"
+                            fi
+                            mv kejilion.sh $nasyt_dir
+                            chmod +x $nasyt_dir/kejilion.sh
+                            sleep 1s
+                            bash $nasyt_dir/kejilion.sh
+                            esc
+                            ;;
+                        10)
+                            test_install wget curl
+                            echo -e "$(info) 正在下载安装脚本"
+                            wget -P $nasyt_dir/v2ray_shell.sh -N --no-check-certificate "https://ghfast.top/https://raw.githubusercontent.com/mack-a/v2ray-agent/master/install.sh"
+                            if [ $? -ne 0 ]; then
+                                echo -e "$(info) $red 文件下载失败$color"
+                            else
+                                echo -e "$(info) $green 文件下载成功$color"
+                            fi
+                            chmod 777 $nasyt_dir/*
+                            $sudo_setup bash $nasyt_dir/v2ray_shell.sh
+                            esc
                             ;;
                         0) 
                             break
@@ -2013,7 +2437,7 @@ index_main() {
                 ;;
             8)
                 clear
-                gx_log #更新日志
+                bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/up_history.sh)" #更新日志
                 esc
                 ;;
             9)
@@ -2024,23 +2448,22 @@ index_main() {
                     1)
                         habit_menu
                         case $habit_menu_xz in
-                            1) echo "export habit="dialog"" >  $nasyt_dir/.config ;;
-                            2) echo "export habit="whiptail"" > $nasyt_dir/.config ;;
-                            3) sed -i '/^export=*/d' $nasyt_dir/.config ;;
-                            0) cw;break ;;
+                            1) echo "export habit="dialog"" >  $nasyt_dir/config.txt ;;
+                            2) echo "export habit="whiptail"" > $nasyt_dir/config.txt ;;
+                            3) sed -i '/^export=*/d' $nasyt_dir/config.txt ;;
+                            0) break ;;
                         esac
+                        echo -e "$(info) $green 习惯设置成功,请重新进入脚本$color"
+                        exit
                         ;;
                     2)  
-                        $habit --yesno "此操作会删除本脚本\n以及本脚本目录下的工具\n你确定要删除(>_<)本脚本吗？" 0 0
-                        rm /usr/bin/nasyt
-                        rm -rf $nasyt_dir
-                        $habit --msgbox "删除完成\n再见，感谢你的支持。" 0 0
+                        shell_uninstall
                         exit 1
                         ;;
                     3)
-                        if ! grep -q "^export github_speed=" $nasyt_dir/.config; then
+                        if ! grep -q "^export github_speed=" $nasyt_dir/config.txt; then
                            $habit --msgbox "已存在github加速地址\n并且地址为:\n$github_speed\n是否删除？" 0 0
-                           sed -i '/export github_speed=/d' $nasyt_dir/.config
+                           sed -i '/export github_speed=/d' $nasyt_dir/config.txt
                         else
                            github_speed_address=$($habit --title "github加速地址" \
                            --inputbox "例如: https://ghfast.top/ \n\n请输入" 0 0 \
@@ -2049,13 +2472,44 @@ index_main() {
                               break
                            fi
                         fi
-                        echo "export github_speed=https://ghfast.top/" >> $nasyt_dir/.config
+                        echo "export github_speed=https://ghfast.top/" >> $nasyt_dir/config.txt
                         $habit --msgbox "地址添加成功，请重启脚本。" 0 0
                         exit 0
                         ;;
+                    4)
+                        test_ncdu
+                        echo -e "$green正在扫描中$color"
+                        sleep 1s
+                        ncdu $nasyt_dir
+                        esc
+                        ;;
+                    5)
+                        while true
+                        do
+                            shell_backup_menu
+                            case $shell_backup_xz in
+                                1) shell_backup;esc;;
+                                2) shell_recover;esc;;
+                                0) break;;
+                                *) break;;
+                            esac
+                        done
+                        ;;
+                    8)
+                        echo -e "$(info) 正在补全文件中"
+                        test_figlet
+                        test_dialog
+                        test_whiptail
+                        test_curl
+                        test_git
+                        test_wget
+                        echo -e "$(info) 命令运行完毕"
+                        esc
+                        ;;
                     9)  
-                        rm $nasyt_dir/.config
+                        rm $nasyt_dir/config.txt
                         $habit --msgbox "删除配置文件完成。" 0 0
+                        exit
                         ;;
                     0)  break;;
                     *)  cw;break;;
@@ -2080,15 +2534,23 @@ index_main() {
 #
 #
 #
-all_variable # 全部变量
 color_variable # 定义颜色变量
+all_variable # 全部变量
+check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+    -g|--gx)
+      gx
+      ;;
+    -u|--upsource)
+      upsource
+      exit
+      ;;
     -t|--tmux)
       tmux_tool
       tmux_tool_index
-      echo "执行完毕。"
+      echo -e "$(info) 执行完毕。"
       exit
       ;;
     -s|--skip)
@@ -2096,7 +2558,7 @@ if [ $# -ne 0 ]; then
       ;;
     -v|-version|--version)
       echo
-      echo "名称: $0"
+      echo "名称: nasyt"
       echo "版本: $version"
       echo "操作系统: $PRETTY_NAME"
       echo "位于目录: "
@@ -2109,6 +2571,8 @@ if [ $# -ne 0 ]; then
       echo "用法:"
       echo "  nasyt [参数]"
       echo "参数:"
+      echo "  -g, --gx 快捷更新脚本"
+      echo "  -u, -upsource 快捷换软件源"
       echo "  -t, --tmux 快捷进入tmux管理"
       echo "  -s, --skip 直接进入菜单部分"
       echo "  -v, --version 输出脚本版本"
