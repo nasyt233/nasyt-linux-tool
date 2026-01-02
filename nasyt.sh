@@ -1,16 +1,24 @@
 #!/bin/bash
+# 本脚本仅用于合法、授权的安全测试和教育目的
+# 禁止用于任何非法攻击行为
+# 使用者需遵守当地法律法规
+
 # 本脚本由NAS油条制作
 # NAS油条的实用脚本
-#欢迎加入NAS油条赤石技术交流群
-#有什么赤石技术可以进来交流
-#赤石群号:610699712
+#欢迎加入NAS油条技术交流群
+#有什么技术可以进来交流
+#群号:610699712
 #gum_tool
+
 cd $HOME
-time_date="2025/12/28"
-version="v2.4.2.1"
+time_date="2026/1/1"
+version="v2.4.2.2"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 bin_dir="usr/bin" #bin目录
+#nasyt_from="gitcode" # 脚本来源
+#> $nasyt_dir/shell.log
+#exec > >(tee -a "$nasyt_dir/shell.log") 2>&1
 
 # 主菜单
 menu_jc() {
@@ -167,15 +175,14 @@ color_variable() {
 }
 
 all_variable() {
-    
     OUTPUT_FILE="nasyt" # 下载文件名
     time_out=10  # curl超时时间（秒）
     urls=(
-      "https://gitee.com/nasyt/nasyt-linux-tool/raw/master/nasyt.sh"   # 主链接
-      "https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh" # 备用链接2
-      "https://linux.class2.icu/shell/nasyt.sh"  # 备用链接2
-      "https://nasyt.hoha.top/shell/nasyt.sh" # 备用链接3
-      "https://nasyt2.class2.icu/shell/nasyt.sh"  # 备用链接4
+      "https://nasyt.hoha.top/shell/nasyt.sh"
+      "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nasyt.sh"
+      "https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh"
+      "https://linux.class2.icu/shell/nasyt.sh"
+      "https://nasyt2.class2.icu/shell/nasyt.sh"
     )
     
 }
@@ -200,6 +207,9 @@ br() {
     echo -e "\e[1;34m----------------------------\e[0m"
 }
 
+br_2() {
+    echo "----------------------------"
+}
 esc() {
     echo -e "$(info) 按$green回车键$color$blue返回$color,按$yellow Ctrl+C$color$red退出$color"
     read
@@ -209,6 +219,25 @@ esc() {
 cw() {
     if [ $cw_test -ne 0 ]; then
        break
+    fi
+}
+
+# 网络工具使用限制检查
+disclaimer() {
+    if [[ -f "$nasyt_dir/disclaimer" ]]; then
+        return 0
+    fi
+    
+    $habit --title "免责声明" \
+    --yesno "本工具仅限合法使用\n带来的后果由使用者承担全部责任\n你是否同意使用条款？" 0 0
+
+    if [ $? -eq 0 ]; then
+        touch "$nasyt_dir/disclaimer"
+        return 0
+    else
+        $habit --msgbox "未同意使用条款,脚本退出。" 0 0
+        clear
+        exit 0
     fi
 }
 
@@ -345,19 +374,6 @@ test_install_jc() {
     fi
 }
 
-test_dialog() {
-        if command -v dialog >/dev/null 2>&1; then
-            echo -e "$green ◉ dialog 已经安装，跳过安装步骤。 $color"
-        else 
-            echo "$(info) 正在安装dialog"
-            $pkg_install dialog $yes_tg
-            if [ $? -ne 0 ]; then
-                echo -e "$(info) 安装完成"
-            fi
-            echo -e "$red 安装失败。 $color"
-        fi
-}
-
 test_figlet() {
     if command -v figlet >/dev/null 2>&1; then
         echo -e "$green ◉ figlet 已经安装，跳过安装步骤。$color"
@@ -370,6 +386,7 @@ test_figlet() {
             echo -e "$red 安装失败。 $color"
     fi
 }
+
 test_toilet() {
     if command -v toilet >/dev/null 2>&1; then
         echo -e "$green ◉ toilet已安装，跳过安装步骤 $color"
@@ -387,37 +404,10 @@ test_whiptail() {
         echo -e "$(info) whiptail未安装，正在安装。"
         if command -v pacman >/dev/null 2>&1; then
             echo -e "$(info) 检测到Arch系统，正在安装libnewt软件包"
-            $pkg_install libnewt $yes_tg
+            test_install libnewt
         else
-            $pkg_install whiptail $yes_tg
-                if [ $? -ne 0 ]; then
-                    echo "$(info) 安装完成"
-                fi
-                echo -e "$red 安装失败。 $color"
+            test_install whiptail
         fi
-    fi
-}
-    
-test_curl() {
-    if command -v curl >/dev/null 2>&1; then
-        echo -e "$green ◉ curl已安装,跳过安装$color"
-    else
-        echo "$(info) 正在安装curl"
-        $pkg_install curl $yes_tg >/dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            echo -e "$red curl安装失败 $color"
-        else
-            echo "$(info) curl安装成功"
-        fi
-    fi
-}
-
-test_wget() {
-    if command -v wget >/dev/null 2>&1; then
-        echo -e "$green ◉ wget已安装，跳过安装 $color"
-    else
-        echo "$(info) 正在安装wget"
-        $pkg_install wget $yes_tg
     fi
 }
 
@@ -427,51 +417,6 @@ test_eatmydata() {
     else
         echo -e "$(info) 正在安装eatmydata"
         $pkg_install eatmydata $yes_tg
-    fi
-}
-
-test_python() {
-    if command -v python >/dev/null 2>&1; then
-       echo -e "$green ◉ python已安装,跳过安装$color"
-    else
-       echo -e "$(info) 正在安装python"
-       $pkg_install python $yes_tg
-    fi
-}
-
-test_pip() {
-    if command -v pip >/dev/null 2>&1; then
-       echo -e "$green ◉ pip已安装,跳过安装$color"
-    else
-        echo -e "$(info) 正在安装pip"
-        $pkg_install pip $yes_tg
-    fi
-}
-
-test_git() {
-    if command -v git >/dev/null 2>&1; then
-        echo -e "$green ◉ git已安装,跳过安装$color"
-    else
-        echo -e "$(info) 正在安装git"
-        $pkg_install git $yes_tg
-    fi
-}
-
-test_neofetch() {
-    if command -v neofetch >/dev/null 2>&1; then
-        echo -e "$green ◉ neofetch已安装,跳过安装$color"
-    else
-        echo -e "$(info) 正在安装neofetch工具"
-        $pkg_install neofetch $yes_tg
-    fi
-}
-
-test_fastfetch() {
-    if command -v fastfetch >/dev/null 2>&1; then
-        echo -e "$green ◉ fastfetch已安装,跳过安装$color"
-    else
-        echo -e "$(info) 正在安装 fastfetch"
-        $pkg_install fastfetch $yes_tg
     fi
 }
 
@@ -642,7 +587,7 @@ habit_xz () {
         habit_menu
         case $habit_menu_xz in
            1)
-               test_dialog
+               test_install dialog
                echo "export habit="dialog"" >  $nasyt_dir/config.txt
                ;;
            2) 
@@ -670,8 +615,8 @@ habit_xz () {
 # 主菜单
 show_menu() {
     index_menu_xz=$($habit --title "NAS油条Linux工具箱" \
-    --backtitle "版本:$version" \
-    --menu "当前版本:$version $time_date\n本工具箱由NAS油条制作\nQQ群:610699712\n请使用方向键+回车键进行操作\n请选择你要启动的项目：" \
+    --backtitle "版本:$version    更新时间:$time_date"\
+    --menu "本工具箱由NAS油条制作\nQQ群:610699712\n请使用方向键+回车键进行操作\n请选择你要启动的项目：" \
     0 0 10 \
     1 "本机信息" \
     2 "系统工具" \
@@ -683,9 +628,7 @@ show_menu() {
     8 "更新历史" \
     9 "脚本设置" \
     0 "退出脚本" \
-    2>&1 1>/dev/tty) 
-    cw_test=$?;cw
-    
+    2>&1 1>/dev/tty)
     
 }
 
@@ -697,7 +640,7 @@ look_menu() {
     1 "当前时间" \
     2 "配置信息" \
     3 "当前 IP" \
-    4 "本机logo" \
+    4 "系统logo" \
     5 "地理位置" \
     6 "进程列表" \
     7 "运行时间" \
@@ -734,6 +677,7 @@ often_tool() {
    often_tool_linux() {
     often_tool_choice=$($habit --title "安装linux常用工具" \
     --menu "请选择" 0 0 10 \
+    1 "docker管理"\
     2 "🖥各种面板" \
     3 "🤖bot机器人" \
     4 "👾娱乐游戏" \
@@ -809,14 +753,13 @@ Internet_tool() {
     Internet_tool_xz=$($habit --title "网络常用工具" \
     --menu "请选择" 0 0 10 \
     1 "Ping工具" \
-    2 "CC攻击" \
+    2 "网络连通性测试工具" \
     3 "Tmux终端工具" \
     4 "TMOE实用工具" \
-    5 "各种渗透工具(未开发)" \
     5 "nmap端口扫描工具" \
     6 "ranger文件管理工具" \
-    7 "hashcat暴力破解工具" \
-    8 "burpsuite渗透工具" \
+    7 "hashcat工具" \
+    8 "burpsuite工具" \
     9 "glow md文件浏览工具" \
     0 "返回上层菜单" \
     2>&1 1>/dev/tty)
@@ -832,7 +775,7 @@ Linux_shell() {
     2 "木空云LinuxTool脚本工具" \
     3 "MC 压力测试 脚本工具" \
     4 "Docker 安装与换源脚本" \
-    5 "赤石脚本 (⁎⚈᷀᷁ᴗ⚈᷀᷁⁎)" \
+    5 "神秘脚本 (纯整活)" \
     7 "TMOE脚本工具" \
     8 "git管理脚本" \
     9 "kejilion脚本工具" \
@@ -905,6 +848,15 @@ bot_install_menu() {
     cw_test=$?;cw
 }
 
+# docker管理工具
+docker_menu() {
+    docker_menu_xz=$($habit --title "docker管理" \
+    --menu "docker管理 开发中... \n请选择" 0 0 10 \
+    1 "docker信息" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
 #其他工具
 other_tool_menu() {
     other_tool_xz=$($habit --title "其他工具" \
@@ -959,7 +911,7 @@ openlist_menu(){
 
 nweb_menu(){
     nweb_menu_xz=$($habit --title "nweb安装" \
-    --menu "nweb一个由Rust 语言构建的\n轻量级高性能 静态Web 服务\n仓库地址https://gitee.com/nasyt/nweb \n由作者 NAS油条 制作\n推荐搭配tmux工具使用\n请选择:" 0 0 10\
+    --menu "nweb一个由Rust 语言构建的\n轻量级高性能 静态Web 服务\n仓库地址https://gitcode.com/nasyt/nweb \n由作者 NAS油条 制作\n推荐搭配tmux工具使用\n请选择:" 0 0 10\
     1 "安装nweb" \
     2 "启动nweb" \
     3 "卸载nweb" \
@@ -1064,11 +1016,6 @@ ping2() {
     ping $ping_sr
 }
 
-# CC攻击命令
-cc() {
-    echo -e "$(info) 无"
-}
-
 # tmux命令
 tmux_tool() {
     tmuxtool=$($habit --title "tmux工具" \
@@ -1108,7 +1055,7 @@ cpolar_instell() {
         2>&1 1>/dev/tty)
         case $cpolar_install_xz in
             1) curl --progress-bar -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash ;;
-            2) test_install dnsutils;bash -c "$(curl https://gitee.com/nasyt/nasyt-linux-tool/raw/master/cpolar/aarch64.sh)";clear;echo "安装完成" ;;
+            2) test_install dnsutils;bash -c "$(curl raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/cpolar/aarch64.sh)" ;;
             3) curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash -s -- --remove ;;
             *) break;;
         esac
@@ -1248,21 +1195,21 @@ MaiBot_install() {
     2>&1 1>/dev/tty)
 }
 
-# CC攻击
-cc() {
-    echo "-------CC攻击-------"
-    cc_url=$($habit --title "CC攻击" \
-    --inputbox "请输入攻击地址" 0 0 \
+# 网络连通测试工具
+curl_connect_tool() {
+    echo "-------网络连通测试工具-------"
+    curl_connect_tool_url=$($habit --title "网络连通测试工具\n⚠️ 注意：仅用于合法网络诊断" \
+    --inputbox "请输入测试地址" 0 0 \
     2>&1 1>/dev/tty)
-    cc_sl=$($habit --title "CC攻击" \
-    --inputbox "请输入攻击数量" 0 0 \
+    curl_connect_tool_sl=$($habit --title "curl" \
+    --inputbox "请输入测试数量" 0 0 \
     2>&1 1>/dev/tty)
-    echo 正在攻击ing...
-    for ((i=0; i<$cc_sl; i++)); do
-        echo -e "$(info) 正在攻击$i"
-        curl -s $cc_url > /dev/null     
+    echo "正在测试中ing..."
+    for ((i=0; i<$curl_connect_tool_sl; i++)); do
+        echo -e "$(info) 正在访问$i"
+        curl -s $curl_connect_tool_url > /dev/null     
     done
-    echo -e "$(info) CC攻击完成"
+    echo -e "$(info) 测试完成"
 }
 
 
@@ -1345,11 +1292,21 @@ ranger_install() {
 
 #脚本卸载
 shell_uninstall() {
-    $habit --yesno "此操作会删除本脚本\n以及本脚本目录下的工具\n你确定要删除(>_<)本脚本吗？" 0 0
-    rm $PREFIX/bin/nasyt >/dev/null 2>&1
-    rm -rf /usr/bin/nasyt >/dev/null 2>&1
-    rm -rf $nasyt_dir
-    $habit --msgbox "删除完成\n再见，感谢你的支持。" 0 0
+    $habit --yesno "此操作会删除本脚本\n你确定要删除(>_<)本脚本吗？" 0 0
+    if [ $? -ne 0 ]; then
+        echo ""
+    else
+        rm $PREFIX/bin/nasyt >/dev/null 2>&1
+        rm /usr/bin/nasyt >/dev/null 2>&1
+    fi
+    $habit --title "确认操作" --yesno "是否删除脚本目录下的所有项目？\n $(br_2) \n$(ls $nasyt_dir/) \n $(br_2)" 0 0
+    if [ $? -ne 0 ]; then
+        echo ""
+    else
+        rm -rfv $nasyt_dir
+        exit 0
+    fi
+    $habit --msgbox "操作完成\n感谢你的支持。" 0 0
 }
 
 #更新查看
@@ -1363,7 +1320,7 @@ gx_show() {
 
 #更新链接来源
 version_update() {
-    new_version=$(curl "https://gitee.com/nasyt/nasyt-linux-tool/raw/master/version.txt") 
+    new_version=$(curl "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/version.txt") 
 }
 
 #更新以及安装
@@ -1396,9 +1353,6 @@ gx() {
             fi
             echo -e "$(info) 正在安装必要文件"
             test_install figlet >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                echo -e "$(info) $red figlet软件包安装失败，请手动安装figlet软件包$color"
-            fi
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
@@ -1470,25 +1424,6 @@ nasyt_backup() {
     done
 }
 
-# DDOS攻击安装
-ddos() {
-    if [ -e $nasyt_dir/ddos.zip ]; then
-        python $nasyt_dir/ddos/ddos.py
-    else
-        esc
-        echo "$(info) 正在安装 python";
-        echo "途中可能会停止请输入y继续"
-        echo "等的时间可能有点长,请耐心等待。";
-        test_install python figlet
-        echo -e "$(info) 正在安装下载 ddos"
-        curl --progress-bar -o ddos.zip https://cccimg.com/down.php/576c81c114e3a3c1b3e702bd19117594.zip
-        unzip ddos.zip $nasyt_dir/ddos9
-        echo "清理安装包中"; rm ddos.zip
-        echo -e "$(info) $green 安装完成$color"
-        cd ddos; python ddos.py
-    fi
-    esc
-}
 
 upsource() {
     read -p "$(info) 确定更换下载源(y/n)" upsource_sz
@@ -1715,6 +1650,7 @@ index_main() {
         ad_gg #支持
         habit_xz #选择使用习惯。
         br
+        disclaimer # 免责声明
         read -p "回车键启动脚本,Ctrl+C退出" 
     fi
     source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
@@ -1736,7 +1672,7 @@ index_main() {
                         2) show_server_config;;
                         3) dialog --msgbox "$(curl iplark.com)" 0 0 ;;
                         4) ifneofetch ;;
-                        5) $habit --msgbox "$(curl -sSL https://slow-api.class2.icu/ip.php)" 0 0;;
+                        5) $habit --msgbox "$(curl -sSL https://slow-api.hoha.top/ip.php)" 0 0;;
                         6) test_install htop;htop ;;
                         7) uptime_cn;;
                         8) resources_show;esc;;
@@ -1949,7 +1885,7 @@ index_main() {
                             if command -v termux-info >/dev/null 2>&1; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
-                                test_wget #检查wget函数
+                                test_install wget #检查wget函数
                                 $habit --title "确认操作" --yesno "本服务由宝塔面板（bt.cn)提供挂载服务\n默认挂载到/www目录\n数据丢失作者不提供任何赔偿" 0 0
                                 if [ $? -ne 0 ]; then
                                     break
@@ -2040,7 +1976,7 @@ index_main() {
                             esc
                             ;;
                         2)
-                            cc
+                            curl_connect_tool
                             esc
                             ;;
                         3)
@@ -2092,6 +2028,28 @@ index_main() {
                     clear
                     often_tool
                     case $often_tool_choice in
+                        1)
+                            while true
+                            do
+                                docker_menu
+                                case $docker_menu_xz in
+                                    1)
+                                        # Docker 信息
+                                        clear
+                                        echo -e "${CYAN}${BOLD}Docker 信息${PLAIN}"
+                                        br
+                                        docker version
+                                        br
+                                        docker info
+                                        br
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
                         2)
                             while true
                             do
@@ -2251,7 +2209,7 @@ index_main() {
                                             Secluded_menu
                                             case $Secluded_menu_xz in
                                             1)
-                                                test_git #检查git是否安装函数
+                                                test_install git #检查git是否安装函数
                                                 if [ -e "$nasyt_dir/Secluded/SecludedLauncher.out.sh" ]; then
                                                     $habit --msgbox "Secluded已安装>_<" 0 0
                                                 else
@@ -2574,7 +2532,7 @@ index_main() {
                                             if [ -e $nasyt_dir/easybot/EasyBot ]; then
                                                 $habit --msgbox "Easybot已安装" 0 0
                                             else
-                                                test_wget
+                                                test_install wget
                                                 test_unzip
                                                 wget https://files.inectar.cn/d/ftp/easybot/1.4.0-c5859/linux-x64/easybot-1.4.0-c5859.zip -O easybot.zip
                                                 unzip easybot.zip -d $nasyt_dir/easybot
@@ -2766,7 +2724,7 @@ index_main() {
                                             if [ $? -ne 0 ]; then
                                                 break
                                             fi
-                                            test_curl #curl安装检测
+                                            test_install curl #curl安装检测
                                             echo "$(info) 正在下载服务端文件(48.35MB)"
                                             echo -e "$pink 感谢 创欧云(coyjs.cn) 提供直链支持 $color"
                                             echo -e "$green 请耐心等待 $color"
@@ -3006,7 +2964,7 @@ index_main() {
                             ;;
                         3)
                             if [ -e "$nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py" ]; then
-                                test_python;test_pip #调用函数检测
+                                test_install python pip #调用函数检测
                                 pip_mcstatus;pip_colorama  #调用函数安装/检测
                                 br;sleep 1
                                 mc_test_ip=$($habit --title "服务器地址" \
@@ -3033,7 +2991,7 @@ index_main() {
                                echo -e "$(info) $green 克隆成功$color"
                                fi
                                echo -e "$(info) 正在检查,脚本所需资源"
-                               test_python;test_pip #调用函数安装/检测
+                               test_install python pip #调用函数安装/检测
                                pip_mcstatus;pip_colorama  #调用函数安装/检测
                                $habit --msgbox "安装完成,请重新打开脚本" 0 0
                             fi
@@ -3067,7 +3025,7 @@ index_main() {
                                     bash kali.sh
                                     ;;
                                 2)
-                                    test_git #git检查函数
+                                    test_install git #git检查函数
                                     if [ -e $nasyt_dir/kali_install/AutoInstallKali/kalinethunter ]; then
                                         $habit --title "确认操作" --yesno "当前脚本已安装是否直接启动？" 0 0
                                         if [ $? -ne 0 ]; then
@@ -3218,11 +3176,11 @@ index_main() {
                     8)
                         echo -e "$(info) 正在补全文件中"
                         test_figlet
-                        test_dialog
+                        test_install dialog
                         test_whiptail
-                        test_curl
-                        test_git
-                        test_wget
+                        test_install curl
+                        test_install git
+                        test_install wget
                         echo -e "$(info) 命令运行完毕"
                         esc
                         ;;
@@ -3282,6 +3240,7 @@ if [ $# -ne 0 ]; then
       echo
       echo "名称: nasyt"
       echo "版本: $version"
+      #echo "来源: $nasyt_from"
       echo "操作系统: $PRETTY_NAME"
       echo "位于目录: $(command -v nasyt)"
       echo
@@ -3309,4 +3268,5 @@ if [ $# -ne 0 ]; then
       exit
     esac
 fi
+
 index_main # 脚本主程序
