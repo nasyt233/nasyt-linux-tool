@@ -2,12 +2,12 @@
 
 ## 脚本概述
 
-**NAS油条Linux工具箱**是一个功能强大的Linux系统管理脚本，由NAS油条开发，版本为v2.4.2.1。该脚本集成了大量实用的Linux系统工具和功能，为用户提供一站式的系统管理和维护解决方案。
+**NAS油条Linux工具箱**是一个功能强大的Linux系统管理脚本，由NAS油条开发,该脚本集成了大量实用的Linux系统工具和功能，为用户提供一站式的系统管理和维护解决方案。
 
 
- **一键食用命令** 
-```
-bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/nasyt.sh)"
+ **一键安装命令** 
+```bash
+bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nasyt_install.sh)"
 ```
 
 
