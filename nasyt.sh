@@ -11,8 +11,8 @@
 #gum_tool
 
 cd $HOME
-time_date="2026/1/1"
-version="v2.4.2.2"
+time_date="2026/1/7"
+version="v2.4.2.3"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 bin_dir="usr/bin" #bin目录
@@ -220,6 +220,13 @@ cw() {
     if [ $cw_test -ne 0 ]; then
        break
     fi
+}
+
+# 生成随机文件名（基于时间戳+随机数
+time_name() {
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local random=$(shuf -i 1000-9999 -n 1)
+    time_name_xz="${timestamp}_${random}"
 }
 
 # 网络工具使用限制检查
@@ -438,6 +445,14 @@ test_burpsuite() {
     fi
 }
 
+# docker安装脚本
+test_docker() {
+    if command -v docker >/dev/null 2>&1; then
+        echo "docker已安装"
+    else
+        curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+    fi
+}
 
 test_bastet() {
     echo "111"
@@ -554,6 +569,11 @@ check_script_folder () {
     else
         mkdir -p "$nasyt_dir/version"
     fi
+    if [ -d "$nasyt_dir/acg" ]; then
+        echo
+    else
+        mkdir -p "$nasyt_dir/acg"
+    fi
 }
 
 # 检查本脚本是否已安装
@@ -627,6 +647,7 @@ show_menu() {
     7 "更新脚本" \
     8 "更新历史" \
     9 "脚本设置" \
+    10 "随机美图" \
     0 "退出脚本" \
     2>&1 1>/dev/tty)
     
@@ -790,11 +811,12 @@ Linux_shell() {
     Linux_shell_xz=$($habit --title "各种termux脚本" \
     --menu "请选择" 0 0 10 \
     3 " MC 压力测试 脚本工具" \
-    5 "赤石脚本good" \
+    5 "神秘脚本 (纯整活)" \
     6 "Termux版kali一键安装脚本" \
     7 "TMOE脚本工具" \
     8 "git管理脚本" \
     9 "kejilion脚本工具" \
+    11 "naster脚本(termux)" \
     91 "欢迎联系作者添加" \
     0 "返回" \
     2>&1 1>/dev/tty)
@@ -864,6 +886,7 @@ other_tool_menu() {
     1 "Alist资源挂载工具" \
     2 "OpenList挂载工具" \
     3 "nweb 高性能web服务"\
+    4 "cloudreve云盘系统" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -916,6 +939,18 @@ nweb_menu(){
     2 "启动nweb" \
     3 "卸载nweb" \
     4 "tmux工具" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+cloudreve_menu() {
+    cloudreve_menu_xz=$($habit --title "cloudreve云盘" \
+    --menu "Cloudreve - 部署公私兼备的网盘系统\n 来源 https://cloudreve.org/ \n脚本作者:NAS油条\n本安装方式釆用docker安装\n docker镜像来源于社区" 0 0 10 \
+    1 "安装cloudreve" \
+    2 "更新cloudreve" \
+    3 "运行cloudreve" \
+    4 "停止cloudreve" \
+    5 "删除cloudreve" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1587,6 +1622,90 @@ change_password() {
 }
 
 
+acg() {
+    test_install wget
+    test_install chafa
+    clear
+    while true
+    do
+        acg_menu_xz=$($habit --title "随机acg" \
+        --menu "推荐将终端拉到最小状态\n以获得最佳体验，按确定键获取图片" 0 0 5\
+        1 "随机acg(竖屏)" \
+        2 "随机acg(横屏)" \
+        3 "随机setu(🔞)" \
+        4 "自定义关键词" \
+        9 "查看历史图片" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+        clear
+        case $acg_menu_xz in
+            1)
+                tp_curl=https://www.loliapi.com/acg/pe
+                ;;
+            2)
+                tp_curl=https://www.loliapi.com/acg/pc
+                ;;
+            3)
+                $habit --title "随机setu🔞" --yesno "你是否已满18岁?" 0 0
+                if [ $? -ne 0 ]; then
+                    break
+                else
+                    echo -e "$(info) 正在请求i.pixiv.re"
+                    setu_api=$(curl https://api.lolicon.app/setu/v2?r18=1)
+                    if [ $? -ne 0 ]; then
+                        echo -e "$(info) $red api请求失败$color"
+                    else
+                        echo -e "$(info) $green api请求成功$color"
+                    fi
+                    #echo $setu_api | grep -o '"pid":[0-9]*\|"title":"[^"]*"\|"original":"[^"]*"\|"ext":"[^"]*"\|"author":"[^"]*"'
+                    tp_curl=$(echo $setu_api | grep -o '"original":"[^"]*"' | head -1 | cut -d'"' -f4)
+                fi
+                ;;
+            4)
+                api_tag=$($habit --title "自定义关键词" \
+                --inputbox "请输入关键词，可用|符合隔开" 0 0 \
+                2>&1 1>/dev/tty)
+                api_r18_xz=$($habit --title "是否查找R18内容" \
+                --yesno "是否查找R18内容?" 0 0 \
+                2>&1 1>/dev/tty)
+                if [ $? -ne 0 ]; then
+                    api_r18=0
+                else
+                    api_r18=1
+                fi
+                echo -e "$(info) 正在请求i.pixiv.re"
+                setu_api=$(curl https://api.lolicon.app/setu/v2?tag=$api_tag&r18=$api_r18)
+                if [ $? -ne 0 ]; then
+                    echo -e "$(info) $red api请求失败$color"
+                else
+                    echo -e "$(info) $green api请求成功$color"
+                fi
+                #echo $setu_api | grep -o '"pid":[0-9]*\|"title":"[^"]*"\|"original":"[^"]*"\|"ext":"[^"]*"\|"author":"[^"]*"'
+                tp_curl=$(echo $setu_api | grep -o '"original":"[^"]*"' | head -1 | cut -d'"' -f4)
+                ;;
+            9)
+                file_xz $nasyt_dir/acg acg_view
+                chafa $acg_view
+                esc
+                continue
+                ;;
+            *)
+                break
+                continue
+                ;;
+        esac
+        time_name #调用随机生成文件
+        echo -e "$(info) 正在获取图片中"
+        wget -O $nasyt_dir/acg/$time_name_xz.png "$tp_curl" >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            $habit --msgbox "图片获取失败" 0 0
+        else
+            chafa $nasyt_dir/acg/$time_name_xz.png
+            echo -e "$(info) 图片已保存在$nasyt_dir/acg/$time_name_xz.png"
+            esc
+        fi
+    done
+}
 # 同步上海时间函数
 sync_shanghai_time() {
     if command -v termux-info >/dev/null 2>&1; then
@@ -2842,11 +2961,13 @@ index_main() {
                                             nweb_menu
                                             case $nweb_menu_xz in
                                                 1)
+                                                    echo -e "$(info) 正在检查wget安装"
+                                                    test_install wget
                                                     echo -e "$(info) 正在下载文件"
                                                     if command -v termux-info >/dev/null 2>&1; then
-                                                        curl -o $nasyt_dir/nweb "https://foruda.gitee.com/attach_file/1766301496052008584/nweb_termux_aarch64_0.1.0?token=21862cf00e2568c8897f06996ea9d644&ts=1766554090&attname=nweb_termux_aarch64_0.1.0"
+                                                        wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_termux_aarch64_0.1.0"
                                                     else
-                                                        curl -o $nasyt_dir/nweb "https://foruda.gitee.com/attach_file/1766290846515057491/nweb_linux_amd64_0.1.0.AppImage?token=50e42e45c7b635230695b727c17035eb&ts=1766554124&attname=nweb_linux_amd64_0.1.0.AppImage"
+                                                        wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_linux_amd64_0.1.0"
                                                     fi
                                                     esc
                                                     ;;
@@ -2870,6 +2991,86 @@ index_main() {
                                                     ;;
                                                 4)
                                                     tmux_tool_index
+                                                    esc
+                                                    ;;
+                                                *)
+                                                    break
+                                                    ;;
+                                            esac
+                                        done
+                                        ;;
+                                    4)
+                                        if command -v termux-info >/dev/null 2>&1; then
+                                            $habit --msgbox "cloudreve不支持termux安装" 0 0
+                                            break
+                                        fi
+                                        while true
+                                        do
+                                            cloudreve_menu
+                                            case $cloudreve_menu_xz in
+                                                1)
+                                                    test_docker #docker安装函数
+                                                    cloudreve_docker_port=$($habit --title "cloudreve安装引导" \
+                                                    --inputbox "请输入cloudreve启动的端口" 0 0 \
+                                                    2>&1 1>/dev/tty)
+                                                    echo -e "$(info) 正在使用docker安装cloudreve中"
+                                                    docker run -d --name cloudreve \
+                                                    -p $cloudreve_docker_port:5212 \
+                                                    -p 6888:6888 \
+                                                    -p 6888:6888/udp \
+                                                    -v ~/cloudreve/data:/cloudreve/data \
+                                                    cloudreve/cloudreve:latest
+                                                    $habit --msgbox "cloudreve已启动\n请访问$cloudreve_docker_port 端口查看" 0 0
+                                                    esc
+                                                    ;;
+                                                2)
+                                                    # 关闭当前运行的容器
+                                                    echo -e "$(info) 正在停止cloudreve服务"
+                                                    docker stop cloudreve
+                                                    # 删除当前运行的容器
+                                                    echo -e "$(info) 正在删除当前cloudreve版本"
+                                                    docker rm cloudreve
+                                                    # 使用新的镜像创建一个新的容器，并挂载相同的 Volume
+                                                    echo -e "$(info) $正在下载新版本cloudreve$color"
+                                                    cloudreve_docker_port=$($habit --title "cloudreve安装引导" \
+                                                    --inputbox "请输入cloudreve启动的端口" 0 0 \
+                                                    2>&1 1>/dev/tty)
+                                                    docker run -d --name cloudreve -p $cloudreve_docker_port:5212 \
+                                                        -v ~/cloudreve/data:/cloudreve/data \
+                                                        # 其他配置参数，与上次启动相同
+                                                        cloudreve/cloudreve:latest
+                                                    esc
+                                                    $habit --msgbox "cloudreve更新完成" 0 0
+                                                    ;;
+                                                3)
+                                                    echo -e "$(info) 正在启动cloudreve"
+                                                    docker start cloudreve
+                                                    if [ $? -ne 0 ]; then
+                                                        echo -e "$(info) $red 启动失败$color"
+                                                    else
+                                                        echo -e "$(info) $green 启动成功$color"
+                                                    fi
+                                                    esc
+                                                    ;;
+                                                4)
+                                                    echo -e "$(info) 正在停止cloudreve服务"
+                                                    docker stop cloudreve
+                                                    if [ $? -ne 0 ]; then
+                                                        echo -e "$(info) $red 停止失败$color"
+                                                    else
+                                                        echo -e "$(info) $green 停止成功$color"
+                                                    fi
+                                                    esc
+                                                    ;;
+                                                5)
+                                                    echo -e "$(info) 正在删除cloudreve云盘"
+                                                    docker stop cloudreve >/dev/null 2>&1
+                                                    docker rm cloudreve
+                                                    if [ $? -ne 0 ]; then
+                                                        echo -e "$(info) $red 删除失败$color"
+                                                    else
+                                                        echo -e "$(info) $green 删除成功$color"
+                                                    fi
                                                     esc
                                                     ;;
                                                 *)
@@ -3100,6 +3301,11 @@ index_main() {
                             fi
                             esc
                             ;;
+                        11)
+                            curl -o $nasyt_dir/naster "https://gitee.com/HA-Hoshino-Ai/nasyt_termux/raw/master/nasyt_termux.sh"
+                            chmod +x $nasyt_dir/*
+                            naster
+                            ;;
                         0) 
                             break
                             ;;
@@ -3194,6 +3400,9 @@ index_main() {
                 esac
                 done
                 ;;
+            10)
+                acg
+                ;;
             0)
                 break
                 clear
@@ -3218,6 +3427,10 @@ check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+    -a|--acg)
+        acg
+        exit
+        ;;
     -b|--backup)
         nasyt_backup
         exit
@@ -3251,6 +3464,7 @@ if [ $# -ne 0 ]; then
       echo "用法:"
       echo "  nasyt [参数]"
       echo "参数:"
+      echo "  -a, --acg 随机acg图片"
       echo "  -g, --gx 快捷更新脚本"
       echo "  -u, -upsource 快捷换软件源"
       echo "  -t, --tmux 快捷进入tmux管理"
