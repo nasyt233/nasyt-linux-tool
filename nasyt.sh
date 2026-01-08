@@ -11,7 +11,7 @@
 #gum_tool
 
 cd $HOME
-time_date="2026/1/7"
+time_date="2026/1/8"
 version="v2.4.2.3"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
@@ -176,12 +176,11 @@ color_variable() {
 
 all_variable() {
     OUTPUT_FILE="nasyt" # 下载文件名
-    time_out=10  # curl超时时间（秒）
+    time_out=7  # curl超时时间（秒）
     urls=(
       "https://nasyt.hoha.top/shell/nasyt.sh"
-      "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nasyt.sh"
       "https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh"
-      "https://linux.class2.icu/shell/nasyt.sh"
+      
       "https://nasyt2.class2.icu/shell/nasyt.sh"
     )
     
@@ -222,12 +221,6 @@ cw() {
     fi
 }
 
-# 生成随机文件名（基于时间戳+随机数
-time_name() {
-    local timestamp=$(date +%Y%m%d_%H%M%S)
-    local random=$(shuf -i 1000-9999 -n 1)
-    time_name_xz="${timestamp}_${random}"
-}
 
 # 网络工具使用限制检查
 disclaimer() {
@@ -872,11 +865,27 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    docker_menu_xz=$($habit --title "docker管理" \
-    --menu "docker管理 开发中... \n请选择" 0 0 10 \
-    1 "docker信息" \
-    0 "◀返回" \
-    2>&1 1>/dev/tty)
+    if command -v docker >/dev/null 2>&1; then
+        docker_menu_xz=$($habit --title "docker管理" \
+        --menu "docker管理 开发中... \n请选择" 0 0 10 \
+        1 "docker信息" \
+        2 "容器管理" \
+        3 "镜像管理" \
+        4 "下载系统镜像" \
+        5 "清理容器/镜像" \
+        6 "卸载docker" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    else
+        $habit --title "docker管理" --yesno "docker未安装是否安装?" 0 0
+        if [ $? -ne 0 ]; then
+            return 0
+            continue
+            break
+        else
+            test_docker
+        fi
+    fi
 }
 
 #其他工具
@@ -1373,8 +1382,8 @@ gx() {
             mv nasyt $nasyt_dir/nasyt >/dev/null 2>&1
             echo -e "$(info) 正在给予权限 $color"
             chmod 777 $nasyt_dir/nasyt >/dev/null 2>&1
-            chmod 777 /usr/bin/* >/dev/null 2>&1
-            chmod 777 $PREFIX/bin/* >/dev/null 2>&1
+            chmod 777 /usr/bin/nasyt >/dev/null 2>&1
+            chmod 777 $PREFIX/bin/nasyt >/dev/null 2>&1
             echo -e "$(info) 正在写入启动文件 $color"
             source $HOME/.bashrc >/dev/null 2>&1
             if command -v nasyt >/dev/null 2>&1; then
@@ -1434,10 +1443,10 @@ shell_recover() {
     chmod 777 $nasyt_dir/*
     if command -v termux-info >/dev/null 2>&1; then
         cp $shell_recover_var $PREFIX/bin/nasyt
-        chmod 777 $PREFIX/bin/*
+        chmod 777 $PREFIX/bin/nasyt
     else
         cp $shell_recover_var /usr/bin/nasyt
-        chmod 777 /usr/bin/* >/dev/null 2>&1
+        chmod 777 /usr/bin/nasyt >/dev/null 2>&1
     fi
     if [ $? -ne 0 ]; then
         echo -e "$(info) $red 脚本恢复失败$color"
@@ -1624,84 +1633,132 @@ change_password() {
 
 acg() {
     test_install wget
+    test_install jq
     test_install chafa
     clear
     while true
     do
-        acg_menu_xz=$($habit --title "随机acg" \
-        --menu "推荐将终端拉到最小状态\n以获得最佳体验，按确定键获取图片" 0 0 5\
-        1 "随机acg(竖屏)" \
-        2 "随机acg(横屏)" \
-        3 "随机setu(🔞)" \
-        4 "自定义关键词" \
-        9 "查看历史图片" \
-        0 "◀返回" \
-        2>&1 1>/dev/tty)
-        clear
-        case $acg_menu_xz in
-            1)
-                tp_curl=https://www.loliapi.com/acg/pe
-                ;;
-            2)
-                tp_curl=https://www.loliapi.com/acg/pc
-                ;;
-            3)
-                $habit --title "随机setu🔞" --yesno "你是否已满18岁?" 0 0
-                if [ $? -ne 0 ]; then
-                    break
-                else
+        if [[ -n $@ ]]; then
+            echo
+        else
+            acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
+            --menu "推荐将终端拉到最小状态\n以获得最佳体验，按确定键获取图片" 0 0 5\
+            1 "随机acg(竖屏)" \
+            2 "随机acg(横屏)" \
+            3 "随机pixiv图片" \
+            6 "自定义图片链接" \
+            7 "自定义关键词" \
+            8 "图片空间占用" \
+            9 "查看历史图片" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
+            clear
+            case $acg_menu_xz in
+                1)
+                    tp_curl=https://www.loliapi.com/acg/pe
+                    ;;
+                2)
+                    tp_curl=https://www.loliapi.com/acg/pc
+                    ;;
+                3)
+                    $habit --title "随机pixiv" --yesno "是否搜索R18图片🤓？" 0 0
+                    if [ $? -ne 0 ]; then
+                        api_r18=0
+                        tp_r18=
+                    else
+                        api_r18=1
+                        tp_r18=R18
+                    fi
                     echo -e "$(info) 正在请求i.pixiv.re"
-                    setu_api=$(curl https://api.lolicon.app/setu/v2?r18=1)
+                    setu_api=$(curl https://api.lolicon.app/setu/v2?r18=$api_r18)
+                    if [ $? -ne 0 ]; then
+                        echo -e "$(info) $red api请求失败$color"
+                        esc
+                    else
+                        echo -e "$(info) $green api请求成功$color"
+                        tp_curl=$(echo $setu_api | grep -o '"original":"[^"]*"' | head -1 | cut -d'"' -f4)
+                        tp_pid=$(echo $setu_api | grep -o '"pid":[[:space:]]*[0-9]*' | cut -d: -f2 | tr -d ' ,')
+                        tp_size=$(echo $setu_api | jq -r '.data[0] | "\(.width)x\(.height)"')
+                        tp_tag=$(echo $setu_api | jq -r '.data[0].tags | join(",")')
+                        clear;br
+                        echo -e "$blue链接: $color$tp_curl"
+                        echo -e "${blue}PID: $color$tp_pid"
+                        echo -e "$blue大小: $color$tp_size"
+                        echo -e "$blue标签: $color$tp_tag"
+                        br
+                    fi
+                    #echo $setu_api | grep -o '"pid":[0-9]*\|"title":"[^"]*"\|"original":"[^"]*"\|"ext":"[^"]*"\|"author":"[^"]*"'
+                    ;;
+                6)
+                    tp_curl=$($habit --title "自定义图片链接" \
+                    --inputbox "请输入链接" 0 0 \
+                    2>&1 1>/dev/tty)
+                    if [ $? -ne 0 ]; then
+                        continue
+                    fi
+                    ;;
+                7)
+                    api_tag=$($habit --title "自定义关键词" \
+                    --inputbox "请输入关键词，可用|符合隔开" 0 0 \
+                    2>&1 1>/dev/tty)
+                    api_r18_xz=$($habit --title "是否查找R18内容" \
+                    --yesno "是否查找R18内容?" 0 0 \
+                    2>&1 1>/dev/tty)
+                    if [ $? -ne 0 ]; then
+                        api_r18=0
+                        api_r18=
+                    else
+                        api_r18=1
+                        api_r18=_R18
+                    fi
+                    echo -e "$(info) 正在请求i.pixiv.re"
+                    setu_api=$(curl -sSL -G "https://api.lolicon.app/setu/v2?r18=$api_r18" --data-urlencode "tag=$api_tag")
                     if [ $? -ne 0 ]; then
                         echo -e "$(info) $red api请求失败$color"
                     else
                         echo -e "$(info) $green api请求成功$color"
                     fi
                     #echo $setu_api | grep -o '"pid":[0-9]*\|"title":"[^"]*"\|"original":"[^"]*"\|"ext":"[^"]*"\|"author":"[^"]*"'
-                    tp_curl=$(echo $setu_api | grep -o '"original":"[^"]*"' | head -1 | cut -d'"' -f4)
-                fi
-                ;;
-            4)
-                api_tag=$($habit --title "自定义关键词" \
-                --inputbox "请输入关键词，可用|符合隔开" 0 0 \
-                2>&1 1>/dev/tty)
-                api_r18_xz=$($habit --title "是否查找R18内容" \
-                --yesno "是否查找R18内容?" 0 0 \
-                2>&1 1>/dev/tty)
-                if [ $? -ne 0 ]; then
-                    api_r18=0
-                else
-                    api_r18=1
-                fi
-                echo -e "$(info) 正在请求i.pixiv.re"
-                setu_api=$(curl https://api.lolicon.app/setu/v2?tag=$api_tag&r18=$api_r18)
-                if [ $? -ne 0 ]; then
-                    echo -e "$(info) $red api请求失败$color"
-                else
-                    echo -e "$(info) $green api请求成功$color"
-                fi
-                #echo $setu_api | grep -o '"pid":[0-9]*\|"title":"[^"]*"\|"original":"[^"]*"\|"ext":"[^"]*"\|"author":"[^"]*"'
-                tp_curl=$(echo $setu_api | grep -o '"original":"[^"]*"' | head -1 | cut -d'"' -f4)
-                ;;
-            9)
-                file_xz $nasyt_dir/acg acg_view
-                chafa $acg_view
-                esc
-                continue
-                ;;
-            *)
-                break
-                continue
-                ;;
-        esac
-        time_name #调用随机生成文件
-        echo -e "$(info) 正在获取图片中"
+                    
+                    ;;
+                8)
+                    test_install ncdu
+                    ncdu $nasyt_dir/acg
+                    esc
+                    continue
+                    ;;
+                9)
+                    file_xz $nasyt_dir/acg acg_view
+                    chafa $acg_view
+                    esc
+                    continue
+                    ;;
+                *)
+                    break
+                    ;;
+            esac
+        fi
+            time_name_xz=()
+            local tp_time=$(date +%Y%m%d_%H%M%S)
+            local random=$(shuf -i 1000-9999 -n 1)
+            local tp_pid_2=$(echo "_$tp_pid")
+            local api_r18_2=$(echo "_$tp_r18")
+            time_name_xz+="${tp_time}${tp_pid_2}${api_r18_2}"
+        echo -e "$(info) 正在获取图片中,请耐心等待"
         wget -O $nasyt_dir/acg/$time_name_xz.png "$tp_curl" >/dev/null 2>&1
         if [ $? -ne 0 ]; then
-            $habit --msgbox "图片获取失败" 0 0
+            find $nasyt_dir/acg -type f -size 0 -regex '.*\.\(jpg\|png\)$' -delete #清理图片
+            $habit --yesno "获取$shell_2图片失败\n请检查你的网络或者关键词" 0 0
+            if [ $? -ne 0 ]; then
+                break
+            fi
         else
             chafa $nasyt_dir/acg/$time_name_xz.png
             echo -e "$(info) 图片已保存在$nasyt_dir/acg/$time_name_xz.png"
+            
+            if [[ -n $@ ]]; then
+                exit 0
+            fi
             esc
         fi
     done
@@ -1948,6 +2005,7 @@ index_main() {
                         7)
                             language_menu () {
                             clear; br
+                            test_termux
                             $habit --msgbox "当前只适配了基于 CentOS/Debian的系统\n其他系统的可以尝试一下。" 0 0
                             case $deb_sys in
                                apt)
@@ -1958,7 +2016,7 @@ index_main() {
                                   else
                                     echo -e "$(info) $green 汉化包下载成功$color"
                                   fi;sleep 1s
-                                  $habit --msgbox "请在接下来的页面内\n切换到zh_CN.UTF-8选项" 0 0
+                                  read -p "请在接下来的页面内 勾选zh_CN.UTF-8选项 然后回车" 0 0
                                   sudo dpkg-reconfigure locales
                                   ;;
                                dnf)
@@ -2162,6 +2220,72 @@ index_main() {
                                         docker info
                                         br
                                         esc
+                                        ;;
+                                    2)
+                                        while true
+                                        do
+                                            containers=()
+                                            while IFS=' ' read -r docker_id docker_image; do
+                                                containers+=("$docker_id" "$docker_image" )
+                                            done < <(docker ps -a --format "{{.ID}} {{.Image}}")
+                                            docker_repo_xz=$($habit --menu "请选择要管理的容器：" 0 0 0 "${containers[@]}" 0 "◀返回" 3>&1 1>&2 2>&3)
+                                            if [ $docker_repo_xz -eq 0 ]; then
+                                                break
+                                            fi
+                                            while true
+                                            do
+                                                docker_image=$(docker inspect --format='{{.Name}}' $docker_repo_xz )
+                                                docker_run="$(docker inspect --format='{{.State.Status}}' $docker_repo_xz)"
+                                                if [ "$docker_run" = "running" ]; then
+                                                    docker_run_status="✓ 当前容器正在运行"
+                                                else
+                                                    docker_run_status="✗ 当前容器未运行"
+                                                fi
+                                                docker_repo_gl=$($habit --title "容器管理" \
+                                                --menu "当前容器名字:$docker_image \n当前容器状态: $docker_run_status \n请选择" 0 0 0\
+                                                1 "启动容器" \
+                                                2 "停止容器" \
+                                                3 "重启容器" \
+                                                4 "删除容器" \
+                                                5 "查看日志" \
+                                                6 "进入终端"\
+                                                0 "◀返回" \
+                                                2>&1 1>/dev/tty)
+                                                case $docker_repo_gl in
+                                                    1)
+                                                        docker start $docker_repo_xz
+                                                        $habit --msgbox "$docker_run_status" 0 0
+                                                        esc
+                                                        ;;
+                                                    2)
+                                                        docker stop $docker_repo_xz
+                                                        esc
+                                                        ;;
+                                                    3)
+                                                        docker restart $docker_repo_xz
+                                                        esc
+                                                        ;;
+                                                    4)
+                                                        docker rm $docker_repo_xz
+                                                        esc
+                                                        ;;
+                                                    5)
+                                                        docker logs $docker_repo_xz
+                                                        esc
+                                                        ;;
+                                                    6)
+                                                        docker exec -it $docker_repo_xz /bin/bash || docker exec -it $docker_repo_xz /bin/sh
+                                                        esc
+                                                        ;;
+                                                    *)
+                                                        break
+                                                        ;;
+                                                esac
+                                            done
+                                        done
+                                        ;;
+                                    3)
+                                        
                                         ;;
                                     *)
                                         break
@@ -3428,9 +3552,39 @@ check_pkg_install # 检测包管理器
 if [ $# -ne 0 ]; then
     case $1 in
     -a|--acg)
-        acg
+        if [[ $2 -eq 0 ]]; then
+            case $2 in
+                help|-h|--help|-help)
+                    echo
+                    echo "用法:"
+                    echo "  nasyt -a [参数]"
+                    echo "参数:"
+                    echo "  nasyt -a pc 随机输出横屏acg图片"
+                    echo "  nasyt -a pe 随机输出竖屏acg图片"
+                    echo "  nasyt -a help 输出帮助"
+                    echo
+                    exit 0
+                    ;;
+                pc|--pc)
+                    tp_curl=https://www.loliapi.com/acg/pc
+                    acg $2
+                    ;;
+                pe|--pe)
+                    tp_curl=https://www.loliapi.com/acg/pe
+                    acg $2
+                    ;;
+                *)
+                    shell_2=$2
+                    if [[ $shell_2 =~ ^http ]]; then
+                        acg $2
+                    else
+                        acg
+                    fi
+                    ;;
+            esac
+        fi
         exit
-        ;;
+        ;;  
     -b|--backup)
         nasyt_backup
         exit
@@ -3459,12 +3613,17 @@ if [ $# -ne 0 ]; then
       echo
       exit
       ;;
-    -h|-help|--help)
+    -n|--ncdu)
+        test_install ncdu
+        ncdu $nasyt_dir
+        exit
+        ;;
+    help|-h|-help|--help)
       echo
       echo "用法:"
-      echo "  nasyt [参数]"
+      echo -e "  ${blue}nasyt [参数]$color"
       echo "参数:"
-      echo "  -a, --acg 随机acg图片"
+      echo "  -a, --acg 快捷随机acg图片"
       echo "  -g, --gx 快捷更新脚本"
       echo "  -u, -upsource 快捷换软件源"
       echo "  -t, --tmux 快捷进入tmux管理"
@@ -3472,14 +3631,18 @@ if [ $# -ne 0 ]; then
       echo "  -v, --version 输出脚本版本"
       echo "  -h, --help  输出命令帮助"
       echo "  -b, --backup  快捷备份恢复脚本"
+      echo "  -n, --ncdu  查看脚本空间占用"
       echo
-      echo "有关更多详细信息，请参见https://gitee.com/nasyt/nasyt-linux-tool"
+      echo "有关更多详细信息，请参见"
+      echo -e "$green https://gitcode.com/nasyt/nasyt-linux-tool$color"
+      echo
       exit
       ;;
     *)
-      echo "无效的参数"
-      echo "$@"
-      exit
+      echo
+      echo -e "$red $@ 是无效的参数$color"
+      echo -e "$blue 请输入nasyt help查看帮助$color"
+      exit 1
     esac
 fi
 
