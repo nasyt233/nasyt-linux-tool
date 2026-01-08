@@ -180,7 +180,7 @@ all_variable() {
     urls=(
       "https://nasyt.hoha.top/shell/nasyt.sh"
       "https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh"
-      
+      "https://ghfast.top/https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh"
       "https://nasyt2.class2.icu/shell/nasyt.sh"
     )
     
