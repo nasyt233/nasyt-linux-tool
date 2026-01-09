@@ -3075,10 +3075,11 @@ index_main() {
                                             esc
                                         else
                                             if [ -e $nasyt_dir/install-openlist-v4.sh ]; then
+                                                echo -e "$(info) 检测到脚本已安装，正在启动脚本。"
+                                                $sudo_setup bash $nasyt_dir/install-openlist-v4.sh
+                                            else
                                                 echo -e "$(info) 正在拉取脚本"
                                                 curl -fsSL https://res.oplist.org/script/v4.sh > $nasyt_dir/install-openlist-v4.sh
-                                            else
-                                                echo -e "$(info) 检测到脚本已安装，正在启动脚本。"
                                                 $sudo_setup bash $nasyt_dir/install-openlist-v4.sh
                                             fi
                                         fi
