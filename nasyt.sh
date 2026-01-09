@@ -11,8 +11,8 @@
 #gum_tool
 
 cd $HOME
-time_date="2026/1/8"
-version="v2.4.2.3"
+time_date="2026/1/9"
+version="v2.4.2.4"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 bin_dir="usr/bin" #bin目录
@@ -36,7 +36,7 @@ menu_jc() {
             fi
             check_Script_Install
             br
-            echo "感谢QQ:2738136724做出贡献。"
+            echo "感谢QQ:2738136724提供下载服务"
             br
             if command -v nasyt &> /dev/null
             then
@@ -49,6 +49,7 @@ menu_jc() {
             if command -v nasyt >/dev/null 2>&1; then
                 echo "3) Linux工具箱 (卸载)"
             fi
+            echo "4) 随机acg美图"
             echo "0) 退出"
             br
             gx_show 
@@ -61,6 +62,9 @@ menu_jc() {
                     break ;;
                 3)
                     shell_uninstall;esc ;;
+                4)
+                    tp_curl=https://www.loliapi.com/acg/pe
+                    acg pe ;;
                 0) 
                     exit 0 ;;
                 *)
@@ -1638,7 +1642,8 @@ acg() {
     clear
     while true
     do
-        if [[ -n $@ ]]; then
+        shell_2=$@
+        if [[ -n $shell_2 ]]; then
             echo
         else
             acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
@@ -2085,11 +2090,11 @@ index_main() {
                                   read -p "请选择: " swap_shell
                                   case $swap_shell in
                                      1)
-                                        sudo bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/swap-install.sh)"
+                                        sudo bash -c "$(curl -L https://gitcode.com/nasyt/nasyt-linux-tool/raw/master/swap-install.sh)"
                                         esc
                                         ;;
                                      2) 
-                                        sudo bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/swap-uninstall.sh)"
+                                        sudo bash -c "$(curl -L https://gitcode.com/nasyt/nasyt-linux-tool/raw/master/swap-uninstall.sh)"
                                         esc
                                         ;;
                                      0) 
@@ -3330,7 +3335,7 @@ index_main() {
                             esc
                             ;;
                         5)
-                            bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/cs_shell.sh)"
+                            bash -c "$(curl -L https://gitcode.com/nasyt/nasyt-linux-tool/raw/master/cs_shell.sh)"
                             ;;
                         6)
                             while true
@@ -3445,7 +3450,7 @@ index_main() {
                 ;;
             8)
                 clear
-                bash -c "$(curl -L https://gitee.com/nasyt/nasyt-linux-tool/raw/master/up_history.sh)" #更新日志
+                bash -c "$(curl -L https://gitcode.com/nasyt/nasyt-linux-tool/raw/master/up_history.sh)" #更新日志
                 esc
                 ;;
             9)
@@ -3547,6 +3552,7 @@ index_main() {
 #
 color_variable # 定义颜色变量
 all_variable # 全部变量
+#country #国内外检测
 check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
