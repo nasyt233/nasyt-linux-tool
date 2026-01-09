@@ -5,13 +5,19 @@
 #有什么赤石技术可以进来交流
 #赤石群号:610699712
 #gum_tool
+if command -v dialog >/dev/null 2>&1; then
+    habit=dialog
+elif command -v whiptail >/dev/null 2>&1; then
+    habit=whiptail
+else
+    test_install dialog
+    habit=dialog
+fi
+
 cd $HOME
-time_date="2026/1/8"
-version="v2.4.2.3"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
-bin_dir="usr/bin" #bin目录
-nasyt_from="gitcode" #来源
+
 # 检查包管理器的函数
 check_pkg_install() {
     if [ -f /etc/os-release ]; then
@@ -128,17 +134,8 @@ version_update() {
     new_version=$(curl "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/version.txt") 
 }
 
-server_ip() {
-    server_ip=$(hostname -i) # 服务器IP
-    $habit --msgbox "当前IP为: $server_ip" 0 0
-}
-
 info() {
     echo -e "$cyan[$(date +"%r")]$color $green[INFO]$color" $*
-}
-uptime_cn() {
-    uptime_sc=$(uptime | sed 's/up/运行/; s/days/天/; s/day/天/; s/hours/小时/; s/hour/小时/; s/minutes/分钟/; s/minute/分钟/; s/users/用户/; s/user/用户/; s/load average/平均负载/')
-    $habit --msgbox "系统: $uptime_sc" 0 0
 }
 
 br() {
@@ -300,7 +297,7 @@ gx() {
     fi
     for url in "${urls[@]}"; do
         echo "$(info) 正在下载脚本"
-        if curl --progress-bar -L -o "$HOME/nasyt" --retry 3 --retry-delay 2 --max-time $time_out "$url" >/dev/null 2>&1 ; then
+        if curl --progress-bar -L -o "$HOME/nasyt" --retry 1 --retry-delay 2 --max-time $time_out "$url" >/dev/null 2>&1 ; then
             cp nasyt /usr/bin/ >/dev/null 2>&1
             cp nasyt $PREFIX/bin >/dev/null 2>&1
             mv nasyt $nasyt_dir/nasyt >/dev/null 2>&1
@@ -329,12 +326,12 @@ gx() {
             source $HOME/.bashrc >/dev/null 2>&1
             exit 0
         else
-            echo "$(info)✗ 当前链接下载失败，3秒后尝试下一个链接..."
+            echo "$(info)✗ 当前链接下载失败，2秒后尝试下一个链接..."
             sleep 3
         fi
     done
     echo -e "$(info) $red 所有链接均下载失败，请检查网络或链接有效性$color"
-    echo "跳过下载本地,使用在线模式。" 0 0
+    exit
 }
 
 #脚本备份
