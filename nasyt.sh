@@ -1,19 +1,19 @@
 #!/bin/bash
-# 本脚本仅用于合法、授权的安全测试和教育目的
 # 禁止用于任何非法攻击行为
 # 使用者需遵守当地法律法规
 
 # 本脚本由NAS油条制作
 # NAS油条的实用脚本
-#欢迎加入NAS油条技术交流群
-#有什么技术可以进来交流
-#群号:610699712
-#gum_tool
+# 欢迎加入NAS油条技术交流群
+# 有什么技术可以进来交流
+# 群号:610699712
+# gum_tool
 
 cd $HOME
-time_date="2026/1/9"
-version="v2.4.2.4"
+time_date="2026/1/17"
+version="v2.4.2.5"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
+habit=dialog #设置默认值
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 bin_dir="usr/bin" #bin目录
 #nasyt_from="gitcode" # 脚本来源
@@ -49,7 +49,6 @@ menu_jc() {
             if command -v nasyt >/dev/null 2>&1; then
                 echo "3) Linux工具箱 (卸载)"
             fi
-            echo "4) 随机acg美图"
             echo "0) 退出"
             br
             gx_show 
@@ -90,6 +89,7 @@ check_pkg_install() {
         pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
+        termux-toast "欢迎使用NAS油条termux脚本" &
         
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
@@ -349,15 +349,20 @@ resources_show() {
 # 根据时间返回问候语
 get_greeting() {
     local hour=$(date +"%H")
+    if command -v termux-info >/dev/null 2>&1; then
+        get_sys=termux
+    else
+        get_sys=linux
+    fi
     case $hour in
         05|06|07|08|09|10|11)
-            echo "🌅 早上好！欢迎使用Linux工具箱"
+            echo "🌅 早上好！欢迎使用$get_sys工具箱"
             ;;
         12|13|14|15|16|17|18)
-            echo "☀️ 下午好！欢迎使用Linux工具箱"
+            echo "☀️ 下午好！欢迎使用$get_sys工具箱"
             ;;
         *)
-            echo "🌙 晚上好！欢迎使用Linux工具箱"
+            echo "🌙 晚上好！欢迎使用$get_sys工具箱"
             ;;
     esac
 }
@@ -678,10 +683,10 @@ system_menu() {
     4 "文件解压缩" \
     5 "ssh管理工具" \
     6 "安装jvav（debian系列)" \
-    7 "系统语言设置" \
+    7 "language设置" \
     8 "磁盘挂载设置" \
     9 "虚拟内存设置" \
-    10 "清理系统日志"  \
+    10 "系统清理"  \
     11 "切换pip国内源" \
     12 "同步上海时间" \
     13 "系统密码设置" \
@@ -854,14 +859,15 @@ bot_install_menu() {
     bot_install_xz=$($habit --title "bot安装" \
     --menu "请选择:" 0 0 10 \
     1 "Secluded机器人" \
-    2 "TRSS机器人" \
+    2 "TRSS 系列脚本" \
     3 "Astrbot机器人" \
-    4 "Napcat适配器" \
-    5 "OneBot适配器" \
+    4 "Napcat框架" \
+    5 "TRSS OneBot脚本" \
     6 "Easybot机器人" \
     7 "koishi机器人" \
-    8 "MaiBot机器人(开发中)" \
+    8 "MaiBot机器人" \
     9 "Karin机器人" \
+    10 "nonebot框架" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -1230,7 +1236,8 @@ koishi_menu(){
 MaiBot_menu(){
     MaiBot_menu_xz=$($habit --title "MaiBot管理" \
     --menu "请选择:" 0 0 10\
-    1 "安装MaiBot" \
+    1 "手动安装MaiBot" \
+    2 "自动化安装MaiBot" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1239,6 +1246,16 @@ MaiBot_install() {
     MaiBot_install_xz=$($habit --title "MaiBot安装" \
     --menu "请选择" 0 0 10 \
     3 "社区脚本安装" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#nonobot机器人
+nonebot_menu() {
+    nonebot_menu_xz=$($habit --title "nonobot管理" \
+    --menu "请选择:" 0 0 10 \
+    1 "shell安装" \
+    2 "docker安装"\
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1280,6 +1297,14 @@ deb_install() {
     2>&1 1>/dev/tty)
 }
 
+clear_waste_menu() {
+    clear_waste_menu_xz=$($habit --title "垃圾清理" \
+    --menu "请选择" 0 0 5 \
+    1 "清理日志" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+
+}
 #软件包安装
 deb_install_Internet() {
     br
@@ -1340,6 +1365,7 @@ ranger_install() {
 
 #脚本卸载
 shell_uninstall() {
+    
     $habit --yesno "此操作会删除本脚本\n你确定要删除(>_<)本脚本吗？" 0 0
     if [ $? -ne 0 ]; then
         echo ""
@@ -1380,7 +1406,7 @@ gx() {
     fi
     for url in "${urls[@]}"; do
         echo "$(info) 正在下载脚本"
-        if curl --progress-bar -L -o "$HOME/nasyt" --retry 3 --retry-delay 2 --max-time $time_out "$url" >/dev/null 2>&1 ; then
+        if curl --progress-bar -L -o "$HOME/nasyt" --retry 1 --retry-delay 2 --max-time $time_out "$url" >/dev/null 2>&1 ; then
             cp nasyt /usr/bin/ >/dev/null 2>&1
             cp nasyt $PREFIX/bin >/dev/null 2>&1
             mv nasyt $nasyt_dir/nasyt >/dev/null 2>&1
@@ -1645,7 +1671,11 @@ acg() {
         shell_2=$@
         if [[ -n $shell_2 ]]; then
             echo
+            acg_menu_sz=$shell_2
         else
+            if command -v termux-info >/dev/null 2>&1; then
+                acg_menu_xz_add="10 "选择并设为壁纸""
+            fi
             acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
             --menu "推荐将终端拉到最小状态\n以获得最佳体验，按确定键获取图片" 0 0 5\
             1 "随机acg(竖屏)" \
@@ -1655,15 +1685,18 @@ acg() {
             7 "自定义关键词" \
             8 "图片空间占用" \
             9 "查看历史图片" \
+            $acg_menu_xz_add \
             0 "◀返回" \
             2>&1 1>/dev/tty)
             clear
             case $acg_menu_xz in
                 1)
                     tp_curl=https://www.loliapi.com/acg/pe
+                    acg_menu_sz=pe
                     ;;
                 2)
                     tp_curl=https://www.loliapi.com/acg/pc
+                    acg_menu_sz=pc
                     ;;
                 3)
                     $habit --title "随机pixiv" --yesno "是否搜索R18图片🤓？" 0 0
@@ -1738,6 +1771,18 @@ acg() {
                     esc
                     continue
                     ;;
+                10)
+                    $habit --msgbox "请在接下来的现在中选择一张图片" 0 0
+                    file_xz $nasyt_dir/acg acg_view2
+                    termux-wallpaper -f $acg_view2
+                    if [ $? -ne 0 ]; then
+                        $habit --msgbox "设置壁纸失败" 0 0
+                    else
+                        $habit --msgbox "壁纸设置成功\n去桌面看看吧。" 0 0
+                    fi
+                    esc
+                    continue
+                    ;;
                 *)
                     break
                     ;;
@@ -1746,10 +1791,17 @@ acg() {
             time_name_xz=()
             local tp_time=$(date +%Y%m%d_%H%M%S)
             local random=$(shuf -i 1000-9999 -n 1)
-            local tp_pid_2=$(echo "_$tp_pid")
+            if [[ -v $tp_pid ]]; then
+                local tp_pid_2=$(echo "_$acg_menu_sz")
+            else
+                local tp_pid_2=$(echo "_$tp_pid")
+            fi
             local api_r18_2=$(echo "_$tp_r18")
             time_name_xz+="${tp_time}${tp_pid_2}${api_r18_2}"
         echo -e "$(info) 正在获取图片中,请耐心等待"
+        if command -v termux-info >/dev/null 2>&1; then
+            termux-toast "请将termux终端缩至最小,以获得最佳体验。"
+        fi
         wget -O $nasyt_dir/acg/$time_name_xz.png "$tp_curl" >/dev/null 2>&1
         if [ $? -ne 0 ]; then
             find $nasyt_dir/acg -type f -size 0 -regex '.*\.\(jpg\|png\)$' -delete #清理图片
@@ -2111,7 +2163,29 @@ index_main() {
                                 echo -e "$(info) 检测到termux终端正在清理日志文件"
                                 find $PREFIX/var/log/ -type f -mtime +30 -exec rm -f {} >/dev/null 2>&1
                             else
-                                find /var/log/ -type f -mtime +30 -exec rm -f {}
+                                while true
+                                do
+                                    clear_waste_menu
+                                    case $clear_waste_menu_xz in
+                                        1)
+                                            if command -v journalctl >/dev/null 2>&1; then
+                                                clear_waste_day=$($habit --title "自定义天数清理" \
+                                                --inputbox "请输入要清理多久以前的日志(单位/天)" 0 0 "7"\
+                                                2>&1 1>/dev/tty)while true
+                                                sudo journalctl --vacuum-time=${clear_waste_day}d
+                                            else
+                                                find /var/log/ -type f -mtime +30 -exec rm -f {}
+                                            fi
+                                            esc
+                                            ;;
+                                        0)
+                                            break
+                                            ;;
+                                        *)
+                                            break
+                                            ;;
+                                    esac
+                                done
                             fi
                             esc
                             ;;
@@ -2290,7 +2364,53 @@ index_main() {
                                         done
                                         ;;
                                     3)
-                                        
+                                        $habit --msgbox "开发中" 0 0
+                                        ;;
+                                    4)
+                                        $habit --msgbox "开发中" 0 0
+                                        ;;
+                                    5)
+                                        $habit --msgbox "开发中" 0 0
+                                        ;;
+                                    114514)
+                                        while true
+                                        do
+                                            containers=()
+                                            while IFS=' ' read -r docker_id docker_image; do
+                                                containers+=("$docker_id" "$docker_image" )
+                                            done < <(docker ps -a --format "{{.ID}} {{.Image}}")
+                                            docker_image_xz=$($habit --menu "请选择要管理的镜像：" 0 0 0 "${containers[@]}" 0 "◀返回" 3>&1 1>&2 2>&3)
+                                            if [ $docker_repo_xz -eq 0 ]; then
+                                                break
+                                            fi
+                                            while true
+                                            do
+                                                docker_image=$(docker inspect --format='{{.Name}}' $docker_repo_xz )
+                                                docker_run="$(docker inspect --format='{{.State.Status}}' $docker_repo_xz)"
+                                                if [ "$docker_run" = "running" ]; then
+                                                    docker_run_status="✓ 当前容器正在运行"
+                                                else
+                                                    docker_run_status="✗ 当前容器未运行"
+                                                fi
+                                                docker_image_gl=$($habit --title "容器管理" \
+                                                --menu "当前镜像名字:$docker_image \n 请选择" 0 0 0\
+                                                1 "删除镜像" \
+                                                0 "◀返回" \
+                                                2>&1 1>/dev/tty)
+                                                case $docker_image_gl in
+                                                    1)
+                                                        docker image rm $docker_repo_xz
+                                                        esc
+                                                        ;;
+                                                    *)
+                                                        break
+                                                        ;;
+                                                esac
+                                            done
+                                        done
+                                        ;;
+                                    6)
+                                        $pkg_remove docker
                                         ;;
                                     *)
                                         break
@@ -2451,6 +2571,7 @@ index_main() {
                                 bot_install_menu
                                 case $bot_install_xz in
                                     1)
+                                        test_termux
                                         while true
                                         do
                                             test_termux
@@ -2795,6 +2916,7 @@ index_main() {
                                         fi
                                         ;;
                                     7)
+                                        test_termux
                                         while true
                                         do
                                             koishi_menu
@@ -2841,7 +2963,7 @@ index_main() {
                                                                 esc
                                                                 ;;
                                                             2)
-                                                                
+                                                                bash -c "$(curl -L https://meowyun.cn/download/maibot.sh)"
                                                                 esc
                                                                 ;;
                                                             3)
@@ -2871,13 +2993,47 @@ index_main() {
                                         done
                                         ;;
                                     9)
-                                        termux_test
+                                        test_termux
                                         $habit --msgbox "目前先收集docker安装方式，按回车键安装" 0 0
                                         if [ $? -ne 0 ]; then
                                             break
                                         fi
                                         curl -fsSL https://raw.gitmirror.com/KarinJS/Karin/main/packages/docker/docker.sh | bash
                                         esc
+                                        ;;
+                                    10)
+                                        test_termux
+                                        while true
+                                        do
+                                            nonebot_menu
+                                            case $nonebot_menu_xz in
+                                                1)
+                                                    test_install acl
+                                                    curl -fsSL https://api.nbgui.top/api/nbgui/script/install.sh | bash
+                                                    setfacl -R -m u:nbwebui:rwx /path/to/your/bot
+                                                    ;;
+                                                2)
+                                                    test_install docker
+                                                    nonebot_docker_port=$($habit --title "端口开放" \
+                                                    --inputbox "请输入开放管理面板的端口" 0 0 \
+                                                    2>&1 1>/dev/tty)
+                                                    nonebot_docker_dir=$($habit --title "安装位置" \
+                                                    none--inputbox "请输入安装的位置\n如果不知道的话请输入/opt/nb-webui" 0 0 \
+                                                    2>&1 1>/dev/tty)
+                                                    echo -e "$(info) docker正在安装中。"
+                                                    docker run -d  \
+                                                    -p $nonebot_docker_port:8025 \
+                                                    -p 2519:2519 \
+                                                    -v $nonebot_docker_dir:/data \
+                                                    --name nonebot-webui \
+                                                    --restart=always \
+                                                    myxuebi/nonebot-webui:latest
+                                                    ;;
+                                                *)
+                                                    break
+                                                    ;;
+                                            esac
+                                        done
                                         ;;
                                     0)
                                         break
@@ -3336,7 +3492,7 @@ index_main() {
                             esc
                             ;;
                         5)
-                            bash -c "$(curl -L https://gitcode.com/nasyt/nasyt-linux-tool/raw/master/cs_shell.sh)"
+                            bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/cs_shell.sh)"
                             ;;
                         6)
                             while true
@@ -3451,7 +3607,7 @@ index_main() {
                 ;;
             8)
                 clear
-                bash -c "$(curl -L https://gitcode.com/nasyt/nasyt-linux-tool/raw/master/up_history.sh)" #更新日志
+                bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/up_history.sh)" #更新日志
                 esc
                 ;;
             9)
@@ -3574,10 +3730,12 @@ if [ $# -ne 0 ]; then
                     ;;
                 pc|--pc)
                     tp_curl=https://www.loliapi.com/acg/pc
+                    acg_menu_sz=pc
                     acg $2
                     ;;
                 pe|--pe)
                     tp_curl=https://www.loliapi.com/acg/pe
+                    acg_menu_sz=pe
                     acg $2
                     ;;
                 *)
