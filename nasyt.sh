@@ -2170,13 +2170,15 @@ index_main() {
                                         1)
                                             if command -v journalctl >/dev/null 2>&1; then
                                                 clear_waste_day=$($habit --title "自定义天数清理" \
-                                                --inputbox "请输入要清理多久以前的日志(单位/天)" 0 0 "7"\
+                                                --inputbox "请输入要清理多久以前的日志(单位/d天)" 0 0 "7d"\
                                                 2>&1 1>/dev/tty)while true
-                                                sudo journalctl --vacuum-time=${clear_waste_day}d
+                                                sudo journalctl --vacuum-time=${clear_waste_day}
+                                                if [ $? -ne 0 ]; then
+                                                    $habit --msgbox "格式错误" 0 0
+                                                fi
                                             else
                                                 find /var/log/ -type f -mtime +30 -exec rm -f {}
                                             fi
-                                            esc
                                             ;;
                                         0)
                                             break
