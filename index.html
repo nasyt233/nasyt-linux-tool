@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+
+<!--
+没错，用AI写的，自己手懒
+感觉不如ai写的好，时代变了🤓。
+部分地方是我修改过的。
+-->
+
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAS油条Linux工具箱</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.50), rgba(0, 0, 0, 0.7)), 
+                        url('https://www.loliapi.com/acg/') no-repeat center center fixed;
+            background-size: cover;
+            color: #f0f0f0;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff9a00, #ff6b6b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ccc;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+        
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #f0f0f0;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(90deg, #ff9a00, #ff6b6b);
+            color: #fff;
+            box-shadow: 0 5px 15px rgba(255, 106, 107, 0.4);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #ff9a00;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 i {
+            font-size: 1.5rem;
+        }
+        
+        .intro-text {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #e0e0e0;
+            margin-bottom: 25px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #ff9a00;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-item:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .feature-item h3 {
+            color: #ffb74d;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .feature-item p {
+            color: #ccc;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .copy-btn.copied {
+            background: #4caf50;
+        }
+        
+        pre {
+            margin: 0;
+            overflow-x: auto;
+            font-size: 0.95rem;
+        }
+        
+        .command-list {
+            list-style-type: none;
+        }
+        
+        .command-list li {
+            background: rgba(255, 255, 255, 0.05);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .command-list code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #ff9a00;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 20px;
+            border-radius: 8px;
+        }
+        
+        .contact-item i {
+            color: #ff9a00;
+            font-size: 1.2rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #ff9a00, #ff6b6b);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-left: 15px;
+            vertical-align: middle;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .tab-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tools"></i> NAS油条Linux工具箱</h1>
+            <p class="subtitle">一个功能强大的Linux系统管理脚本，集成了大量实用的Linux系统工具和功能，为用户提供一站式的系统管理和维护解决方案。</p>
+            <div class="version-badge">v2.4.2.2</div>
+        </header>
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" data-tab="intro">脚本简介</button>
+            <button class="tab-btn" data-tab="features">主要功能</button>
+            <button class="tab-btn" data-tab="installation">安装使用</button>
+            <button class="tab-btn" data-tab="commands">命令参数</button>
+            <button class="tab-btn" data-tab="contact">联系作者</button>
+        </div>
+        
+        <div id="intro" class="tab-content active">
+            <div class="card">
+                <h2><i class="fas fa-info-circle"></i> 脚本简介</h2>
+                <div class="intro-text">
+                    <p>NAS油条Linux工具箱是一个功能强大的Linux系统管理脚本，由NAS油条开发，该脚本集成了大量实用的Linux系统工具和功能，为用户提供一站式的系统管理和维护解决方案。</p>
+                    <br>
+                    <p>本脚本支持多种Linux发行版和Termux终端，包含了系统信息查看、软件包管理、网络工具、Docker管理、各种服务器面板安装、Bot机器人部署、游戏娱乐工具等丰富功能。无论是Linux新手还是资深管理员，都可以通过本工具简化日常系统管理任务。</p>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">免责声明</button>
+                        <pre><code class="language-bash">
+本脚本仅用于合法、授权的安全测试和教育目的
+禁止用于任何非法攻击行为
+使用者需遵守当地法律法规
+
+                        </code></pre>
+                    </div>
+                    
+                    <p>脚本设计注重用户体验，支持dialog和whiptail两种交互界面，可根据用户习惯选择。同时具备自动更新、备份恢复等功能，确保脚本的可持续使用。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="features" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-list-check"></i> 主要功能</h2>
+                <div class="intro-text">
+                    <p>NAS油条Linux工具箱提供了丰富多样的功能模块，涵盖了Linux系统管理的各个方面：</p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <h3><i class="fas fa-desktop"></i> 系统信息查看</h3>
+                        <p>查看CPU、内存、硬盘使用情况，系统运行时间，进程数量，IP地址，地理位置等系统信息。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-network-wired"></i> 网络工具</h3>
+                        <p>Ping测试、网络连通性测试、端口扫描、内网穿透、Tmux终端工具等网络相关功能。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-box"></i> 软件包管理</h3>
+                        <p>支持多种包管理器(apt, yum, dnf, pacman等)，软件安装、卸载、更新、镜像源更换等功能。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-server"></i> 服务器面板</h3>
+                        <p>一键安装宝塔、AMH、1Panel、MCSManager、小皮、GMSSH、Dpanel等各种服务器管理面板。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-robot"></i> Bot机器人</h3>
+                        <p>部署Secluded、TRSS、Astrbot、Napcat、OneBot、Easybot、Koishi、MaiBot、Karin等多种机器人。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-gamepad"></i> 娱乐游戏</h3>
+                        <p>俄罗斯方块、贪吃蛇、太空入侵、黑客帝国屏保、盆栽艺术、可视化音频等终端游戏和娱乐工具。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-docker"></i> Docker管理</h3>
+                        <p>Docker信息查看、容器管理、镜像管理等Docker相关功能。</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h3><i class="fas fa-code"></i> 其他脚本集成</h3>
+                        <p>集成了亚洲云LinuxTool、木空云LinuxTool、TMOE、kejilion、v2ray一键安装等实用脚本。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="installation" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-download"></i> 安装与使用</h2>
+                <div class="intro-text">
+                    <p>NAS油条Linux工具箱安装简单，支持一键安装和更新：</p>
+                </div>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制命令</button>
+                    <pre><code class="language-bash">bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nasyt_install.sh)"</code></pre>
+                </div>
+                
+                <div class="intro-text">
+                    <p>安装完成后，直接在终端输入以下命令即可启动：</p>
+                </div>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制命令</button>
+                    <pre><code class="language-bash">nasyt</code></pre>
+                </div>
+                
+                <div class="intro-text">
+                    <p>如果遇到权限问题，可以尝试以下命令：</p>
+                </div>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制命令</button>
+                    <pre><code class="language-bash">chmod +x /usr/bin/nasyt  # 或 chmod +x $PREFIX/bin/nasyt (Termux)</code></pre>
+                </div>
+                
+                <div class="intro-text">
+                    <h3>支持的系统：</h3>
+                    <ul class="command-list">
+                        <li>Debian/Ubuntu系列</li>
+                        <li>Fedora/RHEL/CentOS系列</li>
+                        <li>Arch Linux系列</li>
+                        <li>openSUSE系列</li>
+                        <li>Alpine/PostmarketOS系统</li>
+                        <li>Gentoo/Funtoo系统</li>
+                        <li>Termux终端</li>
+                        <li>MacOS系统（测试中）</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="commands" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-terminal"></i> 命令参数</h2>
+                <div class="intro-text">
+                    <p>NAS油条Linux工具箱支持多种命令行参数，方便快速执行特定功能：</p>
+                </div>
+                
+                <ul class="command-list">
+                    <li><code>nasyt</code> - 正常启动脚本（显示主菜单）</li>
+                    <li><code>nasyt -g</code> 或 <code>nasyt --gx</code> - 快捷更新脚本</li>
+                    <li><code>nasyt -u</code> 或 <code>nasyt --upsource</code> - 快捷更换软件源</li>
+                    <li><code>nasyt -t</code> 或 <code>nasyt --tmux</code> - 快捷进入tmux管理</li>
+                    <li><code>nasyt -s</code> 或 <code>nasyt --skip</code> - 跳过引导直接进入菜单</li>
+                    <li><code>nasyt -v</code> 或 <code>nasyt --version</code> - 显示脚本版本信息</li>
+                    <li><code>nasyt -h</code> 或 <code>nasyt --help</code> - 显示帮助信息</li>
+                    <li><code>nasyt -b</code> 或 <code>nasyt --backup</code> - 快捷备份/恢复脚本</li>
+                </ul>
+                
+                <div class="intro-text">
+                    <h3>使用示例：</h3>
+                </div>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制命令</button>
+                    <pre><code class="language-bash"># 查看脚本版本
+nasyt --version
+
+# 更新脚本
+nasyt -g
+
+# 直接进入工具箱主菜单（跳过引导）
+nasyt -s
+
+# 备份脚本
+nasyt -b
+        </code></pre>
+                </div>
+            </div>
+        </div>
+        
+        <div id="contact" class="tab-content">
+            <div class="card">
+                <h2><i class="fas fa-address-card"></i> 联系作者</h2>
+                <div class="intro-text">
+                    <p>如果您在使用过程中遇到问题，或有改进建议，欢迎通过以下方式联系作者：</p>
+                </div>
+                
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fab fa-qq"></i>
+                        <div>
+                            <strong>QQ技术交流群</strong>
+                            <p>610699712</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <i class="fas fa-code-branch"></i>
+                        <div>
+                            <strong>GitCode仓库</strong>
+                            <p>https://gitcode.com/nasyt/nasyt-linux-tool</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <i class="fas fa-code-branch"></i>
+                        <div>
+                            <strong>GitHub仓库</strong>
+                            <p>https://github.com/nasyt233/nasyt-linux-tool</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <i class="fas fa-user"></i>
+                        <div>
+                            <strong>作者QQ</strong>
+                            <p>3213631396</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <i class="fas fa-hands-helping"></i>
+                        <div>
+                            <strong>特别感谢</strong>
+                            <p>创欧云提供直链支持</p>
+                            <p>2738136724提供网页服务</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="intro-text" style="margin-top: 30px;">
+                    <h3>免责声明</h3>
+                    <p>本脚本仅用于合法、授权的安全测试和教育目的，禁止用于任何非法攻击行为。使用者需遵守当地法律法规，对使用本脚本带来的任何后果承担全部责任。</p>
+                    
+                    <p>首次使用时会显示免责声明，需要用户同意后方可使用脚本功能。</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2024 NAS油条Linux工具箱 | 本脚本由NAS油条制作 | 最后更新: 2026/1/1</p>
+            <p style="margin-top: 10px; font-size: 0.8rem; color: #888;">背景图片来自Unsplash | 图标来自Font Awesome</p>
+        </footer>
+    </div>
+    
+    <script>
+        // 标签页切换功能
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // 移除所有按钮的激活状态
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // 隐藏所有标签内容
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // 激活当前按钮和标签
+                button.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // 复制代码功能
+        function copyCode(button) {
+            const codeBlock = button.parentElement.querySelector('code');
+            const textToCopy = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                // 显示复制成功反馈
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败: ', err);
+                button.textContent = '复制失败';
+                
+                setTimeout(() => {
+                    button.textContent = '复制命令';
+                }, 2000);
+            });
+        }
+        
+        // 页面加载时初始化高亮
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为所有pre标签中的代码添加高亮
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>
