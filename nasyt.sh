@@ -7,15 +7,14 @@
 # 欢迎加入NAS油条技术交流群
 # 有什么技术可以进来交流
 # 群号:610699712
-# gum_tool
+# gum_tool dust
 
 cd $HOME
-time_date="2026/1/17"
-version="v2.4.2.5"
+time_date="2026/1/24"
+version="v2.4.2.6"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
-habit=dialog #设置默认值
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
-bin_dir="usr/bin" #bin目录
+#bin_dir="usr/bin" #bin目录
 #nasyt_from="gitcode" # 脚本来源
 #> $nasyt_dir/shell.log
 #exec > >(tee -a "$nasyt_dir/shell.log") 2>&1
@@ -44,10 +43,10 @@ menu_jc() {
                echo "2) Linux工具箱 (启动)"
             else
                echo "1) Linux工具箱 (安装)"
-               echo "2) Linux工具箱 (启动)"
+               #echo "2) Linux工具箱 (启动)"
             fi
-            if command -v nasyt >/dev/null 2>&1; then
-                echo "3) Linux工具箱 (卸载)"
+            if command -v chafa >/dev/null 2>&1; then
+                echo "4) 随机美图"
             fi
             echo "0) 退出"
             br
@@ -60,7 +59,7 @@ menu_jc() {
                 2) 
                     break ;;
                 3)
-                    shell_uninstall;esc ;;
+                    esc ;;
                 4)
                     tp_curl=https://www.loliapi.com/acg/pe
                     acg pe ;;
@@ -690,6 +689,7 @@ system_menu() {
     11 "切换pip国内源" \
     12 "同步上海时间" \
     13 "系统密码设置" \
+    14 "修改主机名" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -952,8 +952,13 @@ openlist_menu(){
 }
 
 nweb_menu(){
+    if command -v nweb >/dev/null 2>&1; then
+        nweb_install="nweb已安装"
+    else
+        nweb_install="nweb未安装"
+    fi
     nweb_menu_xz=$($habit --title "nweb安装" \
-    --menu "nweb一个由Rust 语言构建的\n轻量级高性能 静态Web 服务\n仓库地址https://gitcode.com/nasyt/nweb \n由作者 NAS油条 制作\n推荐搭配tmux工具使用\n请选择:" 0 0 10\
+    --menu "nweb一个由Rust 语言构建的\n轻量级高性能 静态Web 服务\n仓库地址https://gitcode.com/nasyt/nweb \n由作者 NAS油条 制作\n推荐搭配tmux工具使用\n $nweb_install 请选择:" 0 0 10\
     1 "安装nweb" \
     2 "启动nweb" \
     3 "卸载nweb" \
@@ -994,6 +999,7 @@ game_menu() {
     4 "黑客帝国屏保" \
     5 "🪴盆栽艺术" \
     6 "可视化音频" \
+    7 "MOSS智能终端" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -1508,6 +1514,9 @@ upsource() {
         termux-change-repo
     else
         if [ -e $nasyt_dir/mirrors.sh ];then
+            chmod 777 $nasyt_dir/*
+            bash $nasyt_dir/mirrors.sh
+        else
             echo -e "$(info) 正在下载脚本文件。"
             curl -sSLo $nasyt_dir/mirrors.sh https://linuxmirrors.cn/main.sh >/dev/null 2>&1
             if [ $? -ne 0 ]; then
@@ -1515,9 +1524,6 @@ upsource() {
             else
                 echo -e "$(info) $green 下载文件成功。$color"
             fi
-        else
-            chmod 777 $nasyt_dir/*
-            bash $nasyt_dir/mirrors.sh
         fi
     fi
     esc
@@ -2163,7 +2169,7 @@ index_main() {
                                 echo -e "$(info) 检测到termux终端正在清理日志文件"
                                 find $PREFIX/var/log/ -type f -mtime +30 -exec rm -f {} >/dev/null 2>&1
                             else
-                               while true
+                                while true
                                 do
                                     clear_waste_menu
                                     case $clear_waste_menu_xz in
@@ -2212,6 +2218,16 @@ index_main() {
                         13)
                             change_password #设置密码
                             esc
+                            ;;
+                        14)
+                            host_name_xz=$($habit --title "主机名" \
+                            --inputbox "请输入新的主机名。" 0 0 \
+                            2>&1 1>/dev/tty)
+                            if [ $? -ne 0 ]; then
+                                break
+                            fi
+                            $sudo_setup hostnamectl set-hostname $host_name_xz
+                            $habit --msgbox "修改成功，重新连接终端生效。" 0 0
                             ;;
                         0)
                             clear
@@ -3080,6 +3096,39 @@ index_main() {
                                         test_install cava
                                         cava
                                         esc
+                                        ;;
+                                    7)
+                                        $habit --msgbox "本项目来自\n gitee.com/heigxaon/moss-android-terminal" 0 0
+                                        if command -v termux-info >/dev/null 2>&1; then
+                                            if [[ -e $HOME/MOSS ]]; then
+                                                cd $HOME
+                                                chmod 777 $HOME/MOSS
+                                                ~/MOSS
+                                            elif [[ -e $HOME/MOSS.UEG ]]; then
+                                                cd $HOME
+                                                chmod 777 $HOME/MOSS.UEG
+                                                ~/MOSS.UEG
+                                            else
+                                                $habit --title "安装版本" --yesno "请选择你要安装的版本\n y为完整版 n为精简版" 0 0
+                                                if [ $? -ne 0 ]; then
+                                                    echo -e "$(info) 正在安装中。"
+                                                    curl -L https://gitee.com/heigxaon/moss-android-terminal/releases/download/latest/MOSS -o ~/MOSS
+                                                    chmod 777 $HOME/MOSS
+                                                    cd ~ && ~/MOSS
+                                                    esc
+                                                else
+                                                    echo -e "$(info) 正在安装中。"
+                                                    yes | termux-setup-storage && termux-wake-lock && echo -e "\n\n\033[42;97m▷ 回车继续\033[0m (全自动安装，无需操作)" && read -n 1 &&
+                                                    cd /storage/emulated/0/ && curl -L --progress-bar https://gitee.com/heigxaon/moss-android-terminal/releases/download/MOSS/MOSS.tar.gz | tar -zx && cd MOSS && cp MOSS.UEG ~ && chmod 777 ~/MOSS.UEG &&
+                                                    tar -zxvf /storage/emulated/0/MOSS/termux-backup.tar.gz -C ~/.. &&
+                                                    termux-reload-settings && echo -e "\033[96m▷ 安装完成\033[0m" && ~/MOSS.UEG ||
+                                                    echo -e "\033[41;97m▷ 异常终止\033[0m"
+                                                fi
+                                            fi
+                                            esc
+                                        else
+                                            $habit --msgbox "此区域是给termux玩的，项目详见\nhttps://gitee.com/heigxaon/moss-android-terminal" 0 0
+                                        fi
                                         ;;
                                     0)
                                         break
