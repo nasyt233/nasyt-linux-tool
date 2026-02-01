@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/1/24"
-version="v2.4.2.6"
+time_date="2026/2/2"
+version="v2.4.2.7"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -46,7 +46,7 @@ menu_jc() {
                #echo "2) Linux工具箱 (启动)"
             fi
             if command -v chafa >/dev/null 2>&1; then
-                echo "4) 随机美图"
+                echo "3) 随机美图"
             fi
             echo "0) 退出"
             br
@@ -58,9 +58,11 @@ menu_jc() {
                     gx; esc ;;
                 2) 
                     break ;;
-                3)
+                1145)
+                    nasyt_body=$(curl https://api.github.com/repos/nasyt233/nasyt-linux-tool/releases/latest | grep -m1 '"body":' | sed -E 's/.*"([^"]+)".*/\1/')
+                    $habit --msgbox "$nasyt_body" 0 0
                     esc ;;
-                4)
+                3)
                     tp_curl=https://www.loliapi.com/acg/pe
                     acg pe ;;
                 0) 
@@ -522,7 +524,6 @@ termux_PATH () {
         else
             echo -e "PATH 已存在于 $nasyt_dir，跳过添加"
         fi
-        chmod 777 $nasyt_dir/* >/dev/null 2>&1 #给予权限
     else
         if ! grep -q "^export PATH="$nasyt_dir:"" $HOME/.bashrc; then
             echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
@@ -538,7 +539,6 @@ termux_PATH () {
             else
                 echo -e "$(info) PATH 已存在于 $nasyt_dir，跳过添加"
             fi
-            chmod 777 $nasyt_dir/* >/dev/null 2>&1 #给予权限
     else
             if ! grep -q "^export PATH="$nasyt_dir:"" $HOME/.zshrc; then
                 echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.zshrc
@@ -547,6 +547,7 @@ termux_PATH () {
             fi
         fi
     fi
+    chmod +x $nasyt_dir/* >/dev/null 2>&1 #给予权限
 }
 
 PATH_set () {
@@ -639,10 +640,10 @@ show_menu() {
     --backtitle "版本:$version    更新时间:$time_date"\
     --menu "本工具箱由NAS油条制作\nQQ群:610699712\n请使用方向键+回车键进行操作\n请选择你要启动的项目：" \
     0 0 10 \
-    1 "本机信息" \
+    1 "系统信息" \
     2 "系统工具" \
     3 "网络工具" \
-    4 "基础工具" \
+    4 "常用工具" \
     5 "软件安装" \
     6 "其它脚本" \
     7 "更新脚本" \
@@ -779,7 +780,6 @@ Internet_tool() {
     2 "网络连通性测试工具" \
     3 "Tmux终端工具" \
     4 "TMOE实用工具" \
-    5 "nmap端口扫描工具" \
     6 "ranger文件管理工具" \
     7 "hashcat工具" \
     8 "burpsuite工具" \
@@ -791,11 +791,20 @@ Internet_tool() {
 
 # 各种脚本。
 Linux_shell() {
+    more_shell_menu() {
+    more_shell_menu_xz=$($habit --title "服务器脚本" \
+    --menu "请选择:" 0 0 10 \
+    1 "亚洲云LinuxTool脚本工具" \
+    2 "木空云LinuxTool脚本工具" \
+    3 "失控LinuxTool脚本工具" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    }
+    
     linux_shell_linux() {
     Linux_shell_xz=$($habit --title "各种脚本" \
     --menu "请选择" 0 0 10 \
-    1 "亚洲云LinuxTool脚本工具" \
-    2 "木空云LinuxTool脚本工具" \
+    1 "更多服务器管理脚本工具" \
     3 "MC 压力测试 脚本工具" \
     4 "Docker 安装与换源脚本" \
     5 "神秘脚本 (纯整活)" \
@@ -856,6 +865,7 @@ panel_menu() {
 }
 
 bot_install_menu() {
+    bot_linux_menu() {
     bot_install_xz=$($habit --title "bot安装" \
     --menu "请选择:" 0 0 10 \
     1 "Secluded机器人" \
@@ -870,7 +880,28 @@ bot_install_menu() {
     10 "nonebot框架" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
+    }
+    bot_termux_menu() {
+    bot_install_xz=$($habit --title "bot安装" \
+    --menu "请选择:" 0 0 10 \
+    1 "Secluded机器人" \
+    3 "Astrbot机器人" \
+    4 "Napcat框架" \
+    5 "TRSS OneBot脚本" \
+    9 "Karin机器人" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    }
+    if command -v termux-info >/dev/null 2>&1; then
+        if [[ $shell_skip == 1 ]]; then
+            echo -e "$(info) 已跳过"
+            bot_linux_menu
+        else
+            bot_termux_menu
+        fi
+    else
+       bot_linux_menu
+    fi
 }
 
 # docker管理工具
@@ -906,6 +937,7 @@ other_tool_menu() {
     2 "OpenList挂载工具" \
     3 "nweb 高性能web服务"\
     4 "cloudreve云盘系统" \
+    5 "nasfq番茄小说下载器" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -2262,7 +2294,7 @@ index_main() {
                             awk -f <(curl -L gitee.com/mo2/linux/raw/2/2.awk)
                             esc
                             ;;
-                        5)
+                        114514)
                             clear
                             nmap_menu
                             esc
@@ -3229,8 +3261,21 @@ index_main() {
                                 other_tool_menu
                                 case $other_tool_xz in
                                     1)
-                                        curl -fsSL "https://alist.nn.ci/v3.sh" -o $nasyt_dir/v3.sh
-                                        bash $nasyt_dir/v3.sh
+                                        if command -v termux-info >/dev/null 2>&1; then
+                                            test_install alist
+                                            if [ $? -ne 0 ]; then
+                                                echo -e "$(info) $red alist安装失败 $color"
+                                            else
+                                                echo "alist安装完成，输入alist查看帮助"
+                                            fi
+                                        else
+                                            echo -e "$(info) 正在拉取脚本"
+                                            curl -fsSL "https://alistgo.com/v3.sh" -o $nasyt_dir/v3.sh
+                                            if [ $? -ne 0 ]; then
+                                                echo -e "$(info) $red 拉取脚本失败，请检查网络连接$color"
+                                            fi
+                                            bash $nasyt_dir/v3.sh
+                                        fi
                                         esc
                                         ;;
                                     2)
@@ -3416,6 +3461,9 @@ index_main() {
                                             esac
                                         done
                                         ;;
+                                    5)
+                                        bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasfq/raw/main/nfq.sh)"
+                                        ;;
                                     *)
                                         break
                                         ;;
@@ -3478,27 +3526,42 @@ index_main() {
                 do
                     Linux_shell
                     case $Linux_shell_xz in
-                        1) 
-                            if [ -e $nasyt_dir/yzy.sh ]; then
-                               chmod +x $nasyt_dir/*
-                               bash $nasyt_dir/yzy.sh
-                            else
-                               curl -L https://gitee.com/krhzj/LinuxTool/raw/main/Linux.sh -o $nasyt_dir/yzy.sh
-                               chmod +x $nasyt_dir/*
-                               bash $nasyt_dir/yzy.sh
-                            fi
-                            esc
-                            ;;
-                        2) 
-                            if [ -e $nasyt_dir/mky.sh ]; then
-                               chmod +x $nasyt_dir/mky.sh
-                               bash $nasyt_dir/mky.sh
-                            else
-                               curl -O mky.sh https://linux.mukongyun.com/linux.sh
-                               chmod +x mky.sh
-                               bash $nasyt_dir/mky.sh
-                            fi
-                            esc
+                        1)
+                            while true
+                            do
+                                more_shell_menu
+                                case $more_shell_menu_xz in
+                                    1) 
+                                        if [ -e $nasyt_dir/yzy.sh ]; then
+                                           chmod +x $nasyt_dir/*
+                                           bash $nasyt_dir/yzy.sh
+                                        else
+                                           curl -L https://gitee.com/krhzj/LinuxTool/raw/main/Linux.sh -o $nasyt_dir/yzy.sh
+                                           chmod +x $nasyt_dir/*
+                                           bash $nasyt_dir/yzy.sh
+                                        fi
+                                        esc
+                                        ;;
+                                    2) 
+                                        if [ -e $nasyt_dir/mky.sh ]; then
+                                           chmod +x $nasyt_dir/mky.sh
+                                           bash $nasyt_dir/mky.sh
+                                        else
+                                           curl -O mky.sh https://linux.mukongyun.com/linux.sh
+                                           chmod +x mky.sh
+                                           bash $nasyt_dir/mky.sh
+                                        fi
+                                        esc
+                                        ;;
+                                    3)
+                                        bash <(curl -sL shell.cdn1.vip)
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
                             ;;
                         3)
                             if [ -e "$nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py" ]; then
