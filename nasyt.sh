@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/2/2"
-version="v2.4.2.7"
+time_date="2026/2/6"
+version="v2.4.2.8"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -123,6 +123,7 @@ check_pkg_install() {
         sys="(Arch Linux 系列)"
         pkg_install="sudo pacman -S"
         pkg_remove="sudo pacman -R"
+        pkg_update="sudo pacman -Syu"
         sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
@@ -852,13 +853,16 @@ Linux_shell() {
 panel_menu() {
     panel_menu_xz=$($habit --title "各种服务器面板" \
     --menu "请选择" 0 0 10 \
-    1 "安装宝塔(bt.cn)面板" \
-    2 "安装AMH面板" \
-    3 "安装1panel面板" \
-    4 "安装MCSManager面板" \
-    5 "安装小皮面板" \
-    6 "安装GMSSH面板" \
-    7 "安装Dpanel面板" \
+    1 "宝塔(bt.cn)面板" \
+    2 "AMH面板" \
+    3 "1panel面板" \
+    4 "MCSManager面板" \
+    5 "小皮面板" \
+    6 "GMSSH面板" \
+    7 "Dpanel面板" \
+    8 "青龙面板" \
+    9 "Ajenti面板" \
+    10 "Cockpit面板" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw
@@ -938,6 +942,7 @@ other_tool_menu() {
     3 "nweb 高性能web服务"\
     4 "cloudreve云盘系统" \
     5 "nasfq番茄小说下载器" \
+    6 "bilibili-TUI版" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -1108,21 +1113,6 @@ ping2() {
     ping $ping_sr
 }
 
-# tmux命令
-tmux_tool() {
-    tmuxtool=$($habit --title "tmux工具" \
-    --menu "请选择" 0 0 10 \
-    1 "新建tmux窗口" \
-    2 "全部tmux窗口" \
-    3 "重命名tmux窗口" \
-    4 "进入tmux窗口" \
-    5 "杀死tmux窗口" \
-    6 "查看tmux快捷键" \
-    7 "全部tmux命令" \
-    0 "退出" \
-    2>&1 1>/dev/tty)
-    cw_test=$?;cw
-}
 
 # tmux快捷键
 tmux_keys() {
@@ -1187,6 +1177,24 @@ dpanel_menu() {
     echo "4) OpenEuler / 其他"
     echo "0) ◀返回"
     br
+}
+
+qinglong_menu() {
+    qinglong_menu_xz=$($habit --title "青龙面板安装" \
+    --menu "提示: 在bt和1p面板也可以快捷安装\n这里仅提供安装服务\n请选择安装方式" 0 0 5 \
+    1 "docker安装" \
+    2 "shell安装" \
+    0 "◀返回"\
+    2>&1 1>/dev/tty)
+}
+
+Ajenti_menu() {
+    Ajenti_menu_xz=$($habit --title "Ajenti安装" \
+    --menu "请选择:" 0 0 10 \
+    1 "安装Ajenti" \
+    2 "打开配置文件" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
 }
 
 # Secluded菜单
@@ -1555,6 +1563,7 @@ upsource() {
                 echo -e "$(info) $red 下载文件失败。$color"
             else
                 echo -e "$(info) $green 下载文件成功。$color"
+                bash $nasyt_dir/mirrors.sh
             fi
         fi
     fi
@@ -1562,75 +1571,147 @@ upsource() {
 }
 
 #tmux工具
-tmux_tool_index() {
-  while true
-  do
-  tmux_ls=$(tmux ls) >/dev/null 2>&1 # tmux转中文
-  tmux_ls_cn=$(echo "$tmux_ls" | sed -E 's/windows//g; s/created/创建于/g; s/^( *)创建于 /\1创建于\\/; s/^/窗口名字: /')
-  clear
-  test_install tmux
-  tmux_tool
-  case $tmuxtool in
-    1) 
-        new_tmux=$($habit --title "窗口名字" \
-        --inputbox "请输入窗口名字" 0 0 \
+tmux_tool() {
+    # 获取所有tmux会话
+    tmux_get() {
+        tmux_ls=$(mktemp) #tmux临时文件
+        tmux list-sessions -F "#S" 2>/dev/null > "$tmux_ls" #输出到临时文件
+    }
+    # tmux菜单
+    tmux_menu() {
+        tmux_menu_xz=$($habit --clear \
+        --title "tmux工具" \
+        --menu "请选择" 0 0 10 \
+        1 "🆕 新建会话" \
+        2 "🔧 会话管理" \
+        3 "❓ 使用说明" \
+        4 "🌌 美化窗口" \
+        0 "◀退出" \
         2>&1 1>/dev/tty)
-        if [ $? -ne 0 ]; then
-            echo
-        else
-            echo "创建 $new_tmux 窗口成功。"
-            echo "Ctrl+B D离开窗口"
-            read -p "回车键进入。"
-            tmux new -t "$new_tmux"
-        fi
-        esc ;;
-    2) 
-        clear; br
-        echo "$tmux_ls_cn"; br
-        esc
-        ;;
-    3)
-        clear; br
-            echo "$tmux_ls_cn"; br
-        read -p "请输入要重命名的窗口: " 
-        read -p "重命名为: " rename_tmux_2
-            tmux rename-session -t $rename_tmux_1 $rename_tmux_2
-            echo "将 $rename_tmux_1 重命名 $rename_tmux_2 成功"
-        esc
-        ;;
-    4)
-        clear; br
-            echo "$tmux_ls_cn"; br
-        read -p "请输入要进入的窗口号: " join_tmux
-            tmux attach-session -t $join_tmux
-        esc
-        ;;
-    5)
-        clear; br
-            echo "$tmux_ls_cn"; br
-        read -p "请输入要杀死的窗口: " kill_tmux
-            tmux kill-session -t $kill_tmux
-        echo "杀死 $kill_tmux 窗口成功"
-        esc
-        ;;
-    7)
-        tmux list-commands; br
-        esc
-        ;;
-    6)
-        clear
-        tmux_keys
-        esc
-        ;;
-    0)
-        break
-        read
-        ;;
-    *)
-        break
-        ;;
-  esac
-done
+    }
+    
+    while true
+    do
+        test_install tmux
+        tmux_menu
+        case $tmux_menu_xz in
+            1) 
+                tmux_new=$($habit --clear --title "🆕新建窗口🆕" \
+                --inputbox "请输入窗口名字:" 0 0 \
+                2>&1 1>/dev/tty)
+                if [ $? -ne 0 ]; then
+                    echo
+                else
+                    tmux new-session -d -s "$tmux_new"
+                    $habit --title "确认操作" --yesno "创建 $tmux_new 窗口成功\n\n是否连接会话" 0 0
+                    if [ $? -ne 0 ]; then
+                        echo
+                    else
+                        tmux attach-session -t $tmux_new
+                    fi
+                fi
+                ;;
+            2)
+                while true
+                do
+                    tmux_get #获取会话列表
+                    # 检查tmux会话
+                    if [ ! -s "$tmux_ls" ]; then
+                        $habit --title "警告" --msgbox "没有找到可用会话\n请先创建会话!" 10 30
+                        
+                    fi
+                    
+                    tmux_list=()
+                    tmux_number=1
+                    while IFS= read -r session; do
+                        tmux_list+=("$tmux_number" "$session")
+                        ((tmux_number++))
+                    done < "$tmux_ls"
+                    
+                    tmux_list_xz=$($habit --clear \
+                    --title "窗口管理" \
+                    --menu "请选择一个会话:" 0 0 10 \
+                    "${tmux_list[@]}" \
+                    0 "◀返回" \
+                    2>&1 1>/dev/tty)
+                    cw_test=$?
+                    if [[ $tmux_list_xz -eq 0 ]]; then
+                        return 0
+                    elif [[ $cw_test -eq 1 ]]; then
+                        return 0
+                    fi
+                    tmux_name=$(echo "${menu_items[@]}" | awk -v idx="$tmux_list_xz" '{for(i=1;i<=NF;i+=2) if ($i == idx) print $(i+1)}')
+                    tmux_session_menu=$($habit --title "标题" \
+                    --menu "文字" 0 0 10 \
+                    1 "🔗 连接到会话" \
+                    2 "🔴 结束此会话" \
+                    3 "📝 重命名会话" \
+                    0 "◀返回" \
+                    2>&1 1>/dev/tty)
+                    case $tmux_session_menu in
+                        1)
+                            if [[ -n "$TMUX" ]]; then
+                                tmux switch-client -t "$tmux_name"
+                            else
+                                tmux attach -t "$tmux_name"
+                            fi
+                            esc
+                            ;;
+                        2)
+                            tmux kill-session -t "$session"
+                            $habit --msgbox "✅ 已结束会话" 0 0
+                            ;;
+                        3)
+                            tmux_new_name=$($habit --title "重命名" \
+                                --inputbox "为会话 '$tmux_name' 输入新名称:" \
+                                0 0 "$tmux_name" \
+                                3>&1 1>&2 2>&3)
+                            if [[ $? -eq 0 ]] && [[ -n "$new_name" ]]; then
+                                if tmux rename-session -t "$tmux_name" "$tmux_new_name"; then
+                                    $habit --msgbox "✅ 会话已重命名为 '$tmux_new_name'" 0 0
+                                fi
+                            fi
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                    rm -f "$tmux_ls"
+                done
+                ;;
+            3)
+                $habit --msgbox '介绍:\n  本工具由 NAS油条 制作\n\n常用快捷键:\n• Ctrl+b %   垂直分割窗格\n• Ctrl+b \"   水平分割窗格\n• Ctrl+b 方向键  切换窗格\n• Ctrl+b c   新建窗口\n• Ctrl+b n/p 切换窗口\n• Ctrl+b d   分离会话 ' 0 0
+                ;;
+            4)
+                cd $HOME
+                echo -e "$(info) $blue 正在克隆oh my tmux项目 $color"
+                if [[ -d $HOME/.tmux ]]; then
+                    echo -e "$(info) $yellow 仓库已克隆，正在进入安装步骤。 $color"
+                else
+                    git clone --single-branch https://gitcode.com/gh_mirrors/tm/.tmux.git
+                    cw_test=$?
+                    echo $cw_test
+                    if [ $cw_test -eq 128 ]; then
+                        echo -e "$(info) $yellow 仓库克隆失败 $color"
+                    elif [ $cw_test -ne 0 ]; then
+                        echo -e "$(info) $red 仓库克隆失败，请检查你的网络后重试。$color"
+                        esc
+                        break
+                    else
+                        echo -e "$(info) $green 仓库克隆成功$color"
+                    fi
+                fi
+                ln -s -f .tmux/.tmux.conf
+                echo -e "$(info)  正在覆盖配置文件"
+                cp .tmux/.tmux.conf.local .
+                echo -e "$(info) $green tmux美化安装完成$color"
+                esc
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
 }
 
 # 显示服务器配置信息
@@ -1781,6 +1862,7 @@ acg() {
                     --yesno "是否查找R18内容?" 0 0 \
                     2>&1 1>/dev/tty)
                     if [ $? -ne 0 ]; then
+                        $habit --msgbox "不好意思R18占多数,只能随机看看了." 0 0
                         api_r18=0
                         api_r18=
                     else
@@ -2287,7 +2369,7 @@ index_main() {
                             ;;
                         3)
                             # tmux工具
-                            tmux_tool_index
+                            tmux_tool
                             esc
                             ;;
                         4)
@@ -2606,8 +2688,121 @@ index_main() {
                                         esac
                                     done
                                     ;;
-                                0)
-                                    break
+                                8)
+                                    while true
+                                    do
+                                        qinglong_menu
+                                        case $qinglong_menu_xz in
+                                            1)
+                                                # curl -sSL get.docker.com | sh
+                                                test_docker #检查docker安装
+                                                qinglong_menu_port=$($habit --title "docker安装" \
+                                                --inputbox "请输入面板端口" 0 0 \
+                                                2>&1 1>/dev/tty)
+                                                qinglong_menu_dir=$($habit --title "路径选择" \
+                                                --inputbox "请输入要安装的路径(如果不知道选什么，请输入/)" 0 0 \
+                                                2>&1 1>/dev/tty)
+                                                    docker run -dit \
+                                                      -v $PWD/ql/data:/ql/data \
+                                                      # 冒号后面的 5700 为默认端口，如果设置了 QlPort, 需要跟 QlPort 保持一致
+                                                      -p $qinglong_menu_port:5700 \
+                                                      # 部署路径非必须，比如 /test
+                                                      -e QlBaseUrl="$qinglong_menu_dir" \
+                                                      # 部署端口非必须，当使用 host 模式时，可以设置服务启动后的端口，默认 5700
+                                                      -e QlPort="5700" \
+                                                      --name qinglong \
+                                                      --hostname qinglong \
+                                                      --restart unless-stopped \
+                                                      whyour/qinglong:latest
+                                                ;;
+                                            2)
+                                                $habit --title "提示" --msgbox "目前只支持Debian系列和CentOS系列\n建议使用纯净系统安装，避免系统原有数据丢失\n需要自己安装 node/npm/python3/pip3" 0 0
+                                                echo -e "$(info) 正在拉取脚本数据"
+                                                case $deb_sys in
+                                                    apt)
+                                                        curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+                                                        esc
+                                                        ;;
+                                                    dnf)
+                                                        curl --silent --location https://rpm.nodesource.com/setup_20.x | sudo bash
+                                                        esc
+                                                        ;;
+                                                    *)
+                                                        $habit --msgbox "不支持的系统" 0 0
+                                                        ;;
+                                                esac
+                                                ;;
+                                            *)
+                                                break
+                                                ;;
+                                        esac
+                                    done
+                                    ;;
+                                9)
+                                    while true
+                                    do
+                                        Ajenti_menu
+                                        case $Ajenti_menu_xz in
+                                            1)
+                                                curl -O $nasyt_dir/Ajenti.sh https://raw.githubusercontent.com/ajenti/ajenti/master/scripts/install.sh
+                                                $sudo_setup bash $nasyt_dir/Ajenti.sh
+                                                esc
+                                                ;;
+                                            2)
+                                                test_install nano
+                                                nano /etc/ajenti/config.yml
+                                                esc
+                                                ;;
+                                            *)
+                                                break
+                                                ;;
+                                        esac
+                                    done
+                                    ;;
+                                10)
+                                    while true
+                                    do
+                                        Cockpit_menu
+                                        case $Cockpit_menu_xz in
+                                            1)
+                                                source /etc/os-release
+                                                echo -e "$(info) 正在更新软件包列表"
+                                                pkg_update
+                                                case $deb_sys in
+                                                    apt)
+                                                        $sudo_setup apt install -t ${VERSION_CODENAME}-backports cockpit
+                                                        cw_test=$?
+                                                        ;;
+                                                    dnf)
+                                                        test_install cockpit
+                                                        cw_test=$?
+                                                        ;;
+                                                    yum)
+                                                        test_install cockpit
+                                                        cw_test=$?
+                                                        ;;
+                                                    pacman)
+                                                        test_install cockpit
+                                                        cw_test=$?
+                                                        ;;
+                                                    zypper)
+                                                        test_install cockpit
+                                                        cw_test=$?
+                                                        ;;
+                                                    *)
+                                                        $habit --msgbox "不支持当前系统" 0 0
+                                                        ;;
+                                                esac
+                                                ;;
+                                            2)
+                                                $sudo_setup systemctl enable --now cockpit.socket
+                                                esc
+                                                ;;
+                                            *)
+                                                break
+                                                ;;
+                                        esac
+                                    done
                                     ;;
                                 *)
                                     break
@@ -3239,7 +3434,7 @@ index_main() {
                                         fi
                                         ;;
                                     3)
-                                        tmux_tool_index
+                                        tmux_tool
                                         esc
                                         ;;
                                     0)
@@ -3372,7 +3567,7 @@ index_main() {
                                                     esc
                                                     ;;
                                                 4)
-                                                    tmux_tool_index
+                                                    tmux_tool
                                                     esc
                                                     ;;
                                                 *)
@@ -3463,6 +3658,21 @@ index_main() {
                                         ;;
                                     5)
                                         bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasfq/raw/main/nfq.sh)"
+                                        ;;
+                                    6)
+                                        $habit --title "bilibili-tui" --yesno "来自项目\ngithub.com/MareDevi/bilibili-tui\n安装脚本只支持amd64框架,其他框架请自行编译安装\n安装方式由项目提供,是否安装" 0 0
+                                        if [ $? -ne 0 ]; then
+                                            return
+                                        else
+                                            test_install curl
+                                            echo -e "$(info) 正在拉取脚本"
+                                            $habit --title "确认操作" --yesno "是否使用github加速地址" 0 0
+                                            if [ $? -ne 0 ]; then
+                                                curl --proto '=https' --tlsv1.2 -LsSf https://github.com/MareDevi/bilibili-tui/releases/download/v1.0.9/bilibili-tui-installer.sh | sh
+                                            else
+                                                curl --proto '=https' --tlsv1.2 -LsSf https://ghfast.top/https://github.com/MareDevi/bilibili-tui/releases/download/v1.0.9/bilibili-tui-installer.sh | sh
+                                            fi
+                                        fi
                                         ;;
                                     *)
                                         break
@@ -3876,7 +4086,7 @@ if [ $# -ne 0 ]; then
       exit
       ;;
     -t|--tmux)
-      tmux_tool_index
+      tmux_tool
       exit
       ;;
     -s|--skip)
