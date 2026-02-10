@@ -4,6 +4,29 @@ br() {
 }
 #-------------------------- 
     clear
+    echo "2026年2月6日更新v2.4.2.8版"
+    echo "优化更换软件源功能"
+    echo "更新bilibili-tui"
+    echo "tmux已进行大整改"
+    echo "tmux更新美化功能"
+    echo "更新Cockpit面板"
+    echo "更新Ajenti面板"
+    echo "更新青龙面板"
+    echo "修复已知bug"
+    br
+    read
+    echo "2026年2月2日更新v2.4.2.7版"
+    echo "更新nasfq番茄小说下载器"
+    echo "PATH环境进行整改"
+    echo "修改安装更新界面的排序"
+    echo "对bot进行了termux分类"
+    echo "alist安装链接更新"
+    echo "移除nmap扫描功能"
+    echo "更新失控服务器管理脚本"
+    echo "归档服务器脚本分类"
+    echo "修复已知bug"
+    br
+    read
     echo "2026年1月24日更新v2.4.2.6版"
     echo "添加娱乐MOSS智能终端"
     echo "对chafa添加智能检测"
@@ -11,7 +34,7 @@ br() {
     echo "修复更换软件源功能"
     echo "修复已知bug"
     br
-    esc
+    read
     echo "2026年1月17日更新v2.4.2.5版"
     echo "MaiBot更新安装脚本"
     echo "添加脚本默认habit值"
@@ -22,7 +45,7 @@ br() {
     echo "更新nonebot框架安装"
     echo "修复已知bug"
     br
-    esc
+    read
     echo "2026年1月10日更新v2.4.2.4版"
     echo "openlist安装修复"
     echo "文件基本迁移完成"
@@ -30,7 +53,7 @@ br() {
     echo "修复sudo致命错误"
     echo "添加对termux的判断"
     br
-    esc
+    read
     echo "2026年1月10日更新v2.4.2.3版"
     echo "更新随机acg功能"
     echo "nweb服务安装修复"
@@ -38,7 +61,7 @@ br() {
     echo "更新naster(termux脚本)"
     echo "修复已知bug"
     br
-    esc
+    read
     echo "2026年1月1日更新v2.4.2.2版"
     echo "准备更新docker工具"
     echo "安全方面问题修改"

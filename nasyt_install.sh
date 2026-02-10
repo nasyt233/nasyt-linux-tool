@@ -147,6 +147,17 @@ esc() {
     read
 }
 
+#国内外检查
+country() {
+    country=$(curl -s https://myip.ipip.net | grep -oE "中国|China" 2>/dev/null)
+    if [ -n "$country" ]; then
+        echo "当前在中国"
+        github_speed=https://ghfast.top/
+    else
+        echo "当前不在中国"
+        github_speed=
+    fi
+}
 #错误处理
 cw() {
     if [ $cw_test -ne 0 ]; then
@@ -316,22 +327,20 @@ gx() {
                 echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
                 shell_recover
             fi
-            echo -e "$(info) 正在安装必要文件"
-            test_install figlet >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                echo -e "$(info) $red figlet软件包安装失败，请手动安装figlet软件包$color"
-            fi
+            echo -e "$(info) 正在后台安装必要文件"
+            test_install figlet & >/dev/null 2>&1
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
+            source $HOME/.zshrc >/dev/null 2>&1
             exit 0
         else
-            echo "$(info)✗ 当前链接下载失败，2秒后尝试下一个链接..."
+            echo "$(info)✗ 当前链接下载失败，3秒后尝试下一个链接..."
             sleep 3
         fi
     done
     echo -e "$(info) $red 所有链接均下载失败，请检查网络或链接有效性$color"
-    exit
+    echo "跳过下载本地,使用在线模式。" 0 0
 }
 
 #脚本备份
@@ -383,6 +392,7 @@ all_variable() {
 }
 
 main() {
+    country >/dev/null 2>&1
     check_script_folder
     check_pkg_install
     color_variable

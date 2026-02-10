@@ -1,22 +1,25 @@
-# NAS油条Linux工具箱 - 完整功能说明
+# NAS油条Linux工具箱
 
 ## 脚本概述
 
-**NAS油条Linux工具箱**是一个功能强大的Linux系统管理脚本，由NAS油条开发,该脚本集成了大量实用的Linux系统工具和功能，为用户提供一站式的系统管理和维护解决方案。
+**NAS油条Linux工具箱**是一个功能强大的Linux系统管理脚本，由NAS油条开发。该脚本集成了大量实用的Linux系统工具和功能，为用户提供一站式的系统管理和维护解决方案。
 
 
- **一键安装命令** 
+ **一键安装使用命令** 
 ```bash
 bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nasyt_install.sh)"
 ```
+
 
 
 ### 📋 基础信息
 - **脚本名称**: nasyt
 - **开发日期**: 2025/3/
 - **开发作者**: NAS油条
-- **交流群**: 610699712（赤石技术交流群）
+- **交流群**: 610699712（用户交流群）
 - **贡献者**: 创欧云(coyjs.cn)  (๑•॒̀ ູ॒•́๑)啦啦
+
+![演示图片](ys.png)
 
 ## 🚀 核心特性
 
@@ -33,7 +36,6 @@ bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nas
 ### 🎨 **用户界面**
 - **dialog界面** - 适合鼠标操作的图形化菜单
 - **whiptail界面** - 适合触屏设备的滑动菜单
-- **自适应问候语** - 根据时间显示不同的问候语（早上好/下午好/晚上好）
 - **彩色输出** - 丰富的颜色标识系统状态
 
 ### 🛠️ **智能检测**
@@ -123,7 +125,7 @@ bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/nas
 ### 4. 基础工具安装 🛠️
 常用软件和工具的一键安装：
 
-#### 🖥️ 各种面板
+#### 🖥️ 各种服务器面板
 - **宝塔面板** - 知名Web管理面板
 - **AMH面板** - 国产主机管理面板
 - **1panel面板** - 新一代Linux面板

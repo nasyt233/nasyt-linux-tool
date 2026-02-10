@@ -1,36 +1,31 @@
-# NAS油条工具箱
+## 欢迎加入`NAS油条技术交流群`
 
-#### Description
-linux工具
+有什么技术或者问题反馈都可以进来交流
 
-#### Software Architecture
-Software architecture description
+点击加入我们: [`610699712`](https://qun.qq.com/universal-share/share?ac=1&authKey=6QUsndT%2BqjAhMbSc04QQyM5P9uuReOXWcm4H3N0ewxJ1Xb2Z8Yz%2Fk7OC3JwJQgRW&busi_data=eyJncm91cENvZGUiOiI2MTA2OTk3MTIiLCJ0b2tlbiI6Im5lRkNjTkRhQ29abW5YUmRvOHcxRm5UYWxhQVZsU0VXdjRieDhURFljeDkweURMd3l4QSs5R1RvdXFLcFBDT3IiLCJ1aW4iOiIzMjEzNjMxMzk2In0%3D&data=ZVdKkat-vFjOLcVDQ7AIv6_L1ih6RrI1ORl8OewruD3hMIkFfDZ4viztu3I6b2NUAAYsoS-CtanimtLWstyr7w&svctype=4&tempid=h5_group_info)
 
-#### Installation
+### NAS油条小破站
+[NAS油条](http://https://nasyt.hoha.top)
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+### 本项目永久开源
+本人热爱linux喜欢制作shell脚本项目
 
-#### Instructions
+### 主要作品
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+[NAS油条linux工具箱](https://gitcode.com/nasyt/nasyt-linux-tool)
 
-#### Contribution
+[nweb静态网站服务](https://gitcode.com/nasyt/nweb)
 
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
+[nshc脚本加密工具](https//gitcode.com/nasyt/nshc)
 
+[主要脚本项目介绍](https//nasyt.hoha.top/nasyt.html)
 
-#### Gitee Feature
+### 加入我们
+QQ群:610699712
 
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+### 捐助
+如果您觉得我们的开源软件对你有所帮助，请扫下方二维码打赏我们一杯咖啡。
+![赞助我们](https://foruda.gitee.com/images/1737677549064431229/e815d34b_15373331.png "2.png")
+
+### 联系
+outlook邮箱:sfsyt233@outlook.com
