@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/2/6"
-version="v2.4.2.8"
+time_date="2026/2/13"
+version="v2.4.2.9"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -182,7 +182,7 @@ color_variable() {
 
 all_variable() {
     OUTPUT_FILE="nasyt" # 下载文件名
-    time_out=7  # curl超时时间（秒）
+    time_out=5  # curl超时时间（秒）
     urls=(
       "https://nasyt.hoha.top/shell/nasyt.sh"
       "https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh"
@@ -195,6 +195,15 @@ all_variable() {
 
 
 # 函数
+
+default_habit() {
+    if [[ -n $habit ]]; then
+        echo
+    else
+        test_install dialog
+        habit=dialog
+    fi
+}
 server_ip() {
     server_ip=$(hostname -i) # 服务器IP
     $habit --msgbox "当前IP为: $server_ip" 0 0
@@ -227,6 +236,17 @@ cw() {
     fi
 }
 
+#国内外检测
+country() {
+    country=$(curl -s https://myip.ipip.net | grep -oE "中国|China" 2>/dev/null)
+    if [ -n "$country" ]; then
+        echo "当前在中国"
+        github_speed=https://ghfast.top/
+    else
+        echo "当前不在中国"
+        github_speed=
+    fi
+}
 
 # 网络工具使用限制检查
 disclaimer() {
@@ -416,6 +436,9 @@ test_whiptail() {
         if command -v pacman >/dev/null 2>&1; then
             echo -e "$(info) 检测到Arch系统，正在安装libnewt软件包"
             test_install libnewt
+        elif command -v dnf >/dev/null 2>&1; then
+            echo "检测到dnf软件包管理系统，正在安装newt软件包"
+            test_install newt
         else
             test_install whiptail
         fi
@@ -627,7 +650,7 @@ habit_xz () {
         echo -e "$green $habit 已安装，跳过安装步骤$color"
     else
         echo "$habit 未安装，正在安装。"
-        $pkg_install $habit $yes_tg
+        test_install $habit
         if [ $? -ne 0 ]; then
             echo -e "$red 安装失败 $color"
         fi
@@ -702,13 +725,15 @@ often_tool() {
    often_tool_linux() {
     often_tool_choice=$($habit --title "安装linux常用工具" \
     --menu "请选择" 0 0 10 \
-    1 "docker管理"\
+    1 "🐳docker管理"\
     2 "🖥各种面板" \
     3 "🤖bot机器人" \
     4 "👾娱乐游戏" \
     5 "🚀各种服务端" \
     6 "🌍穿透工具" \
-    7 "其他工具" \
+    7 "📄编辑工具" \
+    8 "📥下载工具" \
+    9 "☰ 其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -720,7 +745,9 @@ often_tool() {
     3 "🤖bot机器人相关" \
     4 "👾娱乐相关" \
     6 "🌍穿透工具" \
-    7 "其他工具" \
+    7 "📄编辑工具" \
+    8 "📥下载工具" \
+    9 "其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -1000,6 +1027,38 @@ nweb_menu(){
     2 "启动nweb" \
     3 "卸载nweb" \
     4 "tmux工具" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#编辑工具菜单
+edit_tool_menu() {
+    edit_tool_menu_xz=$($habit --clear --title "编辑工具" \
+    --menu "请选择:" 0 0 10 \
+    1 "nvim(lazy)编辑工具" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+# nvim配置菜单
+nvim_menu() {
+    nvim_menu_xz=$($habit --clear --title "nvim管理" \
+    --menu "推荐安装LazyVim整合插件\n请选择:" 0 0 10 \
+    Lazy "安装LazyVim整合插件" \
+    1 "启动nvim" \
+    2 "备份nvim" \
+    3 "恢复nvim" \
+    3 "卸载nvim" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#下载工具菜单
+dow_tool_menu() {
+    dow_tool_menu_xz=$($habit --clear --title "下载工具" \
+    --menu "文字" 0 0 10 \
+    1 "nfq番茄小说下载工具" \
+    2 "twitter视频下载工具" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1411,22 +1470,29 @@ ranger_install() {
 
 #脚本卸载
 shell_uninstall() {
-    
-    $habit --yesno "此操作会删除本脚本\n你确定要删除(>_<)本脚本吗？" 0 0
-    if [ $? -ne 0 ]; then
-        echo ""
+    source $HOME/.bashrc >/dev/null 2>&1 #加载配置文件
+    if [[ -n $habit ]]; then
+        $habit --yesno "此操作会删除本脚本\n你确定要删除(>_<)本脚本吗？" 0 0
+        if [ $? -ne 0 ]; then
+            echo ""
+        else
+            rm $PREFIX/bin/nasyt >/dev/null 2>&1
+            rm /usr/bin/nasyt >/dev/null 2>&1
+        fi
+        $habit --title "确认操作" --yesno "是否删除脚本目录下的所有项目？\n $(br_2) \n$(ls $nasyt_dir/) \n $(br_2)" 0 0
+        if [ $? -ne 0 ]; then
+            echo ""
+        else
+            rm -rfv $nasyt_dir
+            exit 0
+        fi
+        $habit --msgbox "操作完成\n感谢你的支持。" 0 0
     else
+        rm $nasyt_dir/nasyt >/dev/null 2>&1
+        rm usr/bin/nasyt >/dev/null 2>&1
         rm $PREFIX/bin/nasyt >/dev/null 2>&1
-        rm /usr/bin/nasyt >/dev/null 2>&1
+        echo -e "$(info) 删除完成"
     fi
-    $habit --title "确认操作" --yesno "是否删除脚本目录下的所有项目？\n $(br_2) \n$(ls $nasyt_dir/) \n $(br_2)" 0 0
-    if [ $? -ne 0 ]; then
-        echo ""
-    else
-        rm -rfv $nasyt_dir
-        exit 0
-    fi
-    $habit --msgbox "操作完成\n感谢你的支持。" 0 0
 }
 
 #更新查看
@@ -1471,11 +1537,12 @@ gx() {
                 echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
                 shell_recover
             fi
-            echo -e "$(info) 正在安装必要文件"
-            test_install figlet >/dev/null 2>&1
+            echo -e "$(info) 正在后台安装必要文件"
+            test_install figlet & >/dev/null 2>&1
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
+            source $HOME/.zshrc >/dev/null 2>&1
             exit 0
         else
             echo "$(info)✗ 当前链接下载失败，3秒后尝试下一个链接..."
@@ -1714,6 +1781,50 @@ tmux_tool() {
     done
 }
 
+# 下载视频（curl自带进度）
+download_video() {
+    local video_url="$1"
+    local output_name="$2"
+    local download_path="${PWD}/${output_name}"
+
+    echo "正在下载：$video_url"
+    echo "保存到：$download_path"
+
+    curl --progress-bar -L "$video_url" -o "$download_path"
+
+    if [ -f "$download_path" ]; then
+        $habit --msgbox "视频下载完成\n$download_path" 0 0
+    else
+        $habit --msgbox "视频下载失败" 0 0
+        exit 1
+    fi
+}
+# 解析 Twitter/X 视频
+dow_x_mp4() {
+    local twitter_url="$1"
+    local api_url="https://twitsave.com/info?url=${twitter_url}"
+    local ts=$(date +%s)
+    local outfile="${ts}.mp4"
+    
+    echo "🔍 正在解析视频：$twitter_url"
+    echo "🔗 请求解析页：$api_url"
+    
+    local video_url=$(
+        curl -sL "$api_url" \
+        | grep -o 'https://video[^"]*' \
+        | head -1
+    )
+
+    if [ -z "$video_url" ]; then
+        $habit --msgbox "❌ 无法获取视频链接（可能被墙/链接无效/页面改了）" 0 0
+        exit 1
+    fi
+
+    echo "✅ 获取到下载地址：$video_url"
+    download_video "$video_url" "$outfile"
+}
+
+
 # 显示服务器配置信息
 show_server_config() {
     clear
@@ -1721,10 +1832,13 @@ show_server_config() {
     echo "CPU核心数:"
     lscpu | grep -w "CPU(s):" | grep -v "\-"
     lscpu | grep -w "Model name:"
+    br
     echo "CPU频率:"
     lscpu | grep -w "CPU MHz"
+    br
     echo "虚拟化类型:"
     lscpu | grep -w "Hypervisor vendor:"
+    br
     echo "系统版本:"
     if [ -f /etc/lsb-release ]; then
         . /etc/lsb-release
@@ -1736,10 +1850,13 @@ show_server_config() {
         CENTOS_VERSION=$(cat /etc/centos-release)
         echo "CentOS $CENTOS_VERSION"
     fi
+    br
     echo "内存信息:"
     free -h
+    br
     echo "硬盘信息:"
-    df -h
+    df -hl
+    br
     esc
 }
 
@@ -1762,6 +1879,7 @@ ifneofetch() {
                 ;;
             2)
                 test_install fastfetch
+                $habit --msgbox "系统软件包可能没有fastfetch" 0 0
                 fastfetch
                 esc
                 ;;
@@ -1797,13 +1915,13 @@ acg() {
             fi
             acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
             --menu "推荐将终端拉到最小状态\n以获得最佳体验，按确定键获取图片" 0 0 5\
-            1 "随机acg(竖屏)" \
-            2 "随机acg(横屏)" \
-            3 "随机pixiv图片" \
-            6 "自定义图片链接" \
-            7 "自定义关键词" \
-            8 "图片空间占用" \
-            9 "查看历史图片" \
+            1 "📱随机acg(竖屏)" \
+            2 "🖥随机acg(横屏)" \
+            3 "🔞随机pixiv图片" \
+            6 "✎自定义图片链接" \
+            7 "⚙️自定义关键词" \
+            8 "📦图片空间占用" \
+            9 "🕒查看历史图片" \
             $acg_menu_xz_add \
             0 "◀返回" \
             2>&1 1>/dev/tty)
@@ -1986,6 +2104,7 @@ introduce() {
     termux_PATH #termux环境变量设置
     PATH_set #环境变量设置
     source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
+    #default_habit #检查函数并设置默认值
     #check_pkg_install # 检查包管理器。
     check_script_folder # 检查脚本文件夹。
     #test_figlet # 检查figletl是否安装。
@@ -2003,11 +2122,12 @@ index_main() {
         ad_gg #支持
         habit_xz #选择使用习惯。
         br
+        source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置以防免责声明无法加载
         disclaimer # 免责声明
         read -p "回车键启动脚本,Ctrl+C退出" 
     fi
-    source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
-    source $HOME/.bashrc >/dev/null # 加载用户启动文件
+    source $nasyt_dir/config.txt >/dev/null # 何咦魏,加载脚本配置
+    source $HOME/.bashrc >/dev/null 2>&1 # 加载用户启动文件
     clear
     while true
     do
@@ -2023,7 +2143,7 @@ index_main() {
                     case $look_choice in
                         1) $habit --msgbox "$(date +"%r")" 0 0;;
                         2) show_server_config;;
-                        3) dialog --msgbox "$(curl iplark.com)" 0 0 ;;
+                        3) $habit --msgbox "$(curl iplark.com)" 0 0 ;;
                         4) ifneofetch ;;
                         5) $habit --msgbox "$(curl -sSL https://slow-api.hoha.top/ip.php)" 0 0;;
                         6) test_install htop;htop ;;
@@ -2037,36 +2157,26 @@ index_main() {
             2)
                 while true
                 do
-                    clear
                     system_menu
                     case $system_choice in
                         1)
                             while true
                             do
-                                clear
                                 deb_install
                                 case $deb_install_xz in
                                     1)
-                                        clear
                                         deb_install_Internet
                                         esc
                                         ;;
                                     2)
-                                        clear
                                         deb_install_localhost
                                         esc
                                         ;;
                                     3)
-                                        clear
                                         deb_remove
                                         esc
                                         ;;
-                                    0)
-                                        clear
-                                        break
-                                        ;;
                                     *)
-                                        cw_test=$?;cw
                                         break
                                         ;;
                                 esac
@@ -2074,6 +2184,7 @@ index_main() {
                             ;;
                         2)
                             upsource
+                            esc
                             ;;
                         3)
                             $habit --title "确认操作" --yesno "确定更新软件包及系统吗？" 0 0
@@ -3453,6 +3564,126 @@ index_main() {
                         7)
                             while true
                             do
+                                edit_tool_menu
+                                case $edit_tool_menu_xz in
+                                    1)
+                                        PATH=/snap/bin:$PATH >/dev/null 2>&1
+                                        if command -v nvim >/dev/null 2>&1; then
+                                            nvim_menu
+                                            case $nvim_menu_xz in
+                                                Lazy)
+                                                    echo -e "$(info) 正在备份原nvim配置"
+                                                    mv ~/.config/nvim ~/.config/nvim.bak
+                                                    mv ~/.local/share/nvim ~/.local/share/nvim.bak
+                                                    
+
+                                                    country #国内外检测
+                                                    test_install git #检查git安装
+                                                    
+                                                    if [[ -d $HOME/.config/nvim ]]; then
+                                                        echo -e "$(info) $yellow 仓库已克隆安装。 $color"
+                                                    else
+                                                        echo -e "$(info) 正在克隆仓库"
+                                                        git clone ${github_speed}/https://github.com/LazyVim/starter ~/.config/nvim
+                                                        cw_test=$?
+                                                        echo $cw_test
+                                                        if [ $cw_test -eq 128 ]; then
+                                                            echo -e "$(info) $yellow 仓库克隆失败 $color"
+                                                        elif [ $cw_test -ne 0 ]; then
+                                                            echo -e "$(info) $red 仓库克隆失败，请检查你的网络后重试。$color"
+                                                            esc
+                                                            break
+                                                        else
+                                                            echo -e "$(info) $green 仓库克隆成功$color"
+                                                        fi
+                                                    fi
+                                                    esc
+                                                    ;;
+                                                1)
+                                                    echo -e "$(info) 正在加载nvim配置"
+                                                    nvim
+                                                    esc
+                                                    ;;
+                                                2)
+                                                    echo -e "$(info) 正在备份中"
+                                                    mv ~/.config/nvim ~/.config/nvim.bak
+                                                    mv ~/.local/share/nvim ~/.local/share/nvim.bak
+                                                    echo -e "$(info) 备份完成"
+                                                    esc
+                                                    ;;
+                                                3)
+                                                    if [[ -d $HOME/.config/nvim.bak ]]; then
+                                                        echo -e "$(info) 检测到备份文件，正在恢复备份"
+                                                        rm -rf $HOME/.config/nvim
+                                                        mv $HOME/.config/nvim.bak $HOME/.config/nvim
+                                                        if [ $? -ne 0 ]; then
+                                                            echo -e "$(info) $red 备份恢复失败$color"
+                                                        else
+                                                            echo -e "$(info) 备份恢复完成"
+                                                        fi
+                                                    else
+                                                        echo -e "$(info) $red 未检测到备份文件$color"
+                                                    fi
+                                                    esc
+                                                    ;;
+                                                3)
+                                                    if [[ $deb_sys == apt ]]; then
+                                                        echo -e "$(info) 正在卸载nvim"
+                                                        snap remove nvim
+                                                    else
+                                                        echo -e "$(info) 正在卸载nvim"
+                                                        $sudo_setup $pkg_remove nvim
+                                                    fi
+                                                    ;;
+                                                *)
+                                                    break
+                                                    ;;
+                                            esac
+                                        else
+                                            echo -e "$(info)$yellow nvim未安装，正在执行安装步骤$color"
+                                            if [[ $deb_sys == apt ]]; then
+                                                echo -e "$(info) 检测到apt软件包管理,正在使用snap下载"
+                                                test_install snapd
+                                                snap install nvim
+                                            else
+                                                test_install nvim
+                                            fi
+                                        fi
+                                        ;;
+                                    2)
+                                        $habit --msgbox "无" 0 0
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
+                        8)
+                            while true
+                            do
+                                dow_tool_menu
+                                case $dow_tool_menu_xz in
+                                    1)
+                                        bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasfq/raw/main/nfq.sh)"
+                                        esc
+                                        ;;
+                                    2)
+                                        x_url=$($habit --clear --title "twitter视频下载" \
+                                        --inputbox "请输入twitter帖子地址" 0 0 \
+                                        2>&1 1>/dev/tty)
+                                        dow_x_mp4 "$x_url"
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
+                        9)
+                            while true
+                            do
                                 other_tool_menu
                                 case $other_tool_xz in
                                     1)
@@ -3657,7 +3888,7 @@ index_main() {
                                         done
                                         ;;
                                     5)
-                                        bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasfq/raw/main/nfq.sh)"
+                                        $habit --msgbox "无" 0 0
                                         ;;
                                     6)
                                         $habit --title "bilibili-tui" --yesno "来自项目\ngithub.com/MareDevi/bilibili-tui\n安装脚本只支持amd64框架,其他框架请自行编译安装\n安装方式由项目提供,是否安装" 0 0
@@ -4034,10 +4265,23 @@ index_main() {
 color_variable # 定义颜色变量
 all_variable # 全部变量
 #country #国内外检测
+source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+    -x|--dowx)
+        if [[ -z $2 ]]; then
+            echo ""
+            echo "用法:"
+            echo "nasyt -x [链接]"
+            echo ""
+            exit 0
+        else
+            dow_x_mp4 "$2"
+        fi
+        exit 0
+        ;;
     -a|--acg)
         if [[ $2 -eq 0 ]]; then
             case $2 in
@@ -4107,11 +4351,15 @@ if [ $# -ne 0 ]; then
         ncdu $nasyt_dir
         exit
         ;;
+    -r|--remove)
+        shell_uninstall
+        ;;
     help|-h|-help|--help)
       echo
       echo "用法:"
       echo -e "  ${blue}nasyt [参数]$color"
       echo "参数:"
+      echo "  -x, --dowx 快捷下载twitter视频"
       echo "  -a, --acg 快捷随机acg图片"
       echo "  -g, --gx 快捷更新脚本"
       echo "  -u, -upsource 快捷换软件源"
@@ -4121,6 +4369,7 @@ if [ $# -ne 0 ]; then
       echo "  -h, --help  输出命令帮助"
       echo "  -b, --backup  快捷备份恢复脚本"
       echo "  -n, --ncdu  查看脚本空间占用"
+      echo "  -r, --remove 卸载本脚本工具"
       echo
       echo "有关更多详细信息，请参见"
       echo -e "$green https://gitcode.com/nasyt/nasyt-linux-tool$color"

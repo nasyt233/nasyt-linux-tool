@@ -4,6 +4,27 @@ br() {
 }
 #-------------------------- 
     clear
+    echo "2026年2月xx日更新v2.4.3.0版"
+    echo "准备更新edge文字转音频工具"
+    br
+    read
+    echo "2026年2月13日更新v2.4.2.9版"
+    echo "随机美图区域进行美化"
+    echo "系统配置信息显示优化"
+    echo "部分git仓库克隆更加完善"
+    echo "部分功能更新github加速服务"
+    echo "快捷命令更新twitter视频下载"
+    echo "更新twitter视频下载工具"
+    echo "更新LazyVim nvim编辑工具"
+    echo "实用工具分类更加详细完整"
+    echo "更新nasyt -r快捷卸载脚本"
+    echo "优化脚本安装卸载更新问题"
+    echo "对Fedora系列进行更好的适配"
+    echo "脚本第一次安装程序优化"
+    echo "下载更新超时时间为5s"
+    echo "修复已知bug"
+    br
+    read
     echo "2026年2月6日更新v2.4.2.8版"
     echo "优化更换软件源功能"
     echo "更新bilibili-tui"
@@ -304,29 +325,29 @@ br() {
     br
     read
     echo "2025年4日20日更新v2.19版"
-    echo "将脚本发布页融为一体(非常重要)"
-    echo "删除了调试模式。(其实没有)"
-    echo "修复了部分bug(真的修了)"
-    echo "更新ranger文件管理器(豪用)"
-    echo "增加软件包更新功能。(有用吧)"
+    echo "将脚本发布页融为一体"
+    echo "删除了调试模式"
+    echo "修复了部分bug"
+    echo "更新ranger文件管理器"
+    echo "增加软件包更新功能"
     br
     read
     echo "2025年4日18日更新v2.18.5版"
-    echo "恢复了dialog的安装检测(忘记了)"
-    echo "完善了deb软件包管理(可能有用吧)"
-    echo "添加了deb软件包安装的检测。"
-    echo "优化了脚本的体验。(可能吧?)"
+    echo "恢复了dialog的安装检测"
+    echo "完善了deb软件包管理"
+    echo "添加了deb软件包安装的检测"
+    echo "优化了脚本的体验"
     br
     read
     echo "2025年4日18日更新v2.18版"
-    echo "优化了脚本的大小(似乎没啥用)"
-    echo "增加了常用软件安装(摆设)"
-    echo "增加了deb软件包安装(可能有用吧)"
-    echo "增加了nmap扫描功能(没更新完)"
-    echo "更改了系统常用菜单(删了一点东西)"
-    echo "优化了引导菜单脚本(没有改啥)"
-    echo "更新1panel面板安装(懒得整合了)"
-    echo "修了部分bug。(真的吗？)"
+    echo "优化了脚本的大小"
+    echo "增加了常用软件安装"
+    echo "增加了deb软件包安装"
+    echo "增加了nmap扫描功能"
+    echo "更改了系统常用菜单"
+    echo "优化了引导菜单脚本"
+    echo "更新1panel面板安装"
+    echo "修了部分bug"
     br
     read
     echo "2025年4日17日更新v2.17版"
@@ -339,6 +360,7 @@ br() {
     echo "2025年4日15日更新v2.16版"
     echo "更新TRSS机器人安装"
     echo "更新Secluded机器人安装"
+    echo "修复已知bug"
     br
     read
     echo "2025年4日14日更新v2.15版"

@@ -5,6 +5,8 @@
 #有什么赤石技术可以进来交流
 #赤石群号:610699712
 #gum_tool
+
+habit() {
 if command -v dialog >/dev/null 2>&1; then
     habit=dialog
 elif command -v whiptail >/dev/null 2>&1; then
@@ -13,6 +15,7 @@ else
     test_install dialog
     habit=dialog
 fi
+}
 
 cd $HOME
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
@@ -257,7 +260,6 @@ test_install() {
             $pkg_update $yes_tg
             if [ $? -ne 0 ]; then
                 echo -e "$(info) $red 更新软件包失败$color"
-                esc
             else
                 echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
                 $sudo_setup $pkg_install $* $yes_tg
@@ -327,20 +329,22 @@ gx() {
                 echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
                 shell_recover
             fi
-            echo -e "$(info) 正在后台安装必要文件"
-            test_install figlet & >/dev/null 2>&1
+            echo -e "$(info) 正在安装必要文件"
+            test_install figlet >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo -e "$(info) $red figlet软件包安装失败，请手动安装figlet软件包$color"
+            fi
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
-            source $HOME/.zshrc >/dev/null 2>&1
             exit 0
         else
-            echo "$(info)✗ 当前链接下载失败，3秒后尝试下一个链接..."
+            echo "$(info)✗ 当前链接下载失败，2秒后尝试下一个链接..."
             sleep 3
         fi
     done
     echo -e "$(info) $red 所有链接均下载失败，请检查网络或链接有效性$color"
-    echo "跳过下载本地,使用在线模式。" 0 0
+    exit
 }
 
 #脚本备份
@@ -392,6 +396,7 @@ all_variable() {
 }
 
 main() {
+    habit
     country >/dev/null 2>&1
     check_script_folder
     check_pkg_install
