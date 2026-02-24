@@ -5,7 +5,14 @@ br() {
 #-------------------------- 
     clear
     echo "2026年2月24日更新v2.4.3.0版"
-    echo "准备更新edge文字转音频工具"
+    echo "对快捷命令进行微调"
+    echo "优化脚本安装与更新脚本"
+    echo "docker管理添加nasyt -t快捷命令"
+    echo "统一python pip pipx安装函数"
+    echo "修复AstrBot的git安装检测问题"
+    echo "修复AstrBot的国内国外选择问题"
+    echo "修复AstrBot安装venv环境问题"
+    echo "更新edge-tts文字转音频工具"
     br
     read
     echo "2026年2月13日更新v2.4.2.9版"
