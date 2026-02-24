@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/2/13"
-version="v2.4.2.9"
+time_date="2026/2/24"
+version="v2.4.3.0"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -405,18 +405,6 @@ test_install_jc() {
     fi
 }
 
-test_figlet() {
-    if command -v figlet >/dev/null 2>&1; then
-        echo -e "$green ◉ figlet 已经安装，跳过安装步骤。$color"
-    else 
-        echo "$(info) 正在安装figlet"
-        $pkg_install figlet $yes_tg
-        if [ $? -ne 0 ]; then
-            echo -e "$(info) 安装完成"
-        fi
-            echo -e "$red 安装失败。 $color"
-    fi
-}
 
 test_toilet() {
     if command -v toilet >/dev/null 2>&1; then
@@ -449,8 +437,10 @@ test_eatmydata() {
     if command -v eatmydata >/dev/null 2>&1; then
         echo -e "$green ◉ eatmydata已安装,跳过安装$color"
     else
-        echo -e "$(info) 正在安装eatmydata"
-        $pkg_install eatmydata $yes_tg
+        if [[ -e /etc/os-release ]]; then
+            echo -e "$(info) 正在安装eatmydata"
+            $pkg_install eatmydata $yes_tg
+        fi
     fi
 }
 
@@ -506,6 +496,40 @@ test_install() {
             fi
         else
             echo -e "$(info) $green $*安装成功。$color"
+        fi
+    fi
+}
+
+#pip通用安装
+pip_install() {
+    echo -e "$(info) 正在搜索本地pip库"
+    if pip show "$*" > /dev/null 2>&1; then
+       echo -e "$(info) $green ◉ $*已安装,跳过安装$color"
+    else
+        echo -e "$(info) 正在使用pip安装$*"
+        pip install $*
+        if [ $? -ne 0 ]; then
+            echo -e "$(info) $red pip安装$*失败$color"
+        else
+            echo -e "$(info) $green $*安装成功$color"
+        fi
+    fi
+}
+
+pipx_install() {
+    eval PATH=$PATH:$HOME/.local/bin >/dev/null 2>&1
+    test_install python-pip
+    pip install pipx
+    echo -e "$(info) 正在搜索本地pip库"
+    if pip show "$*" > /dev/null 2>&1; then
+       echo -e "$(info) $green  $*已安装,跳过安装$color"
+    else
+        echo -e "$(info) 正在安装$*中"
+        pipx install $* --force
+        if [ $? -ne 0 ]; then
+            echo -e "$(info) $red $*安装失败$color"
+        else
+            echo -e "$(info) $green $*安装成功$color"
         fi
     fi
 }
@@ -733,7 +757,8 @@ often_tool() {
     6 "🌍穿透工具" \
     7 "📄编辑工具" \
     8 "📥下载工具" \
-    9 "☰ 其他工具" \
+    9 "🔄转换工具" \
+    10 "☰ 其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -747,7 +772,8 @@ often_tool() {
     6 "🌍穿透工具" \
     7 "📄编辑工具" \
     8 "📥下载工具" \
-    9 "其他工具" \
+    9 "🔄转换工具" \
+    10 "其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
     cw_test=$?;cw
@@ -937,26 +963,229 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    if command -v docker >/dev/null 2>&1; then
-        docker_menu_xz=$($habit --title "docker管理" \
-        --menu "docker管理 开发中... \n请选择" 0 0 10 \
-        1 "docker信息" \
-        2 "容器管理" \
-        3 "镜像管理" \
-        4 "下载系统镜像" \
-        5 "清理容器/镜像" \
-        6 "卸载docker" \
-        0 "◀返回" \
-        2>&1 1>/dev/tty)
-    else
-        $habit --title "docker管理" --yesno "docker未安装是否安装?" 0 0
-        if [ $? -ne 0 ]; then
-            return 0
-            continue
-            break
+    if command -v termux-info >/dev/null 2>&1; then
+        $habit --msgbox "termux爬一边去" 0 0
+        exit
+    fi
+    while true
+    do
+        if command -v docker >/dev/null 2>&1; then
+            docker_menu_xz=$($habit --title "docker管理" \
+            --menu "docker管理 部分功能开发中... \n请选择" 0 0 10 \
+            1 "docker信息" \
+            2 "容器管理" \
+            3 "镜像管理" \
+            4 "下载系统镜像" \
+            5 "清理容器/镜像" \
+            6 "卸载docker" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
         else
-            test_docker
+            $habit --title "docker管理" --yesno "docker未安装是否安装?" 0 0
+            if [ $? -ne 0 ]; then
+                return 0
+                continue
+                break
+            else
+                test_docker
+            fi
         fi
+        case $docker_menu_xz in
+            1)
+                # Docker 信息
+                clear
+                echo -e "${CYAN}${BOLD}Docker 信息${PLAIN}"
+                br
+                docker version
+                br
+                docker info
+                br
+                esc
+                ;;
+            2)
+                while true
+                do
+                    containers=()
+                    while IFS=' ' read -r docker_id docker_image; do
+                        containers+=("$docker_id" "$docker_image" )
+                    done < <(docker ps -a --format "{{.ID}} {{.Image}}")
+                    docker_repo_xz=$($habit --menu "请选择要管理的容器：" 0 0 0 "${containers[@]}" 0 "◀返回" 3>&1 1>&2 2>&3)
+                    if [ $docker_repo_xz -eq 0 ]; then
+                        break
+                    fi
+                    while true
+                    do
+                        docker_image=$(docker inspect --format='{{.Name}}' $docker_repo_xz )
+                        docker_run="$(docker inspect --format='{{.State.Status}}' $docker_repo_xz)"
+                        if [ "$docker_run" = "running" ]; then
+                            docker_run_status="✓ 当前容器正在运行"
+                        else
+                            docker_run_status="✗ 当前容器未运行"
+                        fi
+                        docker_repo_gl=$($habit --title "容器管理" \
+                        --menu "当前容器名字:$docker_image \n当前容器状态: $docker_run_status \n请选择" 0 0 0\
+                        1 "启动容器" \
+                        2 "停止容器" \
+                        3 "重启容器" \
+                        4 "删除容器" \
+                        5 "查看日志" \
+                        6 "进入终端"\
+                        0 "◀返回" \
+                        2>&1 1>/dev/tty)
+                        case $docker_repo_gl in
+                            1)
+                                docker start $docker_repo_xz
+                                $habit --msgbox "$docker_run_status" 0 0
+                                esc
+                                ;;
+                            2)
+                                docker stop $docker_repo_xz
+                                esc
+                                ;;
+                            3)
+                                docker restart $docker_repo_xz
+                                esc
+                                ;;
+                            4)
+                                docker rm $docker_repo_xz
+                                esc
+                                ;;
+                            5)
+                                docker logs $docker_repo_xz
+                                esc
+                                ;;
+                            6)
+                                docker exec -it $docker_repo_xz /bin/bash || docker exec -it $docker_repo_xz /bin/sh
+                                esc
+                                ;;
+                            *)
+                                break
+                                ;;
+                        esac
+                    done
+                done
+                ;;
+            3)
+                $habit --msgbox "开发中" 0 0
+                ;;
+            4)
+                $habit --msgbox "开发中" 0 0
+                ;;
+            5)
+                $habit --msgbox "开发中" 0 0
+                ;;
+            114514)
+                while true
+                do
+                    containers=()
+                    while IFS=' ' read -r docker_id docker_image; do
+                        containers+=("$docker_id" "$docker_image" )
+                    done < <(docker ps -a --format "{{.ID}} {{.Image}}")
+                    docker_image_xz=$($habit --menu "请选择要管理的镜像：" 0 0 0 "${containers[@]}" 0 "◀返回" 3>&1 1>&2 2>&3)
+                    if [ $docker_repo_xz -eq 0 ]; then
+                        break
+                    fi
+                    while true
+                    do
+                        docker_image=$(docker inspect --format='{{.Name}}' $docker_repo_xz )
+                        docker_run="$(docker inspect --format='{{.State.Status}}' $docker_repo_xz)"
+                        if [ "$docker_run" = "running" ]; then
+                            docker_run_status="✓ 当前容器正在运行"
+                        else
+                            docker_run_status="✗ 当前容器未运行"
+                        fi
+                        docker_image_gl=$($habit --title "容器管理" \
+                        --menu "当前镜像名字:$docker_image \n 请选择" 0 0 0\
+                        1 "删除镜像" \
+                        0 "◀返回" \
+                        2>&1 1>/dev/tty)
+                        case $docker_image_gl in
+                            1)
+                                docker image rm $docker_repo_xz
+                                esc
+                                ;;
+                            *)
+                                break
+                                ;;
+                        esac
+                    done
+                done
+                ;;
+            6)
+                $pkg_remove docker
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+}
+
+#转换工具
+change_tool_menu() {
+    change_tool_menu_xz=$($habit --clear --title "转换工具" \
+    --menu "请选择:" 0 0 10 \
+    1 "edge-tts文字转语音" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#edge-tts安装函数
+edge-tts_install() {
+    eval PATH=$PATH:$HOME/.local/bin >/dev/null 2>&1
+    if command -v edge-tts >/dev/null 2>&1; then
+        echo -e "$(info)$green edge-tts已安装$color"
+    else
+        echo -e "$(info) $yellow edge-tts未安装$color"
+        pipx_install edge-tts
+        echo -e "$(info) 请重新运行本脚本"
+    fi
+}
+
+#voice语音列表
+edge_tts_voice_list() {
+    test_install dialog
+    edge_tts_3=$(eval dialog --clear --title "音色选择" \
+                --menu "选择的音色与文字应相对应-请选择音色：" 0 0 0 \
+                $(edge-tts --list-voices | awk '
+                    /^[a-z]/ {print $1 "\t[" $1 "]"}
+                ' | sort -r | sed 's/\t/ /g') \
+                2>&1 1>/dev/tty)
+                if [ $? -ne 0 ]; then
+                    exit 1
+                fi
+}
+
+#edge-tts文字转语音工具
+edge_tts() {
+    edge-tts_install
+    if [[ -n $@ ]]; then
+        edge_tts_3=${3:-zh-CN-XiaoxiaoNeural}
+        edge_tts_1=$1
+        edge_tts_2=$2
+    else
+        edge_tts_voice_list
+        edge_tts_1=$($habit --clear --title "edge-tts文字转语音工具" \
+        --inputbox "请输入要转语音的文字:" 0 0 "点击输入文字" \
+        2>&1 1>/dev/tty)
+        edge_tts_2=$($habit --clear --title "语音导出" \
+        --inputbox "请输入导出的文件名字:" 0 0 "test.mp3" \
+        2>&1 1>/dev/tty)
+    fi
+    echo -e "$(info) 当前音色为:$blue $edge_tts_3 $color"
+    echo;echo -e "$(info) 正在生成中。"
+    edge-tts --text "$edge_tts_1" --write-media "$edge_tts_2" --voice "$edge_tts_3" >/dev/null 2>&1
+    cw_test=$?
+    if [ $cw_test -ne 0 ]; then
+        echo -e "$(info) $red 错误代码: $cw_test $color"
+        echo -e "$(info) $red 文件生成失败，请检查你的网络或输入的文字。$color"
+    else
+        echo;echo -e "$(info) $green 文件导出成功 $color"
+        echo -e "位于: $blue$PWD/$edge_tts_2 $color"
+    fi
+    
+    if [[ -n $@ ]]; then
+        exit 0
     fi
 }
 
@@ -1056,7 +1285,7 @@ nvim_menu() {
 #下载工具菜单
 dow_tool_menu() {
     dow_tool_menu_xz=$($habit --clear --title "下载工具" \
-    --menu "文字" 0 0 10 \
+    --menu "请选择:" 0 0 10 \
     1 "nfq番茄小说下载工具" \
     2 "twitter视频下载工具" \
     0 "◀返回" \
@@ -1539,6 +1768,7 @@ gx() {
             fi
             echo -e "$(info) 正在后台安装必要文件"
             test_install figlet & >/dev/null 2>&1
+            test_eatmydata >/dev/null 2>&1
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
@@ -2528,138 +2758,8 @@ index_main() {
                     often_tool
                     case $often_tool_choice in
                         1)
-                            while true
-                            do
-                                docker_menu
-                                case $docker_menu_xz in
-                                    1)
-                                        # Docker 信息
-                                        clear
-                                        echo -e "${CYAN}${BOLD}Docker 信息${PLAIN}"
-                                        br
-                                        docker version
-                                        br
-                                        docker info
-                                        br
-                                        esc
-                                        ;;
-                                    2)
-                                        while true
-                                        do
-                                            containers=()
-                                            while IFS=' ' read -r docker_id docker_image; do
-                                                containers+=("$docker_id" "$docker_image" )
-                                            done < <(docker ps -a --format "{{.ID}} {{.Image}}")
-                                            docker_repo_xz=$($habit --menu "请选择要管理的容器：" 0 0 0 "${containers[@]}" 0 "◀返回" 3>&1 1>&2 2>&3)
-                                            if [ $docker_repo_xz -eq 0 ]; then
-                                                break
-                                            fi
-                                            while true
-                                            do
-                                                docker_image=$(docker inspect --format='{{.Name}}' $docker_repo_xz )
-                                                docker_run="$(docker inspect --format='{{.State.Status}}' $docker_repo_xz)"
-                                                if [ "$docker_run" = "running" ]; then
-                                                    docker_run_status="✓ 当前容器正在运行"
-                                                else
-                                                    docker_run_status="✗ 当前容器未运行"
-                                                fi
-                                                docker_repo_gl=$($habit --title "容器管理" \
-                                                --menu "当前容器名字:$docker_image \n当前容器状态: $docker_run_status \n请选择" 0 0 0\
-                                                1 "启动容器" \
-                                                2 "停止容器" \
-                                                3 "重启容器" \
-                                                4 "删除容器" \
-                                                5 "查看日志" \
-                                                6 "进入终端"\
-                                                0 "◀返回" \
-                                                2>&1 1>/dev/tty)
-                                                case $docker_repo_gl in
-                                                    1)
-                                                        docker start $docker_repo_xz
-                                                        $habit --msgbox "$docker_run_status" 0 0
-                                                        esc
-                                                        ;;
-                                                    2)
-                                                        docker stop $docker_repo_xz
-                                                        esc
-                                                        ;;
-                                                    3)
-                                                        docker restart $docker_repo_xz
-                                                        esc
-                                                        ;;
-                                                    4)
-                                                        docker rm $docker_repo_xz
-                                                        esc
-                                                        ;;
-                                                    5)
-                                                        docker logs $docker_repo_xz
-                                                        esc
-                                                        ;;
-                                                    6)
-                                                        docker exec -it $docker_repo_xz /bin/bash || docker exec -it $docker_repo_xz /bin/sh
-                                                        esc
-                                                        ;;
-                                                    *)
-                                                        break
-                                                        ;;
-                                                esac
-                                            done
-                                        done
-                                        ;;
-                                    3)
-                                        $habit --msgbox "开发中" 0 0
-                                        ;;
-                                    4)
-                                        $habit --msgbox "开发中" 0 0
-                                        ;;
-                                    5)
-                                        $habit --msgbox "开发中" 0 0
-                                        ;;
-                                    114514)
-                                        while true
-                                        do
-                                            containers=()
-                                            while IFS=' ' read -r docker_id docker_image; do
-                                                containers+=("$docker_id" "$docker_image" )
-                                            done < <(docker ps -a --format "{{.ID}} {{.Image}}")
-                                            docker_image_xz=$($habit --menu "请选择要管理的镜像：" 0 0 0 "${containers[@]}" 0 "◀返回" 3>&1 1>&2 2>&3)
-                                            if [ $docker_repo_xz -eq 0 ]; then
-                                                break
-                                            fi
-                                            while true
-                                            do
-                                                docker_image=$(docker inspect --format='{{.Name}}' $docker_repo_xz )
-                                                docker_run="$(docker inspect --format='{{.State.Status}}' $docker_repo_xz)"
-                                                if [ "$docker_run" = "running" ]; then
-                                                    docker_run_status="✓ 当前容器正在运行"
-                                                else
-                                                    docker_run_status="✗ 当前容器未运行"
-                                                fi
-                                                docker_image_gl=$($habit --title "容器管理" \
-                                                --menu "当前镜像名字:$docker_image \n 请选择" 0 0 0\
-                                                1 "删除镜像" \
-                                                0 "◀返回" \
-                                                2>&1 1>/dev/tty)
-                                                case $docker_image_gl in
-                                                    1)
-                                                        docker image rm $docker_repo_xz
-                                                        esc
-                                                        ;;
-                                                    *)
-                                                        break
-                                                        ;;
-                                                esac
-                                            done
-                                        done
-                                        ;;
-                                    6)
-                                        $pkg_remove docker
-                                        ;;
-                                    *)
-                                        break
-                                        ;;
-                                esac
-                            done
+                            docker_menu
+                            esc
                             ;;
                         2)
                             while true
@@ -3129,21 +3229,20 @@ index_main() {
                                                             break
                                                         fi
                                                     fi
+                                                    
                                                     test_termux #termux检查
                                                     #if [ -d $nasyt_dir/AstrBot]; then
                                                     #    rm -rf $nasyt_dir/AstrBot
                                                     #fi
+                                                    test_install git #git安装检测
                                                     clear;echo -e "$(info) 正在克隆github仓库。"
-                                                    $habit --title "确认操作" --yesno "你的服务器位于 <国外>还是<国内>？\n国内请选择yes 国外请选择no" 0 0
-                                                    if [ $? -ne 0 ]; then
-                                                        git clone https://ghfast.top/https://github.com/AstrBotDevs/AstrBot $nasyt_dir/AstrBot
-                                                    else
-                                                        git clone https://ghfast.top/https://github.com/AstrBotDevs/AstrBot $nasyt_dir/AstrBot
-                                                    fi
+                                                    country #国家检测
+                                                    git clone $github_speed/https://github.com/AstrBotDevs/AstrBot $nasyt_dir/AstrBot
                                                     cd $nasyt_dir/AstrBot
                                                     echo -e "$(info) 正在检查python安装"
                                                     test_install python3
                                                     echo -e "$(info) 正在添加python环境"
+                                                    $sudo_setup $pkg_install python3*venv $yes_tg
                                                     python3 -m venv ./venv
                                                     echo -e "$(info) 正在加载Astrbot环境"
                                                     source $nasyt_dir/AstrBot/venv/bin/activate
@@ -3154,7 +3253,7 @@ index_main() {
                                                     if [ $? -ne 0 ]; then
                                                         echo -e "$(info) $red 检测到依赖安装失败或者依赖不完整$color"
                                                         echo -e "$(info) 正在安装预备依赖"
-                                                        pip install deprecated sqlalchemy sqlmodel colorlog aiohttp certifi Pillow psutil aiosqlite jsonschema mcp anthropic google-genai openai aiocqhttp numpy
+                                                        pip_install deprecated sqlalchemy sqlmodel colorlog aiohttp certifi Pillow psutil aiosqlite jsonschema mcp anthropic google-genai openai aiocqhttp numpy
                                                         if [ $? -ne 0 ]; then
                                                             echo -e "$(info) $red 安装失败，正在补全文件$color"
                                                             test_install build-essential clang cmake ninja
@@ -3576,7 +3675,6 @@ index_main() {
                                                     mv ~/.config/nvim ~/.config/nvim.bak
                                                     mv ~/.local/share/nvim ~/.local/share/nvim.bak
                                                     
-
                                                     country #国内外检测
                                                     test_install git #检查git安装
                                                     
@@ -3682,6 +3780,21 @@ index_main() {
                             done
                             ;;
                         9)
+                            while true
+                            do
+                                change_tool_menu
+                                case $change_tool_menu_xz in
+                                    1)
+                                        edge_tts
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
+                        10)
                             while true
                             do
                                 other_tool_menu
@@ -4222,7 +4335,7 @@ index_main() {
                         ;;
                     8)
                         echo -e "$(info) 正在补全文件中"
-                        test_figlet
+                        test_install figlet
                         test_install dialog
                         test_whiptail
                         test_install curl
@@ -4270,11 +4383,11 @@ check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
-    -x|--dowx)
+    twitter|-x|--dowx|--twitter)
         if [[ -z $2 ]]; then
             echo ""
             echo "用法:"
-            echo "nasyt -x [链接]"
+            echo "nasyt [参数] [链接]"
             echo ""
             exit 0
         else
@@ -4282,7 +4395,7 @@ if [ $# -ne 0 ]; then
         fi
         exit 0
         ;;
-    -a|--acg)
+    acg|-a|--acg)
         if [[ $2 -eq 0 ]]; then
             case $2 in
                 help|-h|--help|-help)
@@ -4317,26 +4430,42 @@ if [ $# -ne 0 ]; then
             esac
         fi
         exit
-        ;;  
-    -b|--backup)
+        ;;
+    docker|-d|--docker)
+        docker_menu
+        exit
+        ;;
+    edge_tts|-e|--edge_tts)
+        if [[ -n $2 ]] && [[ -n $3 ]]; then
+            edge_tts $2 $3 $4
+        elif [[ $2 == help ]]; then
+            echo;echo "用法: nasyt $1 [文字] [输出文件名] [音色(可选)]"
+        elif [[ $# -ne 1 ]]; then
+            echo -e "$red 还需要一个参数进行输出 $color"
+        else
+            edge_tts
+        fi
+        exit
+        ;;
+    backup|-b|--backup)
         nasyt_backup
         exit
         ;;
-    -g|--gx)
+    update|-u|--update)
       gx
       ;;
-    -u|--upsource)
+    mirror|-m|--mirror)
       upsource
       exit
       ;;
-    -t|--tmux)
+    tmux|-t|--tmux)
       tmux_tool
       exit
       ;;
-    -s|--skip)
+    skin|-s|--skip)
       shell_skip=1
       ;;
-    -v|-version|--version)
+    version|-v|-version|--version)
       echo
       echo "名称: nasyt"
       echo "版本: $version"
@@ -4346,12 +4475,12 @@ if [ $# -ne 0 ]; then
       echo
       exit
       ;;
-    -n|--ncdu)
+    ncdu|-n|--ncdu)
         test_install ncdu
         ncdu $nasyt_dir
         exit
         ;;
-    -r|--remove)
+    remove|-r|--remove)
         shell_uninstall
         ;;
     help|-h|-help|--help)
@@ -4361,8 +4490,10 @@ if [ $# -ne 0 ]; then
       echo "参数:"
       echo "  -x, --dowx 快捷下载twitter视频"
       echo "  -a, --acg 快捷随机acg图片"
-      echo "  -g, --gx 快捷更新脚本"
-      echo "  -u, -upsource 快捷换软件源"
+      echo "  -d, --docker 快捷docker管理"
+      echo "  -e, --edge_tts 文字转语音"
+      echo "  -u, --update 快捷更新脚本"
+      echo "  -m, --mirror 快捷换软件源"
       echo "  -t, --tmux 快捷进入tmux管理"
       echo "  -s, --skip 直接进入菜单部分"
       echo "  -v, --version 输出脚本版本"

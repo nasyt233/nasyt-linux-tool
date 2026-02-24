@@ -35,6 +35,7 @@ check_pkg_install() {
         pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
+        termux-toast "欢迎使用NAS油条termux脚本" &
         
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
@@ -67,6 +68,7 @@ check_pkg_install() {
         sys="(Arch Linux 系列)"
         pkg_install="sudo pacman -S"
         pkg_remove="sudo pacman -R"
+        pkg_update="sudo pacman -Syu"
         sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
@@ -329,11 +331,9 @@ gx() {
                 echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
                 shell_recover
             fi
-            echo -e "$(info) 正在安装必要文件"
-            test_install figlet >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                echo -e "$(info) $red figlet软件包安装失败，请手动安装figlet软件包$color"
-            fi
+            echo -e "$(info) 正在后台安装必要文件"
+            test_install figlet & >/dev/null 2>&1
+            test_install eatmydata >/dev/null 2>&1
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
