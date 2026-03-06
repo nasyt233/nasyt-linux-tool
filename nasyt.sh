@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/2/24"
-version="v2.4.3.0"
+time_date="2026/3/6"
+version="v2.4.3.1"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -81,7 +81,7 @@ check_pkg_install() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release #加载变量
     fi
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         sys="(Termux 终端)"
         PRETTY_NAME="Termux终端"
         sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
@@ -90,6 +90,7 @@ check_pkg_install() {
         pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
+        
         termux-toast "欢迎使用NAS油条termux脚本" &
         
     elif command -v apt-get >/dev/null 2>&1; then
@@ -204,6 +205,7 @@ default_habit() {
         habit=dialog
     fi
 }
+
 server_ip() {
     server_ip=$(hostname -i) # 服务器IP
     $habit --msgbox "当前IP为: $server_ip" 0 0
@@ -227,13 +229,6 @@ br_2() {
 esc() {
     echo -e "$(info) 按$green回车键$color$blue返回$color,按$yellow Ctrl+C$color$red退出$color"
     read
-}
-
-#错误处理
-cw() {
-    if [ $cw_test -ne 0 ]; then
-       break
-    fi
 }
 
 #国内外检测
@@ -347,7 +342,7 @@ file_xz() {
 #监控服务器资源
 resources_show() {
     echo -e "$(info) 正在读取数据中"
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         resources_show_notermux="CPU 使用率：不支持termux"
     else
         cpu_usage=$(grep 'cpu ' /proc/stat | awk '{u=$2+$4; t=$2+$4+$5; print "" sprintf("%.1f%%", u/t*100)}') >/dev/null 2>&1
@@ -371,7 +366,7 @@ resources_show() {
 # 根据时间返回问候语
 get_greeting() {
     local hour=$(date +"%H")
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         get_sys=termux
     else
         get_sys=linux
@@ -390,7 +385,7 @@ get_greeting() {
 }
 
 test_termux() {
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         $habit --msgbox "不支持termux终端" 0 0
         break
     fi
@@ -439,7 +434,7 @@ test_eatmydata() {
     else
         if [[ -e /etc/os-release ]]; then
             echo -e "$(info) 正在安装eatmydata"
-            $pkg_install eatmydata $yes_tg
+            $pkg_install 'eatmydata' $yes_tg
         fi
     fi
 }
@@ -481,18 +476,19 @@ test_install() {
         echo -e "$(info) $green $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在安装$*"
-        $sudo_setup $pkg_install $* $yes_tg
+        $sudo_setup $pkg_install '$*' $yes_tg
         install_error=$?
         if [ $install_error -ne 0 ]; then
             echo -e "$(info) $red $*安装失败。$color"
-            echo -e "$(info) 正在更新软件包"
+            echo -e "$(info) $red 错误代码$install_error $color"
+            echo -e "$(info) 正在尝试更新软件包"
             $pkg_update $yes_tg
             if [ $? -ne 0 ]; then
                 echo -e "$(info) $red 更新软件包失败$color"
                 esc
             else
                 echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
-                $sudo_setup $pkg_install $* $yes_tg
+                $sudo_setup $pkg_install '$*' $yes_tg
             fi
         else
             echo -e "$(info) $green $*安装成功。$color"
@@ -518,14 +514,15 @@ pip_install() {
 
 pipx_install() {
     eval PATH=$PATH:$HOME/.local/bin >/dev/null 2>&1
-    test_install python-pip
+    
+    test_install python*-pip
     pip install pipx
     echo -e "$(info) 正在搜索本地pip库"
     if pip show "$*" > /dev/null 2>&1; then
        echo -e "$(info) $green  $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在安装$*中"
-        pipx install $* --force
+        pipx install $* --force --break-system-packages
         if [ $? -ne 0 ]; then
             echo -e "$(info) $red $*安装失败$color"
         else
@@ -566,7 +563,7 @@ error() {
 
 #工作环境
 termux_PATH () {
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.bashrc; then
             echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
         else
@@ -581,7 +578,7 @@ termux_PATH () {
     fi
     #对zsh检测
     if [ -e $HOME/.zshrc ]; then
-        if command -v termux-info >/dev/null 2>&1; then
+        if [[ -z $PRETTY_NAME ]]; then
             if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.zshrc; then
                 echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.zshrc
             else
@@ -665,7 +662,7 @@ habit_xz () {
                echo "export habit="whiptail"" > $nasyt_dir/config.txt
                ;;
            3) sed -i '/^export=*/d' $nasyt_dir/config.txt ;;
-           0) cw;break ;;
+           *) break ;;
         esac
     elif [ -n "$habit" ]; then
         echo -e "菜单方式为: $yellow$habit$color"
@@ -718,7 +715,6 @@ look_menu() {
     8 "监控资源" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 # 系统操作
@@ -741,7 +737,6 @@ system_menu() {
     14 "修改主机名" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 # 安装常用工具。
@@ -761,7 +756,6 @@ often_tool() {
     10 "☰ 其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
     }
     
    often_tool_termux() {
@@ -776,12 +770,11 @@ often_tool() {
     10 "其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
     }
     
     #检查当前系统
     often_tool_main() {
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         if [[ $shell_skip == 1 ]]; then
             echo -e "$(info) 已跳过"
             often_tool_linux
@@ -806,22 +799,20 @@ app_install() {
     4 "安装bleachbit清理工具" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw
     }
+    
    app_install_termux() {
       $habit --msgbox "此区域只支持linux系统\n抱歉,不支持Termux终端>_<" 0 0
       break
    }
-   app_install_main() {
-    if command -v termux-info >/dev/null 2>&1; then
-        if [[ $shell_skip == 1 ]]; then
+    app_install_main() {
+        if [[ $shell_skip -eq 1 ]]; then
             app_install_linux
-        else    
+        elif [[ -z $PRETTY_NAME ]]; then
             app_install_termux
+        else
+            app_install_linux
         fi
-    else
-        app_install_linux
-    fi
    }
    app_install_main
 }
@@ -840,7 +831,6 @@ Internet_tool() {
     9 "glow md文件浏览工具" \
     0 "返回上层菜单" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 # 各种脚本。
@@ -869,7 +859,6 @@ Linux_shell() {
     91 "欢迎联系作者添加" \
     0 "返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
     
     }
     linux_shell_termux() {
@@ -885,20 +874,16 @@ Linux_shell() {
     91 "欢迎联系作者添加" \
     0 "返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
     
     }
     linux_shell_main() {    
-    if command -v termux-info >/dev/null 2>&1; then
-        if [[ $shell_skip == 1 ]]; then
-            echo -e "$(info) 已跳过"
+        if [[ $shell_skip -eq 1 ]]; then
             linux_shell_linux
-        else
+        elif [[ -z $PRETTY_NAME ]]; then
             linux_shell_termux
+        else
+            linux_shell_linux
         fi
-    else
-       linux_shell_linux
-    fi
    }
    linux_shell_main
 }
@@ -918,7 +903,6 @@ panel_menu() {
     10 "Cockpit面板" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw
 }
 
 bot_install_menu() {
@@ -949,21 +933,18 @@ bot_install_menu() {
     0 "◀返回" \
     2>&1 1>/dev/tty)
     }
-    if command -v termux-info >/dev/null 2>&1; then
-        if [[ $shell_skip == 1 ]]; then
-            echo -e "$(info) 已跳过"
-            bot_linux_menu
-        else
-            bot_termux_menu
-        fi
+    if [[ $shell_skip -eq 1 ]]; then
+        bot_linux_menu
+    elif [[ -z $PRETTY_NAME ]]; then
+        bot_termux_menu
     else
-       bot_linux_menu
+        bot_linux_menu
     fi
 }
 
 # docker管理工具
 docker_menu() {
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         $habit --msgbox "termux爬一边去" 0 0
         exit
     fi
@@ -1121,6 +1102,88 @@ docker_menu() {
     done
 }
 
+frp_menu() {
+    frp_menu_xz=$($habit --clear --title "穿透工具" \
+    --menu "请选择:" 0 0 10 \
+    1 "cpolar穿透工具" \
+    2 "tunnelto穿透工具" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+
+
+#tunnelto_工具
+tunnelto_tool() {
+    PATH=$HOME/.cargo/bin:$PATH
+    tunnelto_menu() {
+        if command -v tunnelto >/dev/null 2>&1; then
+            tunnelto_test="tunnelto已安装"
+        else
+            tunnelto_test="tunnelto未安装"
+        fi
+        tunnelto_menu_xz=$($habit --clear --title "tunnelto工具" \
+        --menu "项目官网: tunnelto.dev \n https://github.com/agrinman/tunnelto \n$tunnelto_test\n 请选择" 0 0 10 \
+        1 "安装tunnelto" \
+        2 "启动tunnelto" \
+        3 "卸载tunnelto" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    
+    while true
+    do
+        tunnelto_menu
+        case $tunnelto_menu_xz in
+            1)
+                tunnelto_install_menu_xz=$($habit --clear --title "安装tunnelto" \
+                --menu "请选择安装方式" 0 0 10 \
+                1 "tunnelto官方安装" \
+                2 "cargo从源码构建" \
+                0 "◀返回" \
+                2>&1 1>/dev/tty)
+                case $tunnelto_install_menu_xz in
+                    1)
+                        echo -e "$(info) 正在通过官方链接进行安装"
+                        curl -sL https://tunnelto.dev/install.sh | sh
+                        esc
+                        ;;
+                    2)
+                        echo -e "$(info) 正在构建 tunnelto 中"
+                        test_install cargo
+                        cargo install tunnelto
+                        echo -e "$(info) $yellow 请自行添加bin环境变量$color"
+                        esc
+                        ;;
+                    *)
+                        break
+                        ;;
+                esac
+                ;;
+            2)
+                tunnelto_key=$($habit --clear --title "key设置" \
+                --inputbox "请输入你的 tunnelto 上面的key密钥" 0 0 \
+                2>&1 1>/dev/tty)
+                tunnelto_port=$($habit --clear --title "port设置" \
+                --inputbox "请输入你要映设的端口" 0 0 \
+                2>&1 1>/dev/tty)
+                echo -e "$(info) 正在启动中"
+                tunnelto --port $tunnelto_port --key $tunnelto_key
+                esc
+                ;;
+            3)
+                rm $(command -v tunnelto)
+                echo -e "$(info) $green 卸载完成$color"
+                esc
+                ;;
+            *)
+                break
+                ;;
+        esac    
+    done
+}
+
+
 #转换工具
 change_tool_menu() {
     change_tool_menu_xz=$($habit --clear --title "转换工具" \
@@ -1189,6 +1252,33 @@ edge_tts() {
     fi
 }
 
+
+#nlist工具
+nlist_tool() {
+    chmod +x $nasyt_dir/* >/dev/null 2>&1
+    nlist_version_new=1.1
+    if command -v nlist >/dev/null 2>&1; then
+        nlist_version=$(grep version $nasyt_dir/nlist | cut -d'=' -f2 )
+    fi
+    if [[ $nlist_version_new == $nlist_version ]]; then
+        echo -e "$(info) 正在运行脚本"
+        nlist $1 $2 $3
+    else
+        echo -e "$(info) 正在下载或更新脚本文件"
+        curl --progress-bar -o $nasyt_dir/nlist "https://raw.gitcode.com/nasyt/nlist/raw/main/nlist.sh"
+        cw_test=$?
+        if ! [ $cw_test -ne 0 ]; then
+            echo -e "$(info) $green 脚本下载成功$color"
+            echo -e "$(info) 正在给予权限。"
+            echo -e "$(info) 输入$blue nlist help$color 查看帮助"
+            chmod +x $nasyt_dir/*
+        else
+            echo -e "$(info) $red 脚本下载失败，请检查你的网络$color"
+            esc
+        fi
+    fi
+}
+
 #其他工具
 other_tool_menu() {
     other_tool_xz=$($habit --title "其他工具" \
@@ -1201,7 +1291,6 @@ other_tool_menu() {
     6 "bilibili-TUI版" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 # 脚本设置
@@ -1217,7 +1306,6 @@ nasyt_setup_menu () {
    9 "删除脚本配置文件" \
    0 "◀返回" \
    2>&1 1>/dev/tty)
-   cw_test=$?;cw
 }
 
 # 调试模式
@@ -1312,7 +1400,6 @@ server_install_menu() {
     3 "tmux工具" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 game_menu() {
@@ -1327,7 +1414,6 @@ game_menu() {
     7 "MOSS智能终端" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 # 文件解压缩
@@ -1362,7 +1448,6 @@ java_install_menu () {
     8 "java8" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 termux_kali_install() {
@@ -1441,7 +1526,6 @@ bt_menu() {
     3 "管理宝塔面板" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 dpanel_menu() {
@@ -1495,7 +1579,6 @@ Secluded_menu() {
     4 "问题" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
-    cw_test=$?;cw
 }
 
 # 安装TRSS机器人
@@ -1796,7 +1879,7 @@ shell_backup_menu() {
 shell_backup() {
     echo "$(info) 正在备份脚本文件";sleep 0.5s
     cp $nasyt_dir/nasyt $nasyt_dir/version/nasyt$version.bak >/dev/null 2>&1
-    #if command -v termux-info >/dev/null 2>&1; then
+    #if [[ -z $PRETTY_NAME ]]; then
     #    cp $PREFIX/bin/nasyt $PREFIX/bin/nasyt$version.bak >/dev/null 2>&1
     #else
     #    cp /usr/bin/nasyt /usr/bin/nasyt$version.bak>/dev/null 2>&1 >/dev/null 2>&1
@@ -1814,7 +1897,7 @@ shell_recover() {
     file_xz $nasyt_dir/version shell_recover_var
     cp $shell_recover_var $nasyt_dir/nasyt >/dev/null 2>&1
     chmod 777 $nasyt_dir/*
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         cp $shell_recover_var $PREFIX/bin/nasyt
         chmod 777 $PREFIX/bin/nasyt
     else
@@ -2140,7 +2223,7 @@ acg() {
             echo
             acg_menu_sz=$shell_2
         else
-            if command -v termux-info >/dev/null 2>&1; then
+            if [[ -z $PRETTY_NAME ]]; then
                 acg_menu_xz_add="10 "选择并设为壁纸""
             fi
             acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
@@ -2267,7 +2350,7 @@ acg() {
             local api_r18_2=$(echo "_$tp_r18")
             time_name_xz+="${tp_time}${tp_pid_2}${api_r18_2}"
         echo -e "$(info) 正在获取图片中,请耐心等待"
-        if command -v termux-info >/dev/null 2>&1; then
+        if [[ -z $PRETTY_NAME ]]; then
             termux-toast "请将termux终端缩至最小,以获得最佳体验。"
         fi
         wget -O $nasyt_dir/acg/$time_name_xz.png "$tp_curl" >/dev/null 2>&1
@@ -2290,17 +2373,18 @@ acg() {
 }
 # 同步上海时间函数
 sync_shanghai_time() {
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -z $PRETTY_NAME ]]; then
         test_termux
     else
         test_install ntpdate
         if [ $? -ne 0 ]; then
-            echo -e "$(info) $red ntpdate安装失败，正在尝试候选$color"
+            echo -e "$(info) $yellow ntpdate安装失败，正在尝试候选$color"
             test_install ntpsec-ntpdate
         fi
         echo "$(info) 正在同步上海时间..."
         $sudo_setup timedatectl set-timezone Asia/Shanghai
         $sudo_setup ntpdate cn.pool.ntp.org
+        echo -e "$(info) $green 同步完成$color";esc
     fi
 }
 
@@ -2337,7 +2421,7 @@ introduce() {
     #default_habit #检查函数并设置默认值
     #check_pkg_install # 检查包管理器。
     check_script_folder # 检查脚本文件夹。
-    #test_figlet # 检查figletl是否安装。
+    test_eatmydata # 检查eatmydata是否安装。
     check_Script_Install # 检查本脚本是否安装。
 }
 
@@ -2577,7 +2661,7 @@ index_main() {
                             ;;
                             
                         8)
-                            if command -v termux-info >/dev/null 2>&1; then
+                            if [[ -z $PRETTY_NAME ]]; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
                                 test_install wget #检查wget函数
@@ -2592,7 +2676,7 @@ index_main() {
                             fi
                             ;;
                         9)
-                            if command -v termux-info >/dev/null 2>&1; then
+                            if [[ -z $PRETTY_NAME ]]; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
                                   clear;br
@@ -2620,7 +2704,7 @@ index_main() {
                             fi
                             ;;
                         10)
-                            if command -v termux-info >/dev/null 2>&1; then
+                            if [[ -z $PRETTY_NAME ]]; then
                                 echo -e "$(info) 检测到termux终端正在清理日志文件"
                                 find $PREFIX/var/log/ -type f -mtime +30 -exec rm -f {} >/dev/null 2>&1
                             else
@@ -3536,7 +3620,7 @@ index_main() {
                                         ;;
                                     7)
                                         $habit --msgbox "本项目来自\n gitee.com/heigxaon/moss-android-terminal" 0 0
-                                        if command -v termux-info >/dev/null 2>&1; then
+                                        if [[ -z $PRETTY_NAME ]]; then
                                             if [[ -e $HOME/MOSS ]]; then
                                                 cd $HOME
                                                 chmod 777 $HOME/MOSS
@@ -3656,9 +3740,24 @@ index_main() {
                                 esac
                             done
                             ;;
-                        6) 
-                            cpolar_instell
-                            esc
+                        6)
+                            while true
+                            do
+                                frp_menu
+                                case $frp_menu_xz in
+                                    1)
+                                        cpolar_instell
+                                        esc
+                                        ;;
+                                    2)
+                                        tunnelto_tool
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
                             ;;
                         7)
                             while true
@@ -3800,7 +3899,7 @@ index_main() {
                                 other_tool_menu
                                 case $other_tool_xz in
                                     1)
-                                        if command -v termux-info >/dev/null 2>&1; then
+                                        if [[ -z $PRETTY_NAME ]]; then
                                             test_install alist
                                             if [ $? -ne 0 ]; then
                                                 echo -e "$(info) $red alist安装失败 $color"
@@ -3819,7 +3918,7 @@ index_main() {
                                         ;;
                                     2)
                                         test_install tar
-                                        if command -v termux-info >/dev/null 2>&1; then
+                                        if [[ -z $PRETTY_NAME ]]; then
                                             test_install openlist
                                             while true
                                             do
@@ -3885,7 +3984,7 @@ index_main() {
                                                     echo -e "$(info) 正在检查wget安装"
                                                     test_install wget
                                                     echo -e "$(info) 正在下载文件"
-                                                    if command -v termux-info >/dev/null 2>&1; then
+                                                    if [[ -z $PRETTY_NAME ]]; then
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_termux_aarch64_0.1.0"
                                                     else
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_linux_amd64_0.1.0"
@@ -3921,7 +4020,7 @@ index_main() {
                                         done
                                         ;;
                                     4)
-                                        if command -v termux-info >/dev/null 2>&1; then
+                                        if [[ -z $PRETTY_NAME ]]; then
                                             $habit --msgbox "cloudreve不支持termux安装" 0 0
                                             break
                                         fi
@@ -4064,10 +4163,6 @@ index_main() {
                             test_install bleachbit
                             bleachbit
                             esc
-                            ;;
-                        0)
-                            cw
-                            break
                             ;;
                         *)
                             break
@@ -4289,7 +4384,7 @@ index_main() {
                             1) echo "export habit="dialog"" >  $nasyt_dir/config.txt ;;
                             2) echo "export habit="whiptail"" > $nasyt_dir/config.txt ;;
                             3) sed -i '/^export=*/d' $nasyt_dir/config.txt ;;
-                            0) break ;;
+                            *) break ;;
                         esac
                         echo -e "$(info) $green 习惯设置成功,请重新进入脚本$color"
                         exit
@@ -4328,7 +4423,6 @@ index_main() {
                             case $shell_backup_xz in
                                 1) shell_backup;esc;;
                                 2) shell_recover;esc;;
-                                0) break;;
                                 *) break;;
                             esac
                         done
@@ -4349,21 +4443,12 @@ index_main() {
                         $habit --msgbox "删除配置文件完成。" 0 0
                         exit
                         ;;
-                    0)  break;;
-                    *)  cw;break;;
+                    *)  break;;
                 esac
                 done
                 ;;
             10)
                 acg
-                ;;
-            0)
-                break
-                clear
-                ;;
-            esc)
-                break
-                clear
                 ;;
             *)
                 break
@@ -4475,9 +4560,8 @@ if [ $# -ne 0 ]; then
       echo
       exit
       ;;
-    ncdu|-n|--ncdu)
-        test_install ncdu
-        ncdu $nasyt_dir
+    nlist|-n|--nlist)
+        nlist_tool $2 $3 $4
         exit
         ;;
     remove|-r|--remove)
@@ -4499,7 +4583,7 @@ if [ $# -ne 0 ]; then
       echo "  -v, --version 输出脚本版本"
       echo "  -h, --help  输出命令帮助"
       echo "  -b, --backup  快捷备份恢复脚本"
-      echo "  -n, --ncdu  查看脚本空间占用"
+      echo "  -n, --nlist  生成网页目录结构"
       echo "  -r, --remove 卸载本脚本工具"
       echo
       echo "有关更多详细信息，请参见"
