@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/3/6"
-version="v2.4.3.1"
+time_date="2026/3/24"
+version="v2.4.3.2"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -214,6 +214,7 @@ server_ip() {
 info() {
     echo -e "$cyan[$(date +"%r")]$color $green[INFO]$color" $*
 }
+
 uptime_cn() {
     uptime_sc=$(uptime | sed 's/up/运行/; s/days/天/; s/day/天/; s/hours/小时/; s/hour/小时/; s/minutes/分钟/; s/minute/分钟/; s/users/用户/; s/user/用户/; s/load average/平均负载/')
     $habit --msgbox "系统: $uptime_sc" 0 0
@@ -226,20 +227,29 @@ br() {
 br_2() {
     echo "----------------------------"
 }
+
 esc() {
     echo -e "$(info) 按$green回车键$color$blue返回$color,按$yellow Ctrl+C$color$red退出$color"
     read
 }
+
+bash_url() {
+    bash -c "$(curl -fsL $@)"
+    if [ $? -ne 0 ]; then
+        echo -e "$(info) $red 拉取脚本失败$color"
+    fi
+}
+
 
 #国内外检测
 country() {
     country=$(curl -s https://myip.ipip.net | grep -oE "中国|China" 2>/dev/null)
     if [ -n "$country" ]; then
         echo "当前在中国"
-        github_speed=https://ghfast.top/
+        github_speed="ghfast.top"
     else
         echo "当前不在中国"
-        github_speed=
+        github_speed=""
     fi
 }
 
@@ -476,7 +486,7 @@ test_install() {
         echo -e "$(info) $green $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在安装$*"
-        $sudo_setup $pkg_install '$*' $yes_tg
+        $sudo_setup $pkg_install $* $yes_tg
         install_error=$?
         if [ $install_error -ne 0 ]; then
             echo -e "$(info) $red $*安装失败。$color"
@@ -488,7 +498,7 @@ test_install() {
                 esc
             else
                 echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
-                $sudo_setup $pkg_install '$*' $yes_tg
+                $sudo_setup $pkg_install $* $yes_tg
             fi
         else
             echo -e "$(info) $green $*安装成功。$color"
@@ -790,21 +800,63 @@ often_tool() {
 
 # 软件安装
 app_install() {
-   app_install_linux() {
-    app_install_xz=$($habit --title "安装软件" \
-    --menu "请选择" 0 0 10 \
-    1 "安装桌面中文输入法" \
-    2 "安装Blender建模软件" \
-    3 "安装linux系统应用商店" \
-    4 "安装bleachbit清理工具" \
-    0 "◀返回" \
-    2>&1 1>/dev/tty)
+    app_install_linux() {
+        app_install_xz=$($habit --title "安装软件" \
+        --menu "请选择" 0 0 10 \
+        1 "🎶 Multimedia:小说/图像/影音 (gimp,mpv,chafa)" \
+        2 "📦 Model:建模/设计/制图 (blender,freeCAD)" \
+        3 "📄 office:办公/PPT/流程图 (wps,LibreOffice)" \
+        4 "🛠 system:软件管理/系统管理 (flatpak,bleachbit)" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
     }
     
-   app_install_termux() {
-      $habit --msgbox "此区域只支持linux系统\n抱歉,不支持Termux终端>_<" 0 0
-      break
-   }
+    image_menu() {
+        image_menu_xz=$($habit --clear --title "🎶 图像与影音" \
+        --menu "GNU和DE分别指的是桌面环境\nTUI指的终端环境\n请选择:" 0 0 10 \
+        1 "GIMP (GNU 图像处理程序)" \
+        2 "feh  (DE 轻量级图片查看工具)" \
+        3 "chafa (TUI 图像显示工具)" \
+        4 "MPV (开源、跨平台的音视频播放器)" \
+        5 "w3m (TUI 网页浏览器)" \
+        6 "calibre (DE 最受欢迎的电子书应用)" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    
+    model_menu() {
+        model_menu_xz=$($habit --clear --title "建模/绘图/制图" \
+        --menu "请选择:" 0 0 10 \
+        1 "💡 Blender (工业级,用于电影制作和设计3D模型)" \
+        2 "🔩 FreeCAD (免费开源,多功能CAD建模机械软件)" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    
+    work_menu() {
+    work_menu_xz=$($habit --clear --title "办公" \
+    --menu "请选择：" 0 0 10 \
+    1 "📋 WPS 365linux (WPS公司的办公软件)" \
+    2 "📄 LibreOffice (开源免费社区办公套件)" \
+    9 "更多内容可联系作者添加" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    
+    }
+    
+    system_app_menu() {
+        system_app_menu_xz=$($habit --clear --title "标题" \
+        --menu "文字" 0 0 10 \
+        1 "📦 Flatpak  (跨平台包管理应用商店)" \
+        2 "📦 gnome-software (系统软件商店)" \
+        3 "🗑 bleachbit  (linux垃圾清理工具)" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    app_install_termux() {
+        $habit --msgbox "此区域只支持linux系统\n抱歉,不支持Termux终端>_<" 0 0
+        break
+    }
     app_install_main() {
         if [[ $shell_skip -eq 1 ]]; then
             app_install_linux
@@ -813,8 +865,8 @@ app_install() {
         else
             app_install_linux
         fi
-   }
-   app_install_main
+    }
+    app_install_main
 }
 
 # 网络常用工具
@@ -829,6 +881,7 @@ Internet_tool() {
     7 "hashcat工具" \
     8 "burpsuite工具" \
     9 "glow md文件浏览工具" \
+    10 "服务器邮箱端口开放检测" \
     0 "返回上层菜单" \
     2>&1 1>/dev/tty)
 }
@@ -1412,6 +1465,15 @@ game_menu() {
     5 "🪴盆栽艺术" \
     6 "可视化音频" \
     7 "MOSS智能终端" \
+    8 "终端galgame" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+galgame_menu() {
+    galgame_menu_xz=$($habit --clear --title "galgame" \
+    --menu "请选择" 0 0 10 \
+    1 "原神vs鸣朝" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -2021,8 +2083,8 @@ tmux_tool() {
                         return 0
                     fi
                     tmux_name=$(echo "${menu_items[@]}" | awk -v idx="$tmux_list_xz" '{for(i=1;i<=NF;i+=2) if ($i == idx) print $(i+1)}')
-                    tmux_session_menu=$($habit --title "标题" \
-                    --menu "文字" 0 0 10 \
+                    tmux_session_menu=$($habit --title "管理" \
+                    --menu "请选择" 0 0 10 \
                     1 "🔗 连接到会话" \
                     2 "🔴 结束此会话" \
                     3 "📝 重命名会话" \
@@ -2611,14 +2673,14 @@ index_main() {
                             $habit --msgbox "当前只适配了基于 CentOS/Debian的系统\n其他系统的可以尝试一下。" 0 0
                             case $deb_sys in
                                apt)
-                                  echo "正在使用 $deb_sys 下载中文汉化包。"
+                                  echo -e "$(info) 正在使用 $deb_sys 下载中文汉化包。"
                                   sudo apt install task-chinese-s task-chinese-t
                                   if [ $? -ne 0 ]; then
                                     echo -e "$(info) $red 汉化包下载失败$color"
                                   else
                                     echo -e "$(info) $green 汉化包下载成功$color"
                                   fi;sleep 1s
-                                  read -p "请在接下来的页面内 勾选zh_CN.UTF-8选项 然后回车" 0 0
+                                  $habit --msgbox "请在接下来的页面内 勾选zh_CN.UTF-8选项 然后回车" 0 0
                                   sudo dpkg-reconfigure locales
                                   ;;
                                dnf)
@@ -2651,11 +2713,11 @@ index_main() {
                             esc
                             $habit --msgbox "脚本执行结束" 0 0
                             $habit --title "确认操作" --yesno "是否现在重启系统" 0 0
-                                    if [ $? -ne 0 ]; then
-                                        break
-                                    else
-                                        reboot
-                                    fi
+                                if [ $? -ne 0 ]; then
+                                    break
+                                else
+                                    reboot
+                                fi
                             }
                             language_menu
                             ;;
@@ -2824,6 +2886,11 @@ index_main() {
                         9)
                             test_install glow
                             glow
+                            esc
+                            ;;
+                        10)
+                            echo -e "$(info) $blue 正在拉取脚本$color"
+                            bash -c "$(curl -L https://www.mxzc.top/tool/mailtest.sh)"
                             esc
                             ;;
                         0) 
@@ -3325,12 +3392,13 @@ index_main() {
                                                     cd $nasyt_dir/AstrBot
                                                     echo -e "$(info) 正在检查python安装"
                                                     test_install python3
-                                                    echo -e "$(info) 正在添加python环境"
+                                                    echo -e "$(info) 正在检查并添加python环境"
                                                     $sudo_setup $pkg_install python3*venv $yes_tg
                                                     python3 -m venv ./venv
                                                     echo -e "$(info) 正在加载Astrbot环境"
                                                     source $nasyt_dir/AstrBot/venv/bin/activate
                                                     echo -e "$(info) 正在检查并更新pip"
+                                                    test_install pip
                                                     pip install --upgrade pip
                                                     echo -e "$(info) 正在安装Astrbot提供的依赖。"
                                                     pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
@@ -3339,7 +3407,7 @@ index_main() {
                                                         echo -e "$(info) 正在安装预备依赖"
                                                         pip_install deprecated sqlalchemy sqlmodel colorlog aiohttp certifi Pillow psutil aiosqlite jsonschema mcp anthropic google-genai openai aiocqhttp numpy
                                                         if [ $? -ne 0 ]; then
-                                                            echo -e "$(info) $red 安装失败，正在补全文件$color"
+                                                            echo -e "$(info) $red 安装失败，正在补全构建文件$color"
                                                             test_install build-essential clang cmake ninja
                                                             echo -e "$(info) 正在尝试重新安装"
                                                             pip install deprecated sqlalchemy sqlmodel colorlog aiohttp certifi Pillow psutil aiosqlite jsonschema mcp anthropic google-genai openai aiocqhttp numpy
@@ -3356,7 +3424,7 @@ index_main() {
                                                     esc
                                                     ;;
                                                 5)
-                                                    if [ -d $nasyt_dir/AstrBot]; then
+                                                    if [[ -d $nasyt_dir/AstrBot ]]; then
                                                         cd $nasyt_dir/AstrBot
                                                         source venv/bin/activate
                                                         clear;br;echo "正在启动astrbot"
@@ -3650,6 +3718,20 @@ index_main() {
                                         else
                                             $habit --msgbox "此区域是给termux玩的，项目详见\nhttps://gitee.com/heigxaon/moss-android-terminal" 0 0
                                         fi
+                                        ;;
+                                    8)
+                                        while true
+                                        do
+                                            galgame_menu
+                                            case $galgame_menu_xz in
+                                                1)
+                                                    $habit --msgbox "开发中" 0 0
+                                                    ;;
+                                                *)
+                                                    break
+                                                    ;;
+                                            esac
+                                        done
                                         ;;
                                     0)
                                         break
@@ -3989,10 +4071,12 @@ index_main() {
                                                     else
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_linux_amd64_0.1.0"
                                                     fi
+                                                    echo -e "$(info) 正在给予权限"
+                                                    chmod 777 $nasyt_dir/*
                                                     esc
                                                     ;;
                                                 2)
-                                                    chmod 777 $nasyt_dir/nweb
+                                                    chmod 777 $nasyt_dir/*
                                                     nweb_dir=$($habit --title "nweb" \
                                                     --inputbox "请输入要运行的目录:" 0 0 \
                                                     2>&1 1>/dev/tty)
@@ -4139,30 +4223,117 @@ index_main() {
                     app_install
                     case $app_install_xz in
                         1)
-                            $habit --msgbox "检测到当前系统为 $sys 是否开始安装？" 0 0
-                            test_install ibus-libpinyin
-                            $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
+                            while true
+                            do
+                                image_menu
+                                case $image_menu_xz in
+                                    1)
+                                        test_install gimp
+                                        esc
+                                        ;;
+                                    2)
+                                        test_install feh
+                                        esc
+                                        ;;
+                                    3)
+                                        test_install chafa
+                                        esc
+                                        ;;
+                                    4)
+                                        test_install mpv
+                                        esc
+                                        ;;
+                                    5)
+                                        test_install w3m
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
                             ;;
                         2)
-                            echo -e "$(info) 正在安装Blender建模软件"
-                            test_install  Blender
-                            $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
-                            esc
+                            while true
+                            do
+                                model_menu
+                                case $model_menu_xz in
+                                    1)
+                                        test_install blender
+                                        esc
+                                        ;;
+                                    2)
+                                        test_install freecad
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
                             ;;
+                        
                         3)
-                            $habit --title "确认操作" --yesno "你确定要安装linux应用商店吗？" 0 0
-                            if [ $? -ne 0 ]; then
-                                break
-                            else
-                                test_install gnome-software
-                            fi
-                            $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
-                            esc
+                            while true
+                            do
+                                work_menu
+                                case $work_menu_xz in
+                                    1)
+                                        if command -v apt >/dev/null 2>&1; then
+                                            test_install wget
+                                            arch=$(uname -p)
+                                            echo -e "$(info) 正在下载软件包"
+                                            wget "https://pubwps-wps365-obs.wpscdn.cn/download/Linux/24730/wps-office_12.1.2.24730.AK.preread.sw_644359_$arch.deb"
+                                            if [ $? -ne 0 ]; then
+                                                echo -e "$(info) $red 下载失败$color，可手动去https://365.wps.cn/download365下载，或者联系QQ:3213631396询问"
+                                                esc
+                                                continue
+                                            else
+                                                echo -e "$(info) $green 软件包下载成功$color"
+                                            fi
+                                            echo -e "$(info) $blue 正在安装软件包$color"
+                                            sudo dpkg -i wps-office*.deb
+                                        else
+                                            $habit --msgbox "目前作者只收集了deb软件包" 0 0
+                                        fi
+                                        ;;
+                                    2)
+                                        test_install libreoffice
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
                             ;;
                         4)
-                            test_install bleachbit
-                            bleachbit
-                            esc
+                            while true
+                            do
+                                system_app_menu
+                                case $system_app_menu_xz in
+                                    1)
+                                        test_install flatpak
+                                        esc
+                                        ;;
+                                    2)
+                                        $habit --title "确认操作" --yesno "你确定要安装linux应用商店吗？" 0 0
+                                        if [ $? -ne 0 ]; then
+                                            break
+                                        else
+                                            test_install gnome-software
+                                        fi
+                                        $habit --msgbox "安装完成\n请打开桌面查看。" 0 0
+                                        esc
+                                        ;;
+                                    3)
+                                        test_install bleachbit
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
                             ;;
                         *)
                             break
@@ -4537,29 +4708,33 @@ if [ $# -ne 0 ]; then
         exit
         ;;
     update|-u|--update)
-      gx
-      ;;
+        gx
+        ;;
     mirror|-m|--mirror)
-      upsource
-      exit
-      ;;
+        upsource
+        exit
+        ;;
     tmux|-t|--tmux)
-      tmux_tool
-      exit
-      ;;
+        tmux_tool
+        exit
+        ;;
+    turn|-turn|--turn)
+        truncate -s $2 $3
+        exit 0
+        ;;
     skin|-s|--skip)
-      shell_skip=1
-      ;;
+        shell_skip=1
+        ;;
     version|-v|-version|--version)
-      echo
-      echo "名称: nasyt"
-      echo "版本: $version"
-      #echo "来源: $nasyt_from"
-      echo "操作系统: $PRETTY_NAME"
-      echo "位于目录: $(command -v nasyt)"
-      echo
-      exit
-      ;;
+        echo
+        echo "名称: nasyt"
+        echo "版本: $version"
+        #echo "来源: $nasyt_from"
+        echo "操作系统: $PRETTY_NAME"
+        echo "位于目录: $(command -v nasyt)"
+        echo
+        exit
+        ;;
     nlist|-n|--nlist)
         nlist_tool $2 $3 $4
         exit
@@ -4568,34 +4743,34 @@ if [ $# -ne 0 ]; then
         shell_uninstall
         ;;
     help|-h|-help|--help)
-      echo
-      echo "用法:"
-      echo -e "  ${blue}nasyt [参数]$color"
-      echo "参数:"
-      echo "  -x, --dowx 快捷下载twitter视频"
-      echo "  -a, --acg 快捷随机acg图片"
-      echo "  -d, --docker 快捷docker管理"
-      echo "  -e, --edge_tts 文字转语音"
-      echo "  -u, --update 快捷更新脚本"
-      echo "  -m, --mirror 快捷换软件源"
-      echo "  -t, --tmux 快捷进入tmux管理"
-      echo "  -s, --skip 直接进入菜单部分"
-      echo "  -v, --version 输出脚本版本"
-      echo "  -h, --help  输出命令帮助"
-      echo "  -b, --backup  快捷备份恢复脚本"
-      echo "  -n, --nlist  生成网页目录结构"
-      echo "  -r, --remove 卸载本脚本工具"
-      echo
-      echo "有关更多详细信息，请参见"
-      echo -e "$green https://gitcode.com/nasyt/nasyt-linux-tool$color"
-      echo
-      exit
-      ;;
+        echo
+        echo "用法:"
+        echo -e "  ${blue}nasyt [参数]$color"
+        echo "参数:"
+        echo "  -x, --dowx 快捷下载twitter视频"
+        echo "  -a, --acg 快捷随机acg图片"
+        echo "  -d, --docker 快捷docker管理"
+        echo "  -e, --edge_tts 文字转语音"
+        echo "  -u, --update 快捷更新脚本"
+        echo "  -m, --mirror 快捷换软件源"
+        echo "  -t, --tmux 快捷进入tmux管理"
+        echo "  -s, --skip 直接进入菜单部分"
+        echo "  -v, --version 输出脚本版本"
+        echo "  -h, --help  输出命令帮助"
+        echo "  -b, --backup  快捷备份恢复脚本"
+        echo "  -n, --nlist  生成网页目录结构"
+        echo "  -r, --remove 卸载本脚本工具"
+        echo
+        echo "有关更多详细信息，请参见"
+        echo -e "$green https://gitcode.com/nasyt/nasyt-linux-tool$color"
+        echo
+        exit
+        ;;
     *)
-      echo
-      echo -e "$red $@ 是无效的参数$color"
-      echo -e "$blue 请输入nasyt help查看帮助$color"
-      exit 1
+        echo
+        echo -e "$red $@ 是无效的参数$color"
+        echo -e "$blue 请输入nasyt help查看帮助$color"
+        exit 1
     esac
 fi
 

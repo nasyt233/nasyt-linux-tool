@@ -5,8 +5,21 @@ br() {
     clear
     
     
-    
+    echo "2026年3月24日更新v2.4.3.2版"
+    echo "添加 WPS-365 linux安装"
+    echo "添加 系统工具更新终端图片查看器"
+    echo "添加 娱乐功能更新终端galgame(开发中)"
+    echo "添加 软件安装带来大量安装功能"
+    echo "添加 软件安装更新分类列表"
+    echo "添加 服务器邮箱端口开放检测脚本"
+    echo "添加 了神秘不知名快捷功能"
+    echo "修复 tmux 文字提示问题"
+    echo "修复 Astrbot克隆以及启动问题"
+    echo "修复 nweb运行环境问题"
+    echo "修复 linux系统软件包安装问题"
+    echo "修复 部分界面不显示问题"
     br
+    read
     echo "2026年3月6日更新v2.4.3.1版"
     echo "移除ncdu脚本空间查询快捷命令"
     echo "更新nlist目录结构生成器"
@@ -33,7 +46,7 @@ br() {
     echo "部分git仓库克隆更加完善"
     echo "部分功能更新github加速服务"
     echo "快捷命令更新twitter视频下载"
-    echo "更新twitter视频下载工具"
+    echo "更新x视频下载工具"
     echo "更新LazyVim nvim编辑工具"
     echo "实用工具分类更加详细完整"
     echo "更新nasyt -r快捷卸载脚本"
@@ -200,7 +213,7 @@ br() {
     br
     read
     echo "2025年8日4日更新v2.3.4版"
-    echo "其他脚本更新 MC压力测试工具"
+    echo "其他脚本更新 mcstatus工具"
     echo "不出所料应该没什么问题(精心制作)"
     echo "个性化 github加速地址 制作完成"
     echo "添加部分函数,以及各种检测"
@@ -262,7 +275,7 @@ br() {
     echo "文字说明更加易懂"
     echo "已支持桌面输入法安装"
     echo "修复已知bug"
-    echo "CC攻击脚本优化"
+    echo "xxx脚本优化"
     echo "中文汉化内容更加完善"
     echo "对中文汉化的CentOS适配"
     echo "系统信息更加详细"
@@ -314,7 +327,6 @@ br() {
     br
     read
     echo "2025年5日16日更新v2.2版"
-    echo "需要定制版的联系NAS油条(免费)"
     echo "更新服务器地理位置查询。"
     echo "增加了ssh的连接管理工具"
     echo "增加了发布页回车键默认选项"
@@ -362,7 +374,7 @@ br() {
     echo "优化了脚本的大小"
     echo "增加了常用软件安装"
     echo "增加了deb软件包安装"
-    echo "增加了nmap扫描功能"
+    echo "增加了xxx功能"
     echo "更改了系统常用菜单"
     echo "优化了引导菜单脚本"
     echo "更新1panel面板安装"
@@ -370,7 +382,7 @@ br() {
     br
     read
     echo "2025年4日17日更新v2.17版"
-    echo "修复DDOS攻击兼容问题"
+    echo "修复xxx兼容问题"
     echo "更新Astrbot机器人安装"
     echo "更新TMOE工具"
     echo "修复已知bug"
@@ -401,7 +413,7 @@ br() {
     br
     read
     echo "2025年3日22日更新v2.12版"
-    echo "更新DDOS安装和CC攻击"
+    echo "更新xxx安装和xxx攻击"
     echo "采用dialog图形形化菜单"
     br
     read
