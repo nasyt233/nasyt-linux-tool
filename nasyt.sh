@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/3/24"
-version="v2.4.3.2"
+time_date="2026/4/6"
+version="v2.4.3.3"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -81,7 +81,7 @@ check_pkg_install() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release #加载变量
     fi
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         sys="(Termux 终端)"
         PRETTY_NAME="Termux终端"
         sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
@@ -246,7 +246,7 @@ country() {
     country=$(curl -s https://myip.ipip.net | grep -oE "中国|China" 2>/dev/null)
     if [ -n "$country" ]; then
         echo "当前在中国"
-        github_speed="ghfast.top"
+        github_speed="gh-proxy.com"
     else
         echo "当前不在中国"
         github_speed=""
@@ -352,7 +352,7 @@ file_xz() {
 #监控服务器资源
 resources_show() {
     echo -e "$(info) 正在读取数据中"
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         resources_show_notermux="CPU 使用率：不支持termux"
     else
         cpu_usage=$(grep 'cpu ' /proc/stat | awk '{u=$2+$4; t=$2+$4+$5; print "" sprintf("%.1f%%", u/t*100)}') >/dev/null 2>&1
@@ -376,7 +376,7 @@ resources_show() {
 # 根据时间返回问候语
 get_greeting() {
     local hour=$(date +"%H")
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         get_sys=termux
     else
         get_sys=linux
@@ -395,7 +395,7 @@ get_greeting() {
 }
 
 test_termux() {
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         $habit --msgbox "不支持termux终端" 0 0
         break
     fi
@@ -560,8 +560,7 @@ pip_colorama() {
 }
 
 ad_gg () {
-    echo -e "$pink本脚本由创欧云提供直链支持 ^o^$color"
-    echo "感谢创欧云coyjs.cn赞助"
+    echo -e "$blue欢迎加入我们$color"
 }
 
 #错误函数处理
@@ -573,7 +572,7 @@ error() {
 
 #工作环境
 termux_PATH () {
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.bashrc; then
             echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
         else
@@ -588,7 +587,7 @@ termux_PATH () {
     fi
     #对zsh检测
     if [ -e $HOME/.zshrc ]; then
-        if [[ -z $PRETTY_NAME ]]; then
+        if [[ -n $PREFIX ]]; then
             if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.zshrc; then
                 echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.zshrc
             else
@@ -702,9 +701,8 @@ show_menu() {
     5 "软件安装" \
     6 "其它脚本" \
     7 "更新脚本" \
-    8 "更新历史" \
-    9 "脚本设置" \
-    10 "随机美图" \
+    8 "脚本设置" \
+    9 "随机美图" \
     0 "退出脚本" \
     2>&1 1>/dev/tty)
     
@@ -763,7 +761,8 @@ often_tool() {
     7 "📄编辑工具" \
     8 "📥下载工具" \
     9 "🔄转换工具" \
-    10 "☰ 其他工具" \
+    10 "🌌终端美化" \
+    20 "☰ 其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
     }
@@ -777,14 +776,15 @@ often_tool() {
     7 "📄编辑工具" \
     8 "📥下载工具" \
     9 "🔄转换工具" \
-    10 "其他工具" \
+    10 "🌌终端美化" \
+    20 "其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
     }
     
     #检查当前系统
     often_tool_main() {
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         if [[ $shell_skip == 1 ]]; then
             echo -e "$(info) 已跳过"
             often_tool_linux
@@ -860,7 +860,7 @@ app_install() {
     app_install_main() {
         if [[ $shell_skip -eq 1 ]]; then
             app_install_linux
-        elif [[ -z $PRETTY_NAME ]]; then
+        elif [[ -n $PREFIX ]]; then
             app_install_termux
         else
             app_install_linux
@@ -932,7 +932,7 @@ Linux_shell() {
     linux_shell_main() {    
         if [[ $shell_skip -eq 1 ]]; then
             linux_shell_linux
-        elif [[ -z $PRETTY_NAME ]]; then
+        elif [[ -n $PREFIX ]]; then
             linux_shell_termux
         else
             linux_shell_linux
@@ -988,7 +988,7 @@ bot_install_menu() {
     }
     if [[ $shell_skip -eq 1 ]]; then
         bot_linux_menu
-    elif [[ -z $PRETTY_NAME ]]; then
+    elif [[ -n $PREFIX ]]; then
         bot_termux_menu
     else
         bot_linux_menu
@@ -997,7 +997,7 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         $habit --msgbox "termux爬一边去" 0 0
         exit
     fi
@@ -1332,6 +1332,41 @@ nlist_tool() {
     fi
 }
 
+#终端主题美化
+zsh_menu() {
+    zsh_menu_xz=$($habit --clear --title "zsh终端美化" \
+    --menu "请选择" 0 0 10 \
+    1 "安装必要工具" \
+    2 "zsh主题配置" \
+    3 "zsh插件管理" \
+    4 "设置默认shell" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#zsh主题配置
+zsh_themes() {
+    zsh_themes_xz=$($habit --clear --title "zsh主题安装" \
+    --menu "请选择要安装的主题" 0 0 10 \
+    1 "powerlevel10k主题" \
+    2 "oh-my-zsh主题集" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#设置默认shell
+index_shell() {
+    index_shell_xz=$($habit --clear --title "默认shell" \
+    --menu "请选择默认shell" 0 0 10 \
+    1 "zsh" \
+    2 "bash" \
+    3 "fish" \
+    4 "nushell" \
+    5 "starship" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
 #其他工具
 other_tool_menu() {
     other_tool_xz=$($habit --title "其他工具" \
@@ -1488,19 +1523,152 @@ zip_menu() {
 }
 
 # ssh工具
-ssh_tool_menu() {
+ssh_tool() {
+    while true
+    do
+        clear
+        ssh_menu
+        case $ssh_menu_xz in
+            1)
+                ssh_list
+                ;;
+            2)
+                ssh_add
+                esc
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+}
+
+ssh_menu() {
+    # 列表文件
+    ssh_config="$nasyt_dir/.ssh_connections"
+    touch "$ssh_config"
+    chmod 600 "$ssh_config" 2>/dev/null
+    ssh_menu_xz=$($habit --clear --title "ssh连接工具" \
+    --menu "请选择" 0 0 10 \
+    1 "📄连接列表" \
+    2 "➕添加连接" \
+    4 "🚫删除连接" \
+    0 "◀退出" \
+    2>&1 1>/dev/tty)
+}
+
+# 连接列表
+ssh_list() {
+    connections=()
+    lines=()
+    while IFS='|' read -r ssh_name ssh_host ssh_port ssh_user ssh_passwd; do
+        connections+=("$ssh_name" "$ssh_user@$ssh_host:$ssh_port:$ssh_passwd")
+        lines+=("$ssh_name|$ssh_host|$ssh_port|$ssh_user|$ssh_passwd")
+    done < "$ssh_config"
+    if [ ${#connections[@]} -eq 0 ]; then
+        $habit --msgbox "没有可用连接，请先添加" 0 0
+        return
+    fi
+    selected=$($habit --clear --title "连接服务器" \
+    --menu "选择要连接的服务器:" 0 0 0 \
+    "${connections[@]}" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+
+    # 获取配置
+    selected_line=$(grep "^$selected|" "$ssh_config")
+    IFS='|' read -r ssh_name ssh_host ssh_port ssh_user ssh_passwd <<< "$selected_line"
+    
+    # 连接服务器
+    do_ssh $ssh_host $ssh_port $ssh_user $ssh_passwd
+}
+
+#添加连接
+ssh_add() {
+    # 输入名称
+    ssh_name=$($habit --clear --title "名称" \
+    --inputbox "请输入名称(别名)" 0 0 \
+    2>&1 1>/dev/tty)
+    if [[ -z "$ssh_name" ]]; then
+        dialog --msgbox "名称不能为空" 0 0
+        return
+    fi
+    if grep -q "^$name|" "$CONFIG_FILE"; then
+        $habit --msgbox "连接名称 '$name' 已存在" 0 0
+        return
+    fi
+    
+    ssh_host=$($habit --clear --title "地址" \
+    --inputbox "请输入主机地址 (IP 或域名):" 0 0 \
+    2>&1 1>/dev/tty)
+    if [[ -z "$ssh_host" ]]; then
+        dialog --msgbox "主机地址不能为空" 0 0
+        return
+    fi
+    
+    ssh_port=$($habit --clear --title "端口" \
+    --inputbox "请输入端口号(默认22):" 0 0 "22"\
+    2>&1 1>/dev/tty)
+    
+    ssh_user=$($habit --clear --title "用户名" \
+    --inputbox "请输入用户名(默认root):" 0 0 "root" \
+    2>&1 1>/dev/tty)
+    if [[ -z "$ssh_user" ]]; then
+        dialog --msgbox "用户名不能为空" 0 0
+        return
+    fi
+
+    ssh_passwd=$($habit --clear --title "密码" \
+    --inputbox "请输入连接密码" 0 0 \
+    2>&1 1>/dev/tty)
+    #写入配置文件
+    echo "$ssh_name|$ssh_host|$ssh_port|$ssh_user|$ssh_passwd" >> "$ssh_config" | $habit --msgbox "写入配置文件成功。" 0 0 || $habit --msgbox "写入配置文件失败。" 0 0
+}
+
+# 删除连接
+delete_connection() {
+    connections=()
+    while IFS='|' read -r ssh_name ssh_host ssh_port ssh_user ssh_passwd; do
+        connections+=("$ssh_name" "$ssh_user@$ssh_host:$ssh_port")
+    done < "$ssh_config"
+    if [ ${#connections[@]} -eq 0 ]; then
+        $habit --msgbox "没有可删除的连接" 0 0
+        return
+    fi
+    selected=$($habit --clear --title "删除连接" \
+    --menu "请选择要删除的连接" 0 0 0 \
+    "${connections[@]}" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+    $habit --yesno "确定要删除连接 '$selected' 吗？" 0 0
+    if [ $? -eq 0 ]; then
+        sed -i "/^$selected|/d" "$CONFIG_FILE"
+        $habit --msgbox "连接已删除" 0 0
+    fi
+}
+
+#连接服务器
+do_ssh() {
+    if [[ -z "$1" || -z "$3" ]]; then
+        dialog --msgbox "连接信息不完整" 0 0
+        return 1
+    fi
+    clear
     br
-    echo "1) 连接SSH"
-    echo "2) 启动SSH"
-    echo "3) 修改密码"
-    echo "0) ◀返回"
-    br
+    echo -e "$(info) 连接到: $3@$1:$2"
+    sshpass -p "$4" \
+    ssh -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -p "$2" \
+    "$3@$1"
+    esc
+    $habit --msgbox "连接已断开" 0 0
 }
 
 #java安装
 java_install_menu () {
     java_install_xz=$($habit --title "jvav安装" \
-    --menu "Debian系列用,请选择🤓jvav版本" 0 0 5 \
+    --menu "Debian系列可用,请选择jvav版本" 0 0 5 \
     22 "java22" \
     21 "java21" \
     20 "java20" \
@@ -1525,6 +1693,7 @@ termux_kali_install() {
     break
   fi
 }
+
 # 废弃
 csh() {
     clear
@@ -1941,7 +2110,7 @@ shell_backup_menu() {
 shell_backup() {
     echo "$(info) 正在备份脚本文件";sleep 0.5s
     cp $nasyt_dir/nasyt $nasyt_dir/version/nasyt$version.bak >/dev/null 2>&1
-    #if [[ -z $PRETTY_NAME ]]; then
+    #if [[ -n $PREFIX ]]; then
     #    cp $PREFIX/bin/nasyt $PREFIX/bin/nasyt$version.bak >/dev/null 2>&1
     #else
     #    cp /usr/bin/nasyt /usr/bin/nasyt$version.bak>/dev/null 2>&1 >/dev/null 2>&1
@@ -1959,7 +2128,7 @@ shell_recover() {
     file_xz $nasyt_dir/version shell_recover_var
     cp $shell_recover_var $nasyt_dir/nasyt >/dev/null 2>&1
     chmod 777 $nasyt_dir/*
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         cp $shell_recover_var $PREFIX/bin/nasyt
         chmod 777 $PREFIX/bin/nasyt
     else
@@ -2285,14 +2454,15 @@ acg() {
             echo
             acg_menu_sz=$shell_2
         else
-            if [[ -z $PRETTY_NAME ]]; then
+            if [[ -n $PREFIX ]]; then
                 acg_menu_xz_add="10 "选择并设为壁纸""
             fi
             acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
             --menu "推荐将终端拉到最小状态\n以获得最佳体验，按确定键获取图片" 0 0 5\
-            1 "📱随机acg(竖屏)" \
-            2 "🖥随机acg(横屏)" \
-            3 "🔞随机pixiv图片" \
+            1 "📱随机Acg(竖屏)" \
+            2 "🖥随机Acg(横屏)" \
+            3 "🔞随机Pixiv图片" \
+            4 "🐱随机Neko图片" \
             6 "✎自定义图片链接" \
             7 "⚙️自定义关键词" \
             8 "📦图片空间占用" \
@@ -2305,10 +2475,12 @@ acg() {
                 1)
                     tp_curl=https://www.loliapi.com/acg/pe
                     acg_menu_sz=pe
+                    tp_r18=acg
                     ;;
                 2)
                     tp_curl=https://www.loliapi.com/acg/pc
                     acg_menu_sz=pc
+                    tp_r18=acg
                     ;;
                 3)
                     $habit --title "随机pixiv" --yesno "是否搜索R18图片🤓？" 0 0
@@ -2338,6 +2510,10 @@ acg() {
                         br
                     fi
                     #echo $setu_api | grep -o '"pid":[0-9]*\|"title":"[^"]*"\|"original":"[^"]*"\|"ext":"[^"]*"\|"author":"[^"]*"'
+                    ;;
+                4)
+                    tp_curl=$(curl -s https://nekos.best/api/v2/neko | awk -F'"url":"' '{print $2}' | awk -F'"' '{print $1}')
+                    tp_r18=neko
                     ;;
                 6)
                     tp_curl=$($habit --title "自定义图片链接" \
@@ -2412,7 +2588,7 @@ acg() {
             local api_r18_2=$(echo "_$tp_r18")
             time_name_xz+="${tp_time}${tp_pid_2}${api_r18_2}"
         echo -e "$(info) 正在获取图片中,请耐心等待"
-        if [[ -z $PRETTY_NAME ]]; then
+        if [[ -n $PREFIX ]]; then
             termux-toast "请将termux终端缩至最小,以获得最佳体验。"
         fi
         wget -O $nasyt_dir/acg/$time_name_xz.png "$tp_curl" >/dev/null 2>&1
@@ -2435,7 +2611,7 @@ acg() {
 }
 # 同步上海时间函数
 sync_shanghai_time() {
-    if [[ -z $PRETTY_NAME ]]; then
+    if [[ -n $PREFIX ]]; then
         test_termux
     else
         test_install ntpdate
@@ -2617,46 +2793,7 @@ index_main() {
                             done
                             ;;
                         5)
-                            while true
-                            do
-                                clear
-                                ssh_tool_menu
-                                read -p "请选择:" ssh_tool_xz
-                                case $ssh_tool_xz in
-                                    1)
-                                        clear; br
-                                        read -p "请输入IP: " ssh_tool_ip
-                                        read -p "请输入端口: " ssh_tool_port
-                                        read -p "请输入用户: " ssh_tool_user; br
-                                        echo "正在连接 $ssh_tool_ip 服务器中。"; br
-                                        ssh -p $ssh_tool_port $ssh_tool_user@ssh_tool_ip; br
-                                        echo "连接已断开"; esc
-                                        ;;
-                                    2)
-                                        echo "正在启动ssh中"
-                                        sshd; echo "启动完成。"; esc
-                                        ;;
-                                    3)
-                                        clear; br
-                                        ssh_tool_passwd=$($habit --title "设置密码" \
-                                        --inputbox "请输入要修改的密码" 0 0 \
-                                        2>&1 1>/dev/tty)
-                                        sudo passwd $ssh_tool_passwd
-                                        if [ $? -ne 0 ]; then
-                                            $habit --msgbox "密码修改失败" 0 0
-                                            break
-                                        fi
-                                        $habit --msgbox "修改密码为 $ssh_tool_passwd 成功。" 0 0
-                                        esc
-                                        ;;
-                                    0)
-                                        break
-                                        ;;
-                                    *)
-                                        break
-                                        ;;
-                                esac
-                            done
+                            ssh_tool
                             ;;
                         6)
                            java_install_menu
@@ -2723,7 +2860,7 @@ index_main() {
                             ;;
                             
                         8)
-                            if [[ -z $PRETTY_NAME ]]; then
+                            if [[ -n $PREFIX ]]; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
                                 test_install wget #检查wget函数
@@ -2738,7 +2875,7 @@ index_main() {
                             fi
                             ;;
                         9)
-                            if [[ -z $PRETTY_NAME ]]; then
+                            if [[ -n $PREFIX ]]; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
                                   clear;br
@@ -2766,7 +2903,7 @@ index_main() {
                             fi
                             ;;
                         10)
-                            if [[ -z $PRETTY_NAME ]]; then
+                            if [[ -n $PREFIX ]]; then
                                 echo -e "$(info) 检测到termux终端正在清理日志文件"
                                 find $PREFIX/var/log/ -type f -mtime +30 -exec rm -f {} >/dev/null 2>&1
                             else
@@ -3688,7 +3825,7 @@ index_main() {
                                         ;;
                                     7)
                                         $habit --msgbox "本项目来自\n gitee.com/heigxaon/moss-android-terminal" 0 0
-                                        if [[ -z $PRETTY_NAME ]]; then
+                                        if [[ -n $PREFIX ]]; then
                                             if [[ -e $HOME/MOSS ]]; then
                                                 cd $HOME
                                                 chmod 777 $HOME/MOSS
@@ -3978,10 +4115,87 @@ index_main() {
                         10)
                             while true
                             do
+                                zsh_menu
+                                case $zsh_menu_xz in
+                                    1)
+                                        test_install git
+                                        test_install zsh
+                                        test_install eza
+                                        $habit --msgbox "基础工具安装完成" 0 0
+                                        ;;
+                                    2)
+                                        while true
+                                        do
+                                            zsh_themes
+                                            case $zsh_themes_xz in
+                                                1)
+                                                    echo "正在从gitee克隆p10k仓库"
+                                                    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.nasyt/zsh/powerlevel10k
+                                                    echo 'source ~/.nasyt/zsh/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
+                                                    $habit --msgbox "主题安装完成，请输入zsh进行p10k个性配置" 0 0
+                                                    ;;
+                                                2)
+                                                    country
+                                                    echo -e "$(info) 现在从github拉取脚本数据。"
+                                                    sh -c "$(curl -fsSL $github_speed/https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+                                                    esc
+                                                    ;;
+                                                *)
+                                                    break
+                                                    ;;
+                                            esac
+                                        done
+                                        ;;
+                                    3)
+                                        $habit --msgbox "开发中" 0 0
+                                        ;;
+                                    4)
+                                        index_shell
+                                        case $index_shell_xz in
+                                            1)
+                                                test_install zsh
+                                                chsh -s $(which zsh)
+                                                $habit --msgbox "设置完成" 0 0
+                                                ;;
+                                            2)
+                                                test_install bash
+                                                chsh -s $(which bash)
+                                                $habit --msgbox "设置完成" 0 0
+                                                ;;
+                                            3)
+                                                test_install fish
+                                                chsh -s $(which fish)
+                                                $habit --msgbox "设置完成" 0 0
+                                                ;;
+                                            4)
+                                                test_install nushell
+                                                chsh -s $(which nushell)
+                                                $habit --msgbox "设置完成" 0 0
+                                                ;;
+                                            5)
+                                                test_install starship
+                                                chsh -s $(which starship)
+                                                $habit --msgbox "设置完成" 0 0
+                                                ;;
+                                            *)
+                                                break
+                                                ;;
+                                        esac
+                                        
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
+                        20)
+                            while true
+                            do
                                 other_tool_menu
                                 case $other_tool_xz in
                                     1)
-                                        if [[ -z $PRETTY_NAME ]]; then
+                                        if [[ -n $PREFIX ]]; then
                                             test_install alist
                                             if [ $? -ne 0 ]; then
                                                 echo -e "$(info) $red alist安装失败 $color"
@@ -4000,7 +4214,7 @@ index_main() {
                                         ;;
                                     2)
                                         test_install tar
-                                        if [[ -z $PRETTY_NAME ]]; then
+                                        if [[ -n $PREFIX ]]; then
                                             test_install openlist
                                             while true
                                             do
@@ -4066,7 +4280,7 @@ index_main() {
                                                     echo -e "$(info) 正在检查wget安装"
                                                     test_install wget
                                                     echo -e "$(info) 正在下载文件"
-                                                    if [[ -z $PRETTY_NAME ]]; then
+                                                    if [[ -n $PREFIX ]]; then
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_termux_aarch64_0.1.0"
                                                     else
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_linux_amd64_0.1.0"
@@ -4104,7 +4318,7 @@ index_main() {
                                         done
                                         ;;
                                     4)
-                                        if [[ -z $PRETTY_NAME ]]; then
+                                        if [[ -n $PREFIX ]]; then
                                             $habit --msgbox "cloudreve不支持termux安装" 0 0
                                             break
                                         fi
@@ -4540,11 +4754,6 @@ index_main() {
                 esc
                 ;;
             8)
-                clear
-                bash -c "$(curl -L https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/up_history.sh)" #更新日志
-                esc
-                ;;
-            9)
                 while true
                 do
                 nasyt_setup_menu
@@ -4618,7 +4827,7 @@ index_main() {
                 esac
                 done
                 ;;
-            10)
+            9)
                 acg
                 ;;
             *)
@@ -4668,11 +4877,13 @@ if [ $# -ne 0 ]; then
                 pc|--pc)
                     tp_curl=https://www.loliapi.com/acg/pc
                     acg_menu_sz=pc
+                    tp_r18=acg
                     acg $2
                     ;;
                 pe|--pe)
                     tp_curl=https://www.loliapi.com/acg/pe
                     acg_menu_sz=pe
+                    tp_r18=acg
                     acg $2
                     ;;
                 *)
@@ -4722,8 +4933,12 @@ if [ $# -ne 0 ]; then
         truncate -s $2 $3
         exit 0
         ;;
-    skin|-s|--skip)
+    skip|-k|--skip)
         shell_skip=1
+        ;;
+    ssh|-s|--ssh)
+        ssh_tool
+        exit
         ;;
     version|-v|-version|--version)
         echo
@@ -4754,7 +4969,8 @@ if [ $# -ne 0 ]; then
         echo "  -u, --update 快捷更新脚本"
         echo "  -m, --mirror 快捷换软件源"
         echo "  -t, --tmux 快捷进入tmux管理"
-        echo "  -s, --skip 直接进入菜单部分"
+        echo "  -k, --skip 直接进入菜单部分"
+        echo "  -s, --ssh 进入ssh管理工具"
         echo "  -v, --version 输出脚本版本"
         echo "  -h, --help  输出命令帮助"
         echo "  -b, --backup  快捷备份恢复脚本"

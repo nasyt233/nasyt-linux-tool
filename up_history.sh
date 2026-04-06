@@ -4,7 +4,16 @@ br() {
 }
     clear
     
-    
+    echo "2026年4月6日更新v2.4.3.3版"
+    echo "修改 skip跳过为-k参数"
+    echo "添加 快捷ssh连接命令-s"
+    echo "重构 ssh系统连接工具"
+    echo "更新 终端zsh美化主题功能"
+    echo "更新 ACG图片添加随机Neko图片"
+    echo "移除 更新历史"
+    echo "移除 赞助商"
+    br
+    read
     echo "2026年3月24日更新v2.4.3.2版"
     echo "添加 WPS-365 linux安装"
     echo "添加 系统工具更新终端图片查看器"
