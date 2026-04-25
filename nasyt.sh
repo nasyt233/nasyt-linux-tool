@@ -1,7 +1,7 @@
 #!/bin/bash
 # 禁止用于任何非法攻击行为
 # 使用者需遵守当地法律法规
-
+# 运行所造成的损失作者依不承担
 # 本脚本由NAS油条制作
 # NAS油条的实用脚本
 # 欢迎加入NAS油条技术交流群
@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/4/6"
-version="v2.4.3.3"
+time_date="2026/4/25"
+version="v2.4.3.4"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -81,7 +81,7 @@ check_pkg_install() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release #加载变量
     fi
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         sys="(Termux 终端)"
         PRETTY_NAME="Termux终端"
         sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
@@ -95,44 +95,44 @@ check_pkg_install() {
         
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
-        pkg_install="sudo apt install"
-        pkg_remove="sudo apt remove"
-        pkg_update="sudo apt update"
+        pkg_install="apt install"
+        pkg_remove="apt remove"
+        pkg_update="apt update"
         sudo_setup="sudo"
         deb_sys="apt"
         yes_tg="-y"
         
     elif command -v dnf >/dev/null 2>&1; then
         sys="(Fedora/RHEL/CentOS 8 及更高版本)"
-        pkg_install="sudo dnf install"
-        pkg_remove="sudo dnf remove"
-        pkg_update="sudo dnf update"
+        pkg_install="dnf install"
+        pkg_remove="dnf remove"
+        pkg_update="dnf update"
         sudo_setup="sudo"
         deb_sys="dnf"
         yes_tg="-y"
         
     elif command -v yum >/dev/null 2>&1; then
         sys="(Fedora/RHEL/Rocky/CentOS 7 及更早版本)"
-        pkg_install="sudo yum install"
-        pkg_remove="sudo yum remove"
-        pkg_update="sudo yum update"
+        pkg_install="yum install"
+        pkg_remove="yum remove"
+        pkg_update="yum update"
         sudo_setup="sudo"
         deb_sys="yum"
         yes_tg="-y"
         
     elif command -v pacman >/dev/null 2>&1; then
         sys="(Arch Linux 系列)"
-        pkg_install="sudo pacman -S"
-        pkg_remove="sudo pacman -R"
-        pkg_update="sudo pacman -Syu"
+        pkg_install="pacman -S"
+        pkg_remove="pacman -R"
+        pkg_update="pacman -Syu"
         sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
         
     elif command -v zypper >/dev/null 2>&1; then
         sys="(openSUSE 系列)"
-        pkg_install="sudo zypper in -y"
-        pkg_remove="sudo zypper rm"
+        pkg_install="zypper in -y"
+        pkg_remove="zypper rm"
         sudo_setup="sudo"
         deb_sys="zypper"
         yes_tg="-y"
@@ -140,16 +140,17 @@ check_pkg_install() {
     elif command -v apk >/dev/null 2>&1; then
         sys="(Alpine/PostmarketOS系统)"
         sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
-        pkg_install="sudo apk add"
-        pkg_remove="sudo apk del"
+        pkg_install="apk add"
+        pkg_remove="apk del"
+        pkg_update="apk update"
         sudo_setup="sudo"
         deb_sys="apk"
         yes_tg=""
         
     elif command -v emerge >/dev/null 2>&1; then
         sys="(gentoo/funtoo 系统)"
-        pkg_install="sudo emerge -avk"
-        pkg_remove="sudo emerge -C"
+        pkg_install="emerge -avk"
+        pkg_remove="emerge -C"
         sudo_setup="sudo"
         deb_sys="emerge"
         yes_tg="-y"
@@ -246,7 +247,7 @@ country() {
     country=$(curl -s https://myip.ipip.net | grep -oE "中国|China" 2>/dev/null)
     if [ -n "$country" ]; then
         echo "当前在中国"
-        github_speed="gh-proxy.com"
+        github_speed="https://gh-proxy.com"
     else
         echo "当前不在中国"
         github_speed=""
@@ -260,7 +261,7 @@ disclaimer() {
     fi
     
     $habit --title "免责声明" \
-    --yesno "本工具仅限合法使用\n带来的后果由使用者承担全部责任\n你是否同意使用条款？" 0 0
+    --yesno "本工具仅限合法使用\n带来的后果由使用者承担全部责任\n运行所造成的损失作者依不承担\n你是否同意使用条款？" 0 0
 
     if [ $? -eq 0 ]; then
         touch "$nasyt_dir/disclaimer"
@@ -352,7 +353,7 @@ file_xz() {
 #监控服务器资源
 resources_show() {
     echo -e "$(info) 正在读取数据中"
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         resources_show_notermux="CPU 使用率：不支持termux"
     else
         cpu_usage=$(grep 'cpu ' /proc/stat | awk '{u=$2+$4; t=$2+$4+$5; print "" sprintf("%.1f%%", u/t*100)}') >/dev/null 2>&1
@@ -376,10 +377,10 @@ resources_show() {
 # 根据时间返回问候语
 get_greeting() {
     local hour=$(date +"%H")
-    if [[ -n $PREFIX ]]; then
-        get_sys=termux
+    if [[ -n $TERMUX_VERSION ]]; then
+        get_sys=Termux
     else
-        get_sys=linux
+        get_sys=Linux
     fi
     case $hour in
         05|06|07|08|09|10|11)
@@ -394,8 +395,11 @@ get_greeting() {
     esac
 }
 
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
 test_termux() {
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         $habit --msgbox "不支持termux终端" 0 0
         break
     fi
@@ -421,19 +425,22 @@ test_toilet() {
 }
 
 test_whiptail() {
-    if command -v whiptail &> /dev/null
-    then
+    if command -v whiptail >/dev/null 2>&1; then
         echo -e "$(info) ◉ whiptail已安装, 跳过安装步骤。"
     else
         echo -e "$(info) whiptail未安装，正在安装。"
         if command -v pacman >/dev/null 2>&1; then
-            echo -e "$(info) 检测到Arch系统，正在安装libnewt软件包"
+            echo -e "$(info) 检测到pacman软件包系统，正在安装libnewt软件包"
             test_install libnewt
         elif command -v dnf >/dev/null 2>&1; then
-            echo "检测到dnf软件包管理系统，正在安装newt软件包"
+            echo -e "$(info) 检测到dnf软件包管理系统，正在安装newt软件包"
+            test_install newt
+        elif command -v apk >/dev/null 2>&1; then
+            echo -e "$(info) 检测到apk软件包管理系统，正在安装newt软件包"
             test_install newt
         else
-            test_install whiptail
+            echo -e "$(info) 正在使用 $deb_sys 安装whiptail"
+            test_install whiptail newt
         fi
     fi
 }
@@ -444,7 +451,11 @@ test_eatmydata() {
     else
         if [[ -e /etc/os-release ]]; then
             echo -e "$(info) 正在安装eatmydata"
-            $pkg_install 'eatmydata' $yes_tg
+            if command -v apk >/dev/null 2>&1; then
+                test_install libeatmydata
+            else
+                test_install eatmydata
+            fi
         fi
     fi
 }
@@ -486,23 +497,39 @@ test_install() {
         echo -e "$(info) $green $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在安装$*"
-        $sudo_setup $pkg_install $* $yes_tg
+        if command -v eatmydata >/dev/null 2>&1; then
+            eatmydata_setup=eatmydata
+        fi
+        $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
         install_error=$?
         if [ $install_error -ne 0 ]; then
             echo -e "$(info) $red $*安装失败。$color"
             echo -e "$(info) $red 错误代码$install_error $color"
             echo -e "$(info) 正在尝试更新软件包"
-            $pkg_update $yes_tg
+            $sudo_setup $pkg_update $yes_tg
             if [ $? -ne 0 ]; then
                 echo -e "$(info) $red 更新软件包失败$color"
                 esc
             else
                 echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
-                $sudo_setup $pkg_install $* $yes_tg
+                $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
             fi
         else
             echo -e "$(info) $green $*安装成功。$color"
         fi
+    fi
+}
+
+#通用卸载函数
+test_remove() {
+    if command -v $* >/dev/null 2>&1; then
+        $sudo_setup $pkg_remove $* $yes_tg
+        remove_error=$?
+        if [[ $remove_error -ne 0 ]]; then
+            echo -e "$(info) $red $* 软件包卸载失败,按回车键继续。 $color";read
+        fi
+    else
+        echo -e "$(info) $green 不存在这个软件包，无需卸载$color"
     fi
 }
 
@@ -541,6 +568,9 @@ pipx_install() {
     fi
 }
 
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
 pip_mcstatus() {
     if pip show "mcstatus" > /dev/null 2>&1; then
        echo -e "$green ◉ mcstatus已安装,跳过安装$color"
@@ -559,20 +589,39 @@ pip_colorama() {
     fi
 }
 
+#通用克隆
+git_clone(){
+    country #地区检测
+    git clone $github_speed/$1 $2
+    if [ $? -ne 0 ]; then
+        echo -e "$(info) $red 仓库克隆失败$color"
+    else
+        echo -e "$green 仓库克隆成功 $color"
+    fi
+}
+
+#通用下载
+dow() {
+    if command -v wget >/dev/null 2>&1; then
+        wget -O "$2" "$1"
+    elif command -v aria2c >/dev/null 2>&1; then
+        aria2c -o "$2" "$1"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -o "$2" "$1"
+    else
+        echo -e "$(info) $red 系统没有可用的下载器$color"
+    fi
+}
+
+#gg
 ad_gg () {
     echo -e "$blue欢迎加入我们$color"
 }
 
-#错误函数处理
-error() {
-    echo -e "\e[31m错误: $1\e[0m"
-    echo -e "$(info) 错误代码为: $?"
-    exit 1
-}
 
 #工作环境
 termux_PATH () {
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.bashrc; then
             echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
         else
@@ -587,7 +636,7 @@ termux_PATH () {
     fi
     #对zsh检测
     if [ -e $HOME/.zshrc ]; then
-        if [[ -n $PREFIX ]]; then
+        if [[ -n $TERMUX_VERSION ]]; then
             if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.zshrc; then
                 echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.zshrc
             else
@@ -603,6 +652,7 @@ termux_PATH () {
     fi
     chmod +x $nasyt_dir/* >/dev/null 2>&1 #给予权限
 }
+
 
 PATH_set () {
 # PATH 行变量
@@ -784,7 +834,7 @@ often_tool() {
     
     #检查当前系统
     often_tool_main() {
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         if [[ $shell_skip == 1 ]]; then
             echo -e "$(info) 已跳过"
             often_tool_linux
@@ -860,7 +910,7 @@ app_install() {
     app_install_main() {
         if [[ $shell_skip -eq 1 ]]; then
             app_install_linux
-        elif [[ -n $PREFIX ]]; then
+        elif [[ -n $TERMUX_VERSION ]]; then
             app_install_termux
         else
             app_install_linux
@@ -932,7 +982,7 @@ Linux_shell() {
     linux_shell_main() {    
         if [[ $shell_skip -eq 1 ]]; then
             linux_shell_linux
-        elif [[ -n $PREFIX ]]; then
+        elif [[ -n $TERMUX_VERSION ]]; then
             linux_shell_termux
         else
             linux_shell_linux
@@ -988,7 +1038,7 @@ bot_install_menu() {
     }
     if [[ $shell_skip -eq 1 ]]; then
         bot_linux_menu
-    elif [[ -n $PREFIX ]]; then
+    elif [[ -n $TERMUX_VERSION ]]; then
         bot_termux_menu
     else
         bot_linux_menu
@@ -997,7 +1047,7 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         $habit --msgbox "termux爬一边去" 0 0
         exit
     fi
@@ -1515,11 +1565,12 @@ galgame_menu() {
 
 # 文件解压缩
 zip_menu() {
-    br
-    echo "1) zip文件"
-    echo "2) tar.gz文件"
-    echo "0) ◀返回"
-    br
+    zip_menu_xz=$($habit --clear --title "文件解压" \
+    --menu "请选择" 0 0 10 \
+    1 "zip文件解压" \
+    2 "tar.gz文件解压" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
 }
 
 # ssh工具
@@ -2110,7 +2161,7 @@ shell_backup_menu() {
 shell_backup() {
     echo "$(info) 正在备份脚本文件";sleep 0.5s
     cp $nasyt_dir/nasyt $nasyt_dir/version/nasyt$version.bak >/dev/null 2>&1
-    #if [[ -n $PREFIX ]]; then
+    #if [[ -n $TERMUX_VERSION ]]; then
     #    cp $PREFIX/bin/nasyt $PREFIX/bin/nasyt$version.bak >/dev/null 2>&1
     #else
     #    cp /usr/bin/nasyt /usr/bin/nasyt$version.bak>/dev/null 2>&1 >/dev/null 2>&1
@@ -2128,7 +2179,7 @@ shell_recover() {
     file_xz $nasyt_dir/version shell_recover_var
     cp $shell_recover_var $nasyt_dir/nasyt >/dev/null 2>&1
     chmod 777 $nasyt_dir/*
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         cp $shell_recover_var $PREFIX/bin/nasyt
         chmod 777 $PREFIX/bin/nasyt
     else
@@ -2418,13 +2469,34 @@ ifneofetch() {
         case $neofetch_menu_xz in
             1)
                 test_install neofetch
-                neofetch
+                if [ $? -ne 0 ]; then
+                    echo -e "$(info) 没有这个软件包，正在从github源码构建"
+                    test_install git
+                    test_install make
+                    git clone --depth 1 https://github.com/dylanaraps/neofetch.git $nasyt_dir/neofetch
+                    cd $nasyt_dir/neofetch
+                    make install
+                else
+                    neofetch
+                fi
                 esc
                 ;;
             2)
                 test_install fastfetch
-                $habit --msgbox "系统软件包可能没有fastfetch" 0 0
-                fastfetch
+                if [ $? -ne 0 ]; then
+                    $habit --msgbox "一些系统软件包可能没有fastfetch" 0 0
+                else
+                    fastfetch
+                fi
+                esc
+                ;;
+            3)
+                test_install screenfetch
+                if [ $? -ne 0 ]; then
+                    $habit --msgbox "一些系统软件包可能没有screenfetch" 0 0
+                else
+                    screenfetch
+                fi
                 esc
                 ;;
             *)
@@ -2454,7 +2526,7 @@ acg() {
             echo
             acg_menu_sz=$shell_2
         else
-            if [[ -n $PREFIX ]]; then
+            if [[ -n $TERMUX_VERSION ]]; then
                 acg_menu_xz_add="10 "选择并设为壁纸""
             fi
             acg_menu_xz=$($habit --title "🤓🤓随机acg🤓🤓" \
@@ -2588,7 +2660,7 @@ acg() {
             local api_r18_2=$(echo "_$tp_r18")
             time_name_xz+="${tp_time}${tp_pid_2}${api_r18_2}"
         echo -e "$(info) 正在获取图片中,请耐心等待"
-        if [[ -n $PREFIX ]]; then
+        if [[ -n $TERMUX_VERSION ]]; then
             termux-toast "请将termux终端缩至最小,以获得最佳体验。"
         fi
         wget -O $nasyt_dir/acg/$time_name_xz.png "$tp_curl" >/dev/null 2>&1
@@ -2611,7 +2683,7 @@ acg() {
 }
 # 同步上海时间函数
 sync_shanghai_time() {
-    if [[ -n $PREFIX ]]; then
+    if [[ -n $TERMUX_VERSION ]]; then
         test_termux
     else
         test_install ntpdate
@@ -2758,9 +2830,7 @@ index_main() {
                         4)
                             while true
                             do
-                                clear
                                 zip_menu
-                                read -p "请选择: " zip_menu_xz
                                 case $zip_menu_xz in
                                     1)
                                         file_xz . zip_zip
@@ -2783,9 +2853,6 @@ index_main() {
                                         fi
                                         esc
                                         ;;
-                                    0)
-                                        break
-                                        ;;
                                     *)
                                         break
                                         ;;
@@ -2804,33 +2871,33 @@ index_main() {
                            $pkg_install openjdk-$java_install_xz-jre-headless $yes_tg
                            ;;
                         7)
-                            language_menu () {
                             clear; br
                             test_termux
-                            $habit --msgbox "当前只适配了基于 CentOS/Debian的系统\n其他系统的可以尝试一下。" 0 0
+                            $habit --msgbox "目前适配了apt dnf yum pacman apk软件包系统的安装" 0 0
                             case $deb_sys in
-                               apt)
-                                  echo -e "$(info) 正在使用 $deb_sys 下载中文汉化包。"
-                                  sudo apt install task-chinese-s task-chinese-t
-                                  if [ $? -ne 0 ]; then
-                                    echo -e "$(info) $red 汉化包下载失败$color"
-                                  else
-                                    echo -e "$(info) $green 汉化包下载成功$color"
-                                  fi;sleep 1s
-                                  $habit --msgbox "请在接下来的页面内 勾选zh_CN.UTF-8选项 然后回车" 0 0
-                                  sudo dpkg-reconfigure locales
-                                  ;;
-                               dnf)
-                                  $habit --msgbox "确定安装" 0 0
-                                  sudo dnf install glibc-all-langpacks glibc-langpack-zh -y
-                                  sudo dnf install google-noto-sans-cjk-*.noarch -y
-                                  sudo dnf groupinstall "Chinese Support"
-                                  ;;
-                               yum)
-                                  $habit --msgbox "确定安装" 0 0
-                                  sudo yum install glibc-common glibc-langpack-zh -y
-                                  ;;
-                               pacman)
+                                apt)
+                                    echo -e "$(info) 正在使用 $deb_sys 下载中文汉化包。"
+                                    test_install task-chinese-s task-chinese-t
+                                    if [ $? -ne 0 ]; then
+                                        echo -e "$(info) $red 汉化包下载失败$color"
+                                    else
+                                        echo -e "$(info) $green 汉化包下载成功$color"
+                                    fi
+                                    sleep 1s
+                                    $habit --msgbox "请在接下来的页面内 勾选zh_CN.UTF-8选项 然后回车" 0 0
+                                    sudo dpkg-reconfigure locales
+                                    ;;
+                                dnf)
+                                    $habit --msgbox "确定安装" 0 0
+                                    sudo dnf install glibc-all-langpacks glibc-langpack-zh -y
+                                    sudo dnf install google-noto-sans-cjk-*.noarch -y
+                                    sudo dnf groupinstall "Chinese Support"
+                                    ;;
+                                yum)
+                                    $habit --msgbox "确定安装" 0 0
+                                    sudo yum install glibc-common glibc-langpack-zh -y
+                                    ;;
+                                pacman)
                                     sudo pacman -S glibc
                                     sudo pacman -S glibc-locales
                                     sudo locale-gen
@@ -2839,28 +2906,46 @@ index_main() {
                                     gsettings set org.gnome.desktop.interface region 'zh_CN.UTF-8' >/dev/null 2>&1
                                     gsettings set org.gnome.desktop.interface language 'zh_CN:en_US' >/dev/null 2>&1
                                     ;;
-                               *)
-                                  $habit --msgbox "不支持的系统" 0 0
-                                  ;;
+                                apk)
+                                    echo -e "$(info) 正在安装语言包"
+                                    test_install alpine-locales
+                                    echo -e "$(info) 正在安装中文字体"
+                                    test_install  wqy-zenhei wqy-microhei
+                                    echo -e "$(info) 正在更新字体缓存"
+                                    fc-cache -fv >/dev/null 2>&1
+                                    ;;
+                                *)
+                                    $habit --msgbox "作者未适配的系统" 0 0
+                                    break
+                                    ;;
                             esac
-                                echo -e "$(info) 正在设置语言"
-                                sudo localectl set-locale LANG=zh_CN.UTF-8 >/dev/null 2>&1
-                                update-locale LANG=zh_CN.UTF-8
-                                echo -e "$(info) $green语言设置完成$color"
+                            echo -e "$(info) 正在设置当前用户的环境变量..."
+                            if [ -f ~/.bashrc ]; then
+                                if ! grep -q "^export LANG=" ~/.bashrc; then
+                                    echo "export LANG=zh_CN.UTF-8" >> ~/.bashrc
+                                fi
+                                if ! grep -q "^export LC_ALL=" ~/.bashrc; then
+                                    echo "export LC_ALL=zh_CN.UTF-8" >> ~/.bashrc
+                                fi
+                            else
+                                echo "export LANG=zh_CN.UTF-8" > ~/.bashrc
+                                echo "export LC_ALL=zh_CN.UTF-8" >> ~/.bashrc
+                            fi
+                            echo -e "$(info) 正在设置语言"
+                            sudo localectl set-locale LANG=zh_CN.UTF-8 >/dev/null 2>&1
+                            update-locale LANG=zh_CN.UTF-8
+                            echo -e "$(info) $green语言设置完成$color"
                             esc
                             $habit --msgbox "脚本执行结束" 0 0
                             $habit --title "确认操作" --yesno "是否现在重启系统" 0 0
-                                if [ $? -ne 0 ]; then
-                                    break
-                                else
-                                    reboot
-                                fi
-                            }
-                            language_menu
+                            if [ $? -ne 0 ]; then
+                                break
+                            else
+                                reboot
+                            fi
                             ;;
-                            
                         8)
-                            if [[ -n $PREFIX ]]; then
+                            if [[ -n $TERMUX_VERSION ]]; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
                                 test_install wget #检查wget函数
@@ -2869,13 +2954,13 @@ index_main() {
                                     break
                                 fi
                                 wget -O auto_disk.sh http://download.bt.cn/tools/auto_disk.sh
-                                sudo bash auto_disk.sh
+                                $sudo_setup bash auto_disk.sh
                                 esc
                                 exit
                             fi
                             ;;
                         9)
-                            if [[ -n $PREFIX ]]; then
+                            if [[ -n $TERMUX_VERSION ]]; then
                                 $habit --msgbox "不支持termux设置" 0 0
                             else
                                   clear;br
@@ -2903,7 +2988,7 @@ index_main() {
                             fi
                             ;;
                         10)
-                            if [[ -n $PREFIX ]]; then
+                            if [[ -n $TERMUX_VERSION ]]; then
                                 echo -e "$(info) 检测到termux终端正在清理日志文件"
                                 find $PREFIX/var/log/ -type f -mtime +30 -exec rm -f {} >/dev/null 2>&1
                             else
@@ -3825,7 +3910,7 @@ index_main() {
                                         ;;
                                     7)
                                         $habit --msgbox "本项目来自\n gitee.com/heigxaon/moss-android-terminal" 0 0
-                                        if [[ -n $PREFIX ]]; then
+                                        if [[ -n $TERMUX_VERSION ]]; then
                                             if [[ -e $HOME/MOSS ]]; then
                                                 cd $HOME
                                                 chmod 777 $HOME/MOSS
@@ -4058,9 +4143,8 @@ index_main() {
                                         else
                                             echo -e "$(info)$yellow nvim未安装，正在执行安装步骤$color"
                                             if [[ $deb_sys == apt ]]; then
-                                                echo -e "$(info) 检测到apt软件包管理,正在使用snap下载"
-                                                test_install snapd
-                                                snap install nvim
+                                                echo -e "$(info) 检测到apt软件包管理,正在安装"
+                                                snap install nvim --classic
                                             else
                                                 test_install nvim
                                             fi
@@ -4195,7 +4279,7 @@ index_main() {
                                 other_tool_menu
                                 case $other_tool_xz in
                                     1)
-                                        if [[ -n $PREFIX ]]; then
+                                        if [[ -n $TERMUX_VERSION ]]; then
                                             test_install alist
                                             if [ $? -ne 0 ]; then
                                                 echo -e "$(info) $red alist安装失败 $color"
@@ -4214,7 +4298,7 @@ index_main() {
                                         ;;
                                     2)
                                         test_install tar
-                                        if [[ -n $PREFIX ]]; then
+                                        if [[ -n $TERMUX_VERSION ]]; then
                                             test_install openlist
                                             while true
                                             do
@@ -4280,7 +4364,7 @@ index_main() {
                                                     echo -e "$(info) 正在检查wget安装"
                                                     test_install wget
                                                     echo -e "$(info) 正在下载文件"
-                                                    if [[ -n $PREFIX ]]; then
+                                                    if [[ -n $TERMUX_VERSION ]]; then
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_termux_aarch64_0.1.0"
                                                     else
                                                         wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_linux_amd64_0.1.0"
@@ -4318,7 +4402,7 @@ index_main() {
                                         done
                                         ;;
                                     4)
-                                        if [[ -n $PREFIX ]]; then
+                                        if [[ -n $TERMUX_VERSION ]]; then
                                             $habit --msgbox "cloudreve不支持termux安装" 0 0
                                             break
                                         fi
@@ -4598,38 +4682,42 @@ index_main() {
                             done
                             ;;
                         3)
-                            if [ -e "$nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py" ]; then
-                                test_install python pip #调用函数检测
-                                pip_mcstatus;pip_colorama  #调用函数安装/检测
-                                br;sleep 1
-                                mc_test_ip=$($habit --title "服务器地址" \
-                                --inputbox "本脚本由 NAS油条 制作\n >_< \n 请输入IP或域名" 0 0 \
-                                2>&1 1>/dev/tty);
-                                if [ $? -ne 0 ];then
-                                    break
+                            while true
+                            do
+                                if [ -e "$nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py" ]; then
+                                    test_install python pip #调用函数检测
+                                    pip_mcstatus;pip_colorama  #调用函数安装/检测
+                                    br;sleep 1
+                                    mc_test_ip=$($habit --title "服务器地址" \
+                                    --inputbox "本脚本由 NAS油条 制作\n >_< \n 请输入IP或域名" 0 0 \
+                                    2>&1 1>/dev/tty);
+                                    if [ $? -ne 0 ];then
+                                        break
+                                    fi
+                                    mc_test_port=$($habit --title "端口" \
+                                    --inputbox "请输入服务器端口" 0 0 \
+                                    2>&1 1>/dev/tty);
+                                    if [ $? -ne 0 ];then
+                                        break
+                                    fi
+                                    mc_test_total=$($habit --title "数量" \
+                                    --inputbox "请输入要测压的数量（1000" 0 0 \
+                                    2>&1 1>/dev/tty);
+                                    if [ $? -ne 0 ];then
+                                        break
+                                    fi
+                                    python $nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py --host $mc_test_ip --port $mc_test_port --total $mc_test_total
+                                    esc
+                                else
+                                   
+                                   echo -e "$(info) 正在克隆github仓库"
+                                   git_clone https://github.com/konsheng/MinecraftMotdStressTest.git $nasyt_dir/MinecraftMotdStressTest
+                                   echo -e "$(info) 正在检查,脚本所需资源"
+                                   test_install python pip #调用函数安装/检测
+                                   pip_mcstatus;pip_colorama  #调用函数安装/检测
+                                   $habit --msgbox "安装完成,请重新打开脚本" 0 0
                                 fi
-                                mc_test_port=$($habit --title "端口" \
-                                --inputbox "请输入服务器端口" 0 0 \
-                                2>&1 1>/dev/tty);
-                                mc_test_total=$($habit --title "数量" \
-                                --inputbox "请输入要测压的数量（1000" 0 0 \
-                                2>&1 1>/dev/tty);
-                                python $nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py --host $mc_test_ip --port $mc_test_port --total $mc_test_total
-                                esc
-                            else
-                               
-                               echo -e "$(info) 正在克隆github仓库"
-                               git clone https://github.com/konsheng/MinecraftMotdStressTest.git $nasyt_dir/MinecraftMotdStressTest 
-                               if [ $? -ne 0 ]; then
-                               echo -e "$(info) $red 克隆失败$color"
-                               else
-                               echo -e "$(info) $green 克隆成功$color"
-                               fi
-                               echo -e "$(info) 正在检查,脚本所需资源"
-                               test_install python pip #调用函数安装/检测
-                               pip_mcstatus;pip_colorama  #调用函数安装/检测
-                               $habit --msgbox "安装完成,请重新打开脚本" 0 0
-                            fi
+                            done
                             ;;
                         4)
                             $habit --title "确认操作" --yesno "确定运行Docker 安装与换源脚本吗？" 0 0

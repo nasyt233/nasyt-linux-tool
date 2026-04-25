@@ -3,7 +3,24 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
-    
+    echo "2026年4月22日更新v2.4.3.4版"
+    echo "添加 更多TUI图形化适配"
+    echo "重构 language中文语言设置"
+    echo "添加 screenfetch软件包安装"
+    echo "添加 neofetch安装错误处理"
+    echo "修复 Termux误检测问题"
+    echo "更新 对Alpine系统更多适配"
+    echo "更新 对OpenWrt系统支持"
+    echo "更新 whiptail软件包安装"
+    echo "修复 通用安装函数重复问题"
+    echo "优化 MC 压力测试脚本"
+    echo "添加 git_clone函数"
+    echo "优化 nvim安装并修复错误"
+    echo "修复 lazy vim克隆问题"
+    echo "修复 github加速检测问题"
+    echo "修复 已知bug,优化一些细节"
+    br
+    read
     echo "2026年4月6日更新v2.4.3.3版"
     echo "修改 skip跳过为-k参数"
     echo "添加 快捷ssh连接命令-s"
