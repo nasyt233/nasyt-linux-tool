@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/4/25"
-version="v2.4.3.4"
+time_date="2026/5/16"
+version="v2.4.3.5"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -76,6 +76,8 @@ menu_jc() {
     menu
 }
 
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
 # 检查包管理器的函数
 check_pkg_install() {
     if [ -f /etc/os-release ]; then
@@ -241,6 +243,15 @@ bash_url() {
     fi
 }
 
+x() {
+    tar -xzvf $1 $2
+    cw_test=$?
+    if [ $cw_test -ne 0 ]; then
+        echo -e "$(info) $red ❌ 错误代码: $cw_test $color"
+    else
+        echo -e "$(info) $green 文件解压成功$color"
+    fi
+}
 
 #国内外检测
 country() {
@@ -251,6 +262,39 @@ country() {
     else
         echo "当前不在中国"
         github_speed=""
+    fi
+}
+
+# SHA256校验通用函数
+sha() {
+    local sha_file="$1"
+    local expect="$2"
+
+    if [ ! -f "$sha_file" ]; then
+        echo -e "$(info) $red 文件不存在 $color"
+        return 1
+    fi
+
+    local local_sum
+    if command -v sha256sum >/dev/null 2>&1; then
+        local_sum=$(sha256sum "$file" | awk '{print $1}')
+    elif command -v openssl >/dev/null 2>&1; then
+        local_sum=$(openssl dgst -sha256 "$file" | awk '{print $2}')
+    elif command -v sha256 >/dev/null 2>&1; then
+        local_sum=$(sha256 "$file" | awk '{print $1}')
+    else
+        echo -e "$(info) $red 系统无可用SHA256计算工具 $color"
+        return 2
+    fi
+
+    if [ "$local_sum" = "$expect" ]; then
+        echo -e "$(info) $green SHA256 校验通过$color"
+        return 0
+    else
+        echo -e "$(info) $red SHA256 校验不匹配 $color"
+        echo "本地: $local_sum"
+        echo "官方: $expect"
+        return 3
     fi
 }
 
@@ -394,9 +438,6 @@ get_greeting() {
             ;;
     esac
 }
-
-#--------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------
 
 test_termux() {
     if [[ -n $TERMUX_VERSION ]]; then
@@ -571,24 +612,6 @@ pipx_install() {
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
 
-pip_mcstatus() {
-    if pip show "mcstatus" > /dev/null 2>&1; then
-       echo -e "$green ◉ mcstatus已安装,跳过安装$color"
-    else
-       echo -e "$(info) 正在使用pip安装mcstatus"
-       pip install mcstatus
-    fi
-}
-
-pip_colorama() {
-    if pip show "colorama" > /dev/null 2>&1; then
-       echo -e "$green ◉ colorama已安装,跳过安装$color"
-    else
-       echo -e "$(info) 正在使用pip安装colorama"
-       pip install colorama
-    fi
-}
-
 #通用克隆
 git_clone(){
     country #地区检测
@@ -737,6 +760,8 @@ habit_xz () {
     fi
     
 }
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
 
 # 主菜单
 show_menu() {
@@ -760,7 +785,6 @@ show_menu() {
 
 # 查看菜单
 look_menu() {
-    
     look_choice=$($habit --title "查询菜单" \
     --menu "请选择" 0 0 10 \
     1 "当前时间" \
@@ -812,6 +836,7 @@ often_tool() {
     8 "📥下载工具" \
     9 "🔄转换工具" \
     10 "🌌终端美化" \
+    11 "📁文件管理" \
     20 "☰ 其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
@@ -827,6 +852,7 @@ often_tool() {
     8 "📥下载工具" \
     9 "🔄转换工具" \
     10 "🌌终端美化" \
+    11 "📁文件管理" \
     20 "其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
@@ -857,6 +883,7 @@ app_install() {
         2 "📦 Model:建模/设计/制图 (blender,freeCAD)" \
         3 "📄 office:办公/PPT/流程图 (wps,LibreOffice)" \
         4 "🛠 system:软件管理/系统管理 (flatpak,bleachbit)" \
+        5 "💻 code:文件编辑/代码开发 (vscode,Pychrom,Zed)" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
@@ -884,25 +911,54 @@ app_install() {
     }
     
     work_menu() {
-    work_menu_xz=$($habit --clear --title "办公" \
-    --menu "请选择：" 0 0 10 \
-    1 "📋 WPS 365linux (WPS公司的办公软件)" \
-    2 "📄 LibreOffice (开源免费社区办公套件)" \
-    9 "更多内容可联系作者添加" \
-    0 "◀返回" \
-    2>&1 1>/dev/tty)
-    
+        work_menu_xz=$($habit --clear --title "办公" \
+        --menu "请选择：" 0 0 10 \
+        1 "📋 WPS 365linux (WPS公司的办公软件)" \
+        2 "📄 LibreOffice (开源免费社区办公套件)" \
+        3 "🌌 OBS-studio  (免费开源的录屏软件)" \
+        9 "更多内容可联系作者添加" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
     }
     
     system_app_menu() {
         system_app_menu_xz=$($habit --clear --title "标题" \
         --menu "文字" 0 0 10 \
         1 "📦 Flatpak  (跨平台包管理应用商店)" \
-        2 "📦 gnome-software (系统软件商店)" \
+        2 "📦 gnome-software  (系统软件商店)" \
         3 "🗑 bleachbit  (linux垃圾清理工具)" \
+        4 "🍷 Lutris   (linux下开源游戏平台)" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
+    
+    code_menu() {
+        code_menu_xz=$($habit --clear --title "开发" \
+        --menu "请选择" 0 0 10 \
+        1 "Visual Studio Code (开源免费的代码编辑器)" \
+        2 "Zed     (Rust语言开发的高性能代码编辑器)" \
+        3 "JetBrains（JB IDE 全家桶开发系列)" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    
+    jb_menu() {
+        jb_menu_xz=$($habit --clear --title "JetBrains系列" \
+        --menu "安装包全部来源jetbrains.com.cn\n请选择要安装的JB软件：" 0 0 0 \
+        1 "PyCharm 社区版" \
+        2 "IDEA 社区版" \
+        3 "CLion" \
+        4 "GoLand" \
+        5 "WebStorm" \
+        6 "PhpStorm" \
+        7 "RubyMine" \
+        8 "DataGrip" \
+        9 "RustRover" \
+        10 "全部安装" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    
     app_install_termux() {
         $habit --msgbox "此区域只支持linux系统\n抱歉,不支持Termux终端>_<" 0 0
         break
@@ -1047,10 +1103,19 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    if [[ -n $TERMUX_VERSION ]]; then
+    if [[ $shell_skip == 1 ]]; then
+        echo
+    elif [[ -n $TERMUX_VERSION ]]; then
         $habit --msgbox "termux爬一边去" 0 0
         exit
     fi
+    docker_speed() {
+        docker_speed_xz=$($habit --clear --title "镜像选择" \
+        --menu "请选择" 0 0 10 \
+        1 "毫秒docker镜像" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
     while true
     do
         if command -v docker >/dev/null 2>&1; then
@@ -1059,15 +1124,19 @@ docker_menu() {
             1 "docker信息" \
             2 "容器管理" \
             3 "镜像管理" \
-            4 "下载系统镜像" \
+            4 "下载镜像" \
             5 "清理容器/镜像" \
-            6 "卸载docker" \
+            6 "重启服务" \
+            7 "重载配置" \
+            8 "启动服务" \
+            9 "停止服务" \
+            10 "卸载docker" \
+            11 "镜像加速" \
             0 "◀返回" \
             2>&1 1>/dev/tty)
         else
             $habit --title "docker管理" --yesno "docker未安装是否安装?" 0 0
             if [ $? -ne 0 ]; then
-                return 0
                 continue
                 break
             else
@@ -1196,7 +1265,43 @@ docker_menu() {
                 done
                 ;;
             6)
-                $pkg_remove docker
+                echo -e "$(info) 正在重启docker服务"
+                sudo systemctl restart docker
+                esc
+                ;;
+            7)
+                echo -e "$(info) 正在重载docker配置文件"
+                systemctl daemon-reload
+                esc
+                ;;
+            8)
+                echo -e "$(info) 正在启动docker服务"
+                sudo systemctl start docker
+                esc
+                ;;
+            9)
+                echo -e "$(info) 正在停止docker服务"
+                sudo systemctl stop docker
+                esc
+                ;;
+            10)
+                echo -e "$(info) 正在卸载docker"
+                $pkg_remove docker docker.io
+                ;;
+            11)
+                while true
+                do
+                    docker_speed
+                    case $docker_speed_xz in
+                        1)
+                            bash <(curl -sSL https://n3.ink/helper)
+                            esc
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
                 ;;
             *)
                 break
@@ -1253,6 +1358,7 @@ tunnelto_tool() {
                         ;;
                     2)
                         echo -e "$(info) 正在构建 tunnelto 中"
+                        test_install rustc
                         test_install cargo
                         cargo install tunnelto
                         echo -e "$(info) $yellow 请自行添加bin环境变量$color"
@@ -1413,6 +1519,22 @@ index_shell() {
     3 "fish" \
     4 "nushell" \
     5 "starship" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+}
+
+#文件管理工具
+file_admin() {
+    file_admin_xz=$($habit --clear --title "文件管理工具" \
+    --menu "请选择:" 0 0 10 \
+    1 "mc      (1994 C语言开发 经典/新手/简单操作)" \
+    2 "Ranger  (2010 python语言开发 vim/高度定制)" \
+    3 "Yazi    (2023 rust语言开发 精美/现代/高性能)" \
+    4 "vifm    (2005 C语言开发 vim重度依赖者)" \
+    5 "nnn     (2016 C语言开发 极致轻量/服务器)" \
+    6 "lf      (2015 Go语言开发 ranger/轻量/极简主义)" \
+    7 "xplr    (2021 rust语言开发 lua/REPL/开发者)" \
+    8 "kondo   (2024 rust语言开发 清理工具/开发者)" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -4273,6 +4395,63 @@ index_main() {
                                 esac
                             done
                             ;;
+                        11)
+                            while true
+                            do
+                                file_admin
+                                case $file_admin_xz in
+                                    1)
+                                        test_install mc
+                                        mc
+                                        ;;
+                                    2)
+                                        test_install ranger
+                                        ranger
+                                        ;;
+                                    3)
+                                        test_install yazi
+                                        yazi
+                                        ;;
+                                    4)
+                                        test_install vifm
+                                        vifm
+                                        ;;
+                                    5)
+                                        test_install nnn
+                                        nnn
+                                        ;;
+                                    6)
+                                        test_install lf
+                                        lf
+                                        ;;
+                                    7)
+                                        export PATH=$HOME/.cargo/bin:$PATH >/dev/null 2>&1
+                                        if command -v xplr >/dev/null 2>&1; then
+                                            xplr
+                                        else
+                                            test_install rustc
+                                            test_install cargo
+                                            cargo install xplr
+                                            export PATH=$HOME/.cargo/bin:$PATH
+                                        fi
+                                        ;;
+                                    8)
+                                        export PATH=$HOME/.cargo/bin:$PATH >/dev/null 2>&1
+                                        if command -v kondo >/dev/null 2>&1; then
+                                            xplr
+                                        else
+                                            test_install rustc
+                                            test_install cargo
+                                            cargo install kondo
+                                            export PATH=$HOME/.cargo/bin:$PATH
+                                        fi
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
                         20)
                             while true
                             do
@@ -4598,6 +4777,10 @@ index_main() {
                                         test_install libreoffice
                                         esc
                                         ;;
+                                    3)
+                                        test_install obs-studio
+                                        esc
+                                        ;;
                                     *)
                                         break
                                         ;;
@@ -4610,7 +4793,7 @@ index_main() {
                                 system_app_menu
                                 case $system_app_menu_xz in
                                     1)
-                                        test_install flatpak
+                                        test_install flatpak gnome-software-plugin-flatpak
                                         esc
                                         ;;
                                     2)
@@ -4626,6 +4809,63 @@ index_main() {
                                     3)
                                         test_install bleachbit
                                         esc
+                                        ;;
+                                    4)
+                                        test_install lutris
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
+                        5)
+                            while true
+                            do
+                                code_menu
+                                case $code_menu_xz in
+                                    1)
+                                        $habit --msgbox "开发中" 0 0
+                                        ;;
+                                    2)
+                                        curl -f https://zed.rust-lang.net.cn/install.sh | sh
+                                        esc
+                                        ;;
+                                    3)
+                                        while true
+                                        do
+                                            jb_head = "https://download.jetbrains.com"
+                                            jb_menu
+                                            case $jb_menu_xz in
+                                                1)
+                                                    jb_name = "pycharm-2026.1.tar.gz"
+                                                    jb_url = "$jb_head/python/pycharm-2026.1.tar.gz"
+                                                    esc
+                                                    ;;
+                                                2)
+                                                    jb_name = "idea-2026.1.1.tar.gz"
+                                                    jb_url = "$jb_head/idea/idea-2026.1.1.tar.gz"
+                                                    ;;
+                                                3)
+                                                    jb_name = "CLion-2026.1.1.tar.gz"
+                                                    jb_url = "$jb_head/cpp/CLion-2026.1.1.tar.gz"
+                                                    ;;
+                                                0)
+                                                    break
+                                                    ;;
+                                                *)
+                                                    $habit --msgbox "开发中" 0 0
+                                                    break
+                                                    ;;
+                                            esac
+                                                echo -e "$(info) 正在下载中安装包。"
+                                                wget $jb_url -O $jb_name
+                                                echo -e "$(info) 正在解压安装包"
+                                                x $jb_name $nasyt_dir
+                                                echo -e "$(info) 软件安装在$nasyt_dir目录"
+                                            esc
+                                        done
                                         ;;
                                     *)
                                         break
@@ -4686,7 +4926,8 @@ index_main() {
                             do
                                 if [ -e "$nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py" ]; then
                                     test_install python pip #调用函数检测
-                                    pip_mcstatus;pip_colorama  #调用函数安装/检测
+                                    pip_install mcstatus
+                                    pip_install colorama  #调用函数安装/检测
                                     br;sleep 1
                                     mc_test_ip=$($habit --title "服务器地址" \
                                     --inputbox "本脚本由 NAS油条 制作\n >_< \n 请输入IP或域名" 0 0 \
@@ -4936,11 +5177,24 @@ check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+    aria2c|-c|--aria2c)
+        test_install aria2c
+        echo -e "$(info) 正在下载文件"
+        aria2c "$2" -s 16 -x 16 -c
+        cw_test=$?
+        if [ $cw_test -ne 0 ]; then
+            echo -e "$(info) $red 文件下载失败，请检查你的网络和链接是否正确。$color"
+            echo -e "$(info) $red 错误代码: $cw_test $color"
+        else
+            echo -e "$(info) $green 文件下载成功$color"
+        fi
+        exit
+        ;;
     twitter|-x|--dowx|--twitter)
         if [[ -z $2 ]]; then
             echo ""
             echo "用法:"
-            echo "nasyt [参数] [链接]"
+            echo "nasyt -x [链接]"
             echo ""
             exit 0
         else
@@ -5050,6 +5304,7 @@ if [ $# -ne 0 ]; then
         echo "用法:"
         echo -e "  ${blue}nasyt [参数]$color"
         echo "参数:"
+        echo "  -c  --aria2c 快捷多线程下载"
         echo "  -x, --dowx 快捷下载twitter视频"
         echo "  -a, --acg 快捷随机acg图片"
         echo "  -d, --docker 快捷docker管理"

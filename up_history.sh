@@ -3,7 +3,22 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
-    echo "2026年4月22日更新v2.4.3.4版"
+    echo "2026年5月15日更新v2.4.3.5版"
+    echo "更新 aria2c下载的快捷方式-c"
+    echo "更新 docker管理 加速地址"
+    echo "更新 docker管理 基础功能"
+    echo "更新 软件安装/JetBrains IDE全家桶安装"
+    echo "更新 软件安装/obs-studio录屏软件"
+    echo "更新 软件安装/linux游戏管理平台"
+    echo "更新 软件安装/code代码开发软件"
+    echo "更新 实用工具/📁文件管理工具"
+    echo "更新 脚本免责声明内容"
+    echo "更新 软件安装/OBS-Studio录屏软件"
+    echo "优化 软件安装/flatpak软件包管理器安装"
+    echo "修复 部分bug"
+    br
+    read
+    echo "2026年4月25日更新v2.4.3.4版"
     echo "添加 更多TUI图形化适配"
     echo "重构 language中文语言设置"
     echo "添加 screenfetch软件包安装"
