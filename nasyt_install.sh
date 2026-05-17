@@ -26,7 +26,7 @@ check_pkg_install() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release #加载变量
     fi
-    if command -v termux-info >/dev/null 2>&1; then
+    if [[ -n $TERMUX_VERSION ]]; then
         sys="(Termux 终端)"
         PRETTY_NAME="Termux终端"
         sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
@@ -35,48 +35,49 @@ check_pkg_install() {
         pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
+        
         termux-toast "欢迎使用NAS油条termux脚本" &
         
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
-        pkg_install="sudo apt install"
-        pkg_remove="sudo apt remove"
-        pkg_update="sudo apt update"
+        pkg_install="apt install"
+        pkg_remove="apt remove"
+        pkg_update="apt update"
         sudo_setup="sudo"
         deb_sys="apt"
         yes_tg="-y"
         
     elif command -v dnf >/dev/null 2>&1; then
         sys="(Fedora/RHEL/CentOS 8 及更高版本)"
-        pkg_install="sudo dnf install"
-        pkg_remove="sudo dnf remove"
-        pkg_update="sudo dnf update"
+        pkg_install="dnf install"
+        pkg_remove="dnf remove"
+        pkg_update="dnf update"
         sudo_setup="sudo"
         deb_sys="dnf"
         yes_tg="-y"
         
     elif command -v yum >/dev/null 2>&1; then
         sys="(Fedora/RHEL/Rocky/CentOS 7 及更早版本)"
-        pkg_install="sudo yum install"
-        pkg_remove="sudo yum remove"
-        pkg_update="sudo yum update"
+        pkg_install="yum install"
+        pkg_remove="yum remove"
+        pkg_update="yum update"
         sudo_setup="sudo"
         deb_sys="yum"
         yes_tg="-y"
         
     elif command -v pacman >/dev/null 2>&1; then
         sys="(Arch Linux 系列)"
-        pkg_install="sudo pacman -S"
-        pkg_remove="sudo pacman -R"
-        pkg_update="sudo pacman -Syu"
+        pkg_install="pacman -S"
+        pkg_remove="pacman -R"
+        pkg_update="pacman -Syu"
         sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
         
     elif command -v zypper >/dev/null 2>&1; then
         sys="(openSUSE 系列)"
-        pkg_install="sudo zypper in -y"
-        pkg_remove="sudo zypper rm"
+        pkg_install="zypper in -y"
+        pkg_remove="zypper rm"
         sudo_setup="sudo"
         deb_sys="zypper"
         yes_tg="-y"
@@ -84,16 +85,17 @@ check_pkg_install() {
     elif command -v apk >/dev/null 2>&1; then
         sys="(Alpine/PostmarketOS系统)"
         sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
-        pkg_install="sudo apk add"
-        pkg_remove="sudo apk del"
+        pkg_install="apk add"
+        pkg_remove="apk del"
+        pkg_update="apk update"
         sudo_setup="sudo"
         deb_sys="apk"
         yes_tg=""
         
     elif command -v emerge >/dev/null 2>&1; then
         sys="(gentoo/funtoo 系统)"
-        pkg_install="sudo emerge -avk"
-        pkg_remove="sudo emerge -C"
+        pkg_install="emerge -avk"
+        pkg_remove="emerge -C"
         sudo_setup="sudo"
         deb_sys="emerge"
         yes_tg="-y"
@@ -181,94 +183,45 @@ brew_install() {
 
 }
 
-#文件选择器
-file_xz() {
-    #处理
-    file_browser_xz() {
-        #第一个目录参数
-        current_dir="${1:-.}"
-        #第二个变量参数
-        file_var="${2:-file_index}"
-        
-        # 检查目录是否存在
-        if [[ ! -d "$current_dir" ]]; then
-            echo "目标目录 '$current_dir' 不存在" >&2
-            return 1
-        fi
-            #循环
-            while true
-            do
-                local menu_items=()
-                
-                #如果不是根目录，添加返回选项
-                if [[ "$current_dir" != "." ]]; then
-                    menu_items+=(".." "📁 ◀返回上级目录")
-                fi
-                
-                #添加当前目录内容
-                while IFS= read -r item; do
-                    if [[ -n "$item" ]]; then
-                        if [[ -d "$current_dir/$item" ]]; then
-                            menu_items+=("$item" "📁 $item/")
-                        else
-                            menu_items+=("$item" "📄 $item")
-                        fi
-                    fi
-                done < <(ls -a "$current_dir" --group-directories-first)
-                
-                dir_xz=$($habit --title "文件选择器" \
-                --menu "文件浏览器: $current_dir 🤓👇" 0 0 15 \
-                "${menu_items[@]}" \
-                2>&1 1>/dev/tty)
-                
-                if [[ -z "$dir_xz" ]]; then
-                    break
-                fi
-                
-                if [[ "$dir_xz" == ".." ]]; then
-                    current_dir=$(dirname "$current_dir")
-                elif [[ -d "$current_dir/$dir_xz" ]]; then
-                    current_dir="$current_dir/$dir_xz"
-                else
-                    $habit --yesno "确认文件: $current_dir/$dir_xz" 0 0
-                    if [ $? -eq 0 ]; then
-                        eval "$file_var"="$current_dir/$dir_xz"
-                        break
-                    fi
-                fi
-            done    
-        }
-    file_browser_xz "$@"
-    #输出
-    #if [[ -n $file_index ]]; then
-    #    echo $file_index
-    #else
-    #    echo $file_var
-    #fi
-}
-
-
 #通用安装
 test_install() {
     if command -v $* >/dev/null 2>&1; then
         echo -e "$(info) $green $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在安装$*"
-        $sudo_setup $pkg_install $* $yes_tg
+        if command -v eatmydata >/dev/null 2>&1; then
+            eatmydata_setup=eatmydata
+        fi
+        $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
         install_error=$?
         if [ $install_error -ne 0 ]; then
             echo -e "$(info) $red $*安装失败。$color"
-            echo -e "$(info) 正在更新软件包"
-            $pkg_update $yes_tg
+            echo -e "$(info) $red 错误代码$install_error $color"
+            echo -e "$(info) 正在尝试更新软件包"
+            $sudo_setup $pkg_update $yes_tg
             if [ $? -ne 0 ]; then
                 echo -e "$(info) $red 更新软件包失败$color"
+                esc
             else
                 echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
-                $sudo_setup $pkg_install $* $yes_tg
+                $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
             fi
         else
             echo -e "$(info) $green $*安装成功。$color"
         fi
+    fi
+}
+
+#通用卸载函数
+test_remove() {
+    if command -v $* >/dev/null 2>&1; then
+        $sudo_setup $pkg_remove $* $yes_tg
+        remove_error=$?
+        if [[ $remove_error -ne 0 ]]; then
+            echo -e "$(info) $red $* 软件包卸载失败,按回车键继续。 $color";read
+        fi
+    else
+        echo -e "$(info) $green 不存在这个软件包，无需卸载$color"
     fi
 }
 
@@ -308,6 +261,7 @@ gx() {
     # 下载安装更新
     br
     if command -v nasyt >/dev/null 2>&1; then
+        echo -e "$(info) 检测到已安装nasyt脚本"
         shell_backup
     fi
     for url in "${urls[@]}"; do
@@ -331,9 +285,7 @@ gx() {
                 echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
                 shell_recover
             fi
-            echo -e "$(info) 正在后台安装必要文件"
-            test_install figlet & >/dev/null 2>&1
-            test_install eatmydata >/dev/null 2>&1
+            # echo -e "$(info) 正在安装必要文件"
             echo "$(info) 如果不行请重新连接终端"
             echo -e "$(info) 启动命令为$yellow nasyt$color"
             source $HOME/.bashrc >/dev/null 2>&1
@@ -363,25 +315,6 @@ shell_backup() {
     fi
 }
 
-#脚本恢复
-shell_recover() {
-    echo -e "$(info) 正在恢复脚本文件";sleep 0.5s
-    file_xz $nasyt_dir/version shell_recover_var
-    cp $shell_recover_var $nasyt_dir/nasyt >/dev/null 2>&1
-    chmod 777 $nasyt_dir/*
-    if command -v termux-info >/dev/null 2>&1; then
-        cp $shell_recover_var $PREFIX/bin/nasyt
-        chmod 777 $PREFIX/bin/nasyt
-    else
-        cp $shell_recover_var /usr/bin/nasyt
-        chmod 777 /usr/bin/nasyt >/dev/null 2>&1
-    fi
-    if [ $? -ne 0 ]; then
-        echo -e "$(info) $red 脚本恢复失败$color"
-    else
-        echo -e "$(info) $green 脚本恢复成功$color"
-    fi
-}
 
 all_variable() {
     OUTPUT_FILE="nasyt" # 下载文件名
