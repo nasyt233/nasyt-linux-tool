@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/5/16"
-version="v2.4.3.5"
+time_date="2026/5/24"
+version="v2.4.3.6"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
@@ -837,6 +837,7 @@ often_tool() {
     9 "🔄转换工具" \
     10 "🌌终端美化" \
     11 "📁文件管理" \
+    12 "🦞AI工具" \
     20 "☰ 其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
@@ -853,6 +854,7 @@ often_tool() {
     9 "🔄转换工具" \
     10 "🌌终端美化" \
     11 "📁文件管理" \
+    12 "🦞AI工具" \
     20 "其他工具" \
     0 "◀返回上层菜单" \
     2>&1 1>/dev/tty)
@@ -1539,6 +1541,16 @@ file_admin() {
     2>&1 1>/dev/tty)
 }
 
+ai_menu() {
+    ai_menu_xz=$($habit --clear --title "🦞Ai工具" \
+    --menu "请选择" 0 0 10 \
+    1 "CodeX-tui" \
+    2 "deepseek-tui" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
+
+}
+
 #其他工具
 other_tool_menu() {
     other_tool_xz=$($habit --title "其他工具" \
@@ -1635,9 +1647,47 @@ dow_tool_menu() {
     dow_tool_menu_xz=$($habit --clear --title "下载工具" \
     --menu "请选择:" 0 0 10 \
     1 "nfq番茄小说下载工具" \
-    2 "twitter视频下载工具" \
+    2 "Twitter视频下载工具" \
+    3 "bili YouTube视频下载工具" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
+}
+
+#bilibili视频解析
+video_jx() {
+    if [[ $* == *"bilibili.com/video/"* ]]; then
+        echo -e "$(info)  检测到B站链接，正在解析。"
+        video_jg=$(echo "$*" | grep -o "https://www.bilibili.com/video/[^?]*")
+    elif [[ $* == *"b23.tv"* ]]; then
+        echo -e "$(info)  检测到BV链接正在进行二次解析"
+        video_jg=$(curl -s "$(echo "$*" | grep -o "https://b23.tv/[^*]*")" | grep -o "https://www.bilibili.com/video/[^?]*")
+    elif [[ $* == *"https://v.douyin.com/"* ]]; then
+        $habit --msgbox "检测到抖音链接请选择Cookie文件" 0 0
+        file_xz $PWD cookie_xz
+        cookie="--cookies "$cookie_xz""
+        video_jg=$(echo "$*" | grep -o "https://v.douyin.com/[^/]*")
+    else
+        video_jg=$(echo "$*")
+    fi
+}
+
+#bilibili视频下载工具
+video_dow() {
+    test_install yt-dlp ffmpeg
+    video_jx $*
+    yt-dlp \
+    --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" \
+    $cookie \
+    -c $video_jg
+    cw_test=$?
+    if [ $cw_test -ne 0 ]; then
+        echo -e "$(info) $red 视频下载失败 $color"
+        echo -e "$(info) $red 错误代码：$cw_test $color"
+    else
+        echo -e "$(info) $green 视频下载成功$color"
+        echo -e "$(info) 视频已保存到$PWD目录"
+    fi
+    esc
 }
 
 cloudreve_menu() {
@@ -1657,7 +1707,7 @@ server_install_menu() {
     --menu "请选择" 0 0 10 \
     1 "安装SFS服务端" \
     2 "安装phira服务端" \
-    3 "tmux工具" \
+    3 "Tmux后台管理工具" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1672,7 +1722,7 @@ game_menu() {
     5 "🪴盆栽艺术" \
     6 "可视化音频" \
     7 "MOSS智能终端" \
-    8 "终端galgame" \
+    8 "终端GalGame" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1681,6 +1731,7 @@ galgame_menu() {
     galgame_menu_xz=$($habit --clear --title "galgame" \
     --menu "请选择" 0 0 10 \
     1 "原神vs鸣朝" \
+    2 "千恋雨姐" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -4071,6 +4122,14 @@ index_main() {
                                                 1)
                                                     $habit --msgbox "开发中" 0 0
                                                     ;;
+                                                2)
+                                                    echo -e "$(info) 正在下载文件"
+                                                    curl -o $nasyt_dir/qlyj.zip "https://cdn.hoha.top/%E5%8D%83%E6%81%8B%E9%9B%A8%E5%A7%90/0.8/%E5%8D%83%E6%81%8B%E9%9B%A8%E5%A7%90-0.8-android-aarch64.zip"
+                                                    unzip $nasyt_dir/qlyj.zip
+                                                    cd $nasyt_dir/千恋雨姐/0.8
+                                                    bash start.sh
+                                                    esc
+                                                    ;;
                                                 *)
                                                     break
                                                     ;;
@@ -4297,6 +4356,13 @@ index_main() {
                                         dow_x_mp4 "$x_url"
                                         esc
                                         ;;
+                                    3)
+                                        video_url=$($habit --clear --title "视频解析工具" \
+                                        --inputbox "请输入链接" 0 0 \
+                                        2>&1 1>/dev/tty)
+                                        video_dow $video_url
+                                        esc
+                                        ;;
                                     *)
                                         break
                                         ;;
@@ -4444,6 +4510,52 @@ index_main() {
                                             test_install cargo
                                             cargo install kondo
                                             export PATH=$HOME/.cargo/bin:$PATH
+                                        fi
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
+                        12)
+                            while true
+                            do
+                                ai_menu
+                                case $ai_menu_xz in
+                                    1)
+                                        if command -v codex >/dev/null 2>&1; then
+                                            codex
+                                        else
+                                            test_install nodejs
+                                            if [[ -n $PREFIX ]]; then
+                                                npm install -g @mmmbuto/codex-cli-termux@latest
+                                                codex --version
+                                                codex
+                                            else
+                                                npm install codex
+                                            fi
+                                        fi
+                                        esc
+                                        ;;
+                                    2)
+                                        if [[ -n $PREFIX ]]; then
+                                            $habit --msgbox "不支持termux" 0 0
+                                        else
+                                            test_install nodejs libdbus-1-3 ca-certificates openssl
+                                            if command -v deepseek >/dev/null 2>&1; then
+                                                deepseek
+                                            else
+                                                $habit --msgbox "下载deepseek-tui需要科学上网\n确保你能正常访问github" 0 0
+                                                npm install -g deepseek-tui
+                                                cw_test=$?
+                                                if [ $cw_test -ne 0 ]; then
+                                                    echo -e "$(info) $red 下载失败 错误代码：$cw_test $color"
+                                                else
+                                                    echo -e "$(info) $green 下载成功$color"
+                                                    deepseek
+                                                fi
+                                            fi
                                         fi
                                         ;;
                                     *)
@@ -5177,6 +5289,10 @@ check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+    bilibili|-b|--bili)
+        video_dow $2
+        exit
+        ;;
     aria2c|-c|--aria2c)
         test_install aria2c
         echo -e "$(info) 正在下载文件"
@@ -5304,6 +5420,7 @@ if [ $# -ne 0 ]; then
         echo "用法:"
         echo -e "  ${blue}nasyt [参数]$color"
         echo "参数:"
+        echo "  -b  --bili b站 YouTube视频下载工具"
         echo "  -c  --aria2c 快捷多线程下载"
         echo "  -x, --dowx 快捷下载twitter视频"
         echo "  -a, --acg 快捷随机acg图片"

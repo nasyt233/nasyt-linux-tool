@@ -3,7 +3,14 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
-    echo "2026年5月15日更新v2.4.3.5版"
+    echo "2026年5月24日更新v2.4.3.6版"
+    echo "更新 nasyt -b命令快捷视频解析"
+    echo "更新 📺(b站 抖音 YouTube)视频解析工具"
+    echo "更新 🦞AI工具 codex deekseek工具"
+    echo "更新 实用工具/娱乐/ngal项目千恋雨姐(termux)快捷下载"
+    br
+    read
+    echo "2026年5月16日更新v2.4.3.5版"
     echo "更新 aria2c下载的快捷方式-c"
     echo "更新 docker管理 加速地址"
     echo "更新 docker管理 基础功能"
