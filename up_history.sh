@@ -3,6 +3,28 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年6月4日更新v2.4.3.7版"
+    echo "更新 脚本运行日志清理"
+    echo "更新 nasyt log日志输出模式"
+    echo "更新 nasyt -l彩色输出模式"
+    echo "更新 nasyt -sec快捷选项"
+    echo "更新 nasyt -v展示更多信息"
+    echo "优化 Ajenti面板配置文件打开"
+    echo "更新 jmcomic📕下载工具"
+    echo "更新 debug 函数输出模式"
+    echo "更新 ssh管理配置文件选项"
+    echo "测试 proot容器管理工具"
+    echo "修改 help的一些选项"
+    echo "优化 help的帮助列表排序"
+    echo "更新 github加速链接设置"
+    echo "更新 文件默认打开设置"
+    echo "更新 查看配置文件选项"
+    echo "引入 yml配置文件管理函数"
+    echo "引入 新配置文件管理函数"
+    echo "适配 nonebot管理支持termux使用"
+    echo "修复 已知bug 优化代码结构"
+    br
+    read
     echo "2026年5月24日更新v2.4.3.6版"
     echo "更新 nasyt -b命令快捷视频解析"
     echo "更新 📺(b站 抖音 YouTube)视频解析工具"

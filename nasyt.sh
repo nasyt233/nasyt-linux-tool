@@ -10,22 +10,20 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/5/24"
-version="v2.4.3.6"
+time_date="2026/6/4"
+version="v2.4.3.7"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
+#config_file="$nasyt_dir/config.txt" #脚本配置文件
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 #bin_dir="usr/bin" #bin目录
 #nasyt_from="gitcode" # 脚本来源
-#> $nasyt_dir/shell.log
-#exec > >(tee -a "$nasyt_dir/shell.log") 2>&1
 
 # 主菜单
 menu_jc() {
     menu() {
-        clear
         while true
         do
-            clear; clear
+            clear
             echo
             # 根据时间返回问候语
             get_greeting
@@ -92,7 +90,7 @@ check_pkg_install() {
         pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
-        
+        deb_size="共$(dpkg -l | wc -l) 个软件包" >/dev/null 2>&1
         termux-toast "欢迎使用NAS油条termux脚本" &
         
     elif command -v apt-get >/dev/null 2>&1; then
@@ -103,6 +101,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="apt"
         yes_tg="-y"
+        deb_size="共$(dpkg -l | wc -l) 个软件包" >/dev/null 2>&1
         
     elif command -v dnf >/dev/null 2>&1; then
         sys="(Fedora/RHEL/CentOS 8 及更高版本)"
@@ -112,6 +111,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="dnf"
         yes_tg="-y"
+        deb_size="共$(rpm -qa | wc -l) 个软件包" >/dev/null 2>&1
         
     elif command -v yum >/dev/null 2>&1; then
         sys="(Fedora/RHEL/Rocky/CentOS 7 及更早版本)"
@@ -121,6 +121,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="yum"
         yes_tg="-y"
+        deb_size="共$(rpm -qa | wc -l) 个软件包" >/dev/null 2>&1
         
     elif command -v pacman >/dev/null 2>&1; then
         sys="(Arch Linux 系列)"
@@ -130,6 +131,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
+        deb_size="共$(pacman -Q | wc -l) 个软件包" >/dev/null 2>&1
         
     elif command -v zypper >/dev/null 2>&1; then
         sys="(openSUSE 系列)"
@@ -138,6 +140,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="zypper"
         yes_tg="-y"
+        deb_size="共$(zypper se -i | wc -l) 个软件包" >/dev/null 2>&1
         
     elif command -v apk >/dev/null 2>&1; then
         sys="(Alpine/PostmarketOS系统)"
@@ -148,6 +151,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="apk"
         yes_tg=""
+        deb_size="共$(apk info | wc -l) 个软件包" >/dev/null 2>&1
         
     elif command -v emerge >/dev/null 2>&1; then
         sys="(gentoo/funtoo 系统)"
@@ -156,6 +160,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="emerge"
         yes_tg="-y"
+        deb_size="共$(qlist -I | wc -l) 个软件包" >/dev/null 2>&1
         
     elif [[ "$(uname -s)" == "Darwin" ]]; then
         brew_install #brew安装检测
@@ -164,6 +169,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="brew"
         yes_tg="-y"
+        deb_size="共$(brew list | wc -l) 个软件包" >/dev/null 2>&1
         read -p "抱歉，目前没有完全适配MacOS系统"
         
     else
@@ -197,9 +203,7 @@ all_variable() {
 }
 
 
-
 # 函数
-
 default_habit() {
     if [[ -n $habit ]]; then
         echo
@@ -219,8 +223,8 @@ info() {
 }
 
 uptime_cn() {
-    uptime_sc=$(uptime | sed 's/up/运行/; s/days/天/; s/day/天/; s/hours/小时/; s/hour/小时/; s/minutes/分钟/; s/minute/分钟/; s/users/用户/; s/user/用户/; s/load average/平均负载/')
-    $habit --msgbox "系统: $uptime_sc" 0 0
+    uptime_sc=$(uptime -p | sed 's/up/运行/; s/week/周/; s/days/天/; s/day/天/; s/hours/小时/; s/hour/小时/; s/minutes/分钟/; s/minute/分钟/; s/users/用户/; s/user/用户/; s/load average/平均负载/')
+    
 }
 
 br() {
@@ -244,7 +248,7 @@ bash_url() {
 }
 
 x() {
-    tar -xzvf $1 $2
+    tar -xzvf $1 -C $2 >/dev/null 2>&1
     cw_test=$?
     if [ $cw_test -ne 0 ]; then
         echo -e "$(info) $red ❌ 错误代码: $cw_test $color"
@@ -265,6 +269,77 @@ country() {
     fi
 }
 
+
+
+#github加速工具
+github_speed_tool() {
+    github_speed_menu() {
+        github_speed_xz=$($habit --clear --title "github加速设置" \
+        --menu "当前加速地址: $github_speed \n请选择一个github加速地址" 0 0 10 \
+        1 "gh-proxy.com" \
+        2 "ghfast.top" \
+        3 "ghproxy.net" \
+        4 "ghproxy.homeboyc.cn" \
+        5 "gh.jasonzeng.dev" \
+        6 "github.xxlab.tech" \
+        8 "重置选择" \
+        9 "自定义链接" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    github_speed_while() {
+        while true
+        do
+            github_speed_menu
+            case $github_speed_xz in
+                1)
+                    github_speed_sz="https://gh-proxy.com"
+                    ;;
+                2)
+                    github_speed_sz="https://ghfast.top"
+                    ;;
+                3)
+                    github_speed_sz="https://ghproxy.net"
+                    ;;
+                4)
+                    github_speed_sz="https://ghproxy.homeboyc.cn"
+                    ;;
+                5)
+                    github_speed_sz="https://gh.jasonzeng.dev"
+                    ;;
+                6)
+                    github_speed_sz="https://github.xxlab.tech"
+                    ;;
+                8)
+                    config del github_speed
+                    $habit --msgbox "重置完成" 0 0
+                    ;;
+                9)
+                    github_speed_sz=$($habit --clear --title "自定义设置加速链接" \
+                    --inputbox "请输入链接(例如https://xxx.com)\n加速链接不要用/结尾" 0 0 \
+                    2>&1 1>/dev/tty)
+                    if [ $? -ne 0 ]; then
+                        break
+                    fi
+                    ;;
+                *)
+                    break
+                    ;;
+            esac
+            config add github_speed $github_speed_sz
+            echo -e "$(info) $green 设置完成，如需切换请在脚本设置进行切换$color"
+            esc
+        done
+    }
+    if [[ $github_speed_skip != 1 ]]; then
+        if [[ -z $github_speed ]]; then
+            github_speed_while
+        fi
+    else
+        github_speed_while
+    fi
+}
+
 # SHA256校验通用函数
 sha() {
     local sha_file="$1"
@@ -277,24 +352,24 @@ sha() {
 
     local local_sum
     if command -v sha256sum >/dev/null 2>&1; then
-        local_sum=$(sha256sum "$file" | awk '{print $1}')
-    elif command -v openssl >/dev/null 2>&1; then
-        local_sum=$(openssl dgst -sha256 "$file" | awk '{print $2}')
+        local_sum=$(sha256sum "$sha_file")
     elif command -v sha256 >/dev/null 2>&1; then
-        local_sum=$(sha256 "$file" | awk '{print $1}')
+        local_sum=$(sha256 "$sha_file")
+    elif command -v shasum >/dev/null 2>&1; then
+        local_sum=$(shasum -a 256 "$sha_file")
     else
-        echo -e "$(info) $red 系统无可用SHA256计算工具 $color"
+        echo -e "$(info) $red 系统无可用的SHA256计算工具 $color"
         return 2
     fi
 
-    if [ "$local_sum" = "$expect" ]; then
+    if [[ "$local_sum" == "$expect" ]]; then
         echo -e "$(info) $green SHA256 校验通过$color"
         return 0
     else
         echo -e "$(info) $red SHA256 校验不匹配 $color"
         echo "本地: $local_sum"
         echo "官方: $expect"
-        return 3
+        return 1
     fi
 }
 
@@ -326,6 +401,98 @@ brew_install() {
         bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
+}
+
+# 配置管理函数
+config() {
+    local config_file=${4:-$nasyt_dir/config.txt} >/dev/null 2>&1
+    mkdir -p "$(dirname "$config_file")" >/dev/null 2>&1
+    [ ! -f "$config_file" ] && touch "$config_file"
+
+    config_add() {
+        local key="$1"
+        local val="$2"
+        val="${val//\"/\\\"}"
+        sed -i "/^${key}=/d" "$config_file"
+        echo "${key}=\"${val}\"" >> "$config_file"
+    }
+
+    config_load() {
+        local key="$1"
+        local res
+        res=$(awk -v k="$key" '$0 ~ "^"k"=\"" {sub(/^[^"]+="/,""); sub(/"/,""); print}' "$config_file")
+        [[ -z "$res" ]] && return 1
+        echo "$res"
+    }
+
+    config_del() {
+        local key="$1"
+        sed -i "/^${key}=/d" "$config_file"
+    }
+
+    config_list() {
+        cat "$config_file"
+    }
+
+    config_clear() {
+        > "$config_file"
+    }
+
+    case "$1" in
+        add) shift; config_add "$@" ;;
+        load) shift; config_load "$@" ;;
+        del)  shift; config_del "$@"  ;;
+        list) config_list ;;
+        clear) config_clear ;;
+    esac
+    #重载配置文件
+    source "$config_file" >/dev/null 2>&1
+}
+
+#yml配置文件管理
+yml() {
+    # yml add 1.yml nasyt.name "NAS油条"
+    # yml del 1.yml nasyt.name
+    #检测文件
+    yml_file() {
+        [ -f "$1" ]||{ echo -e "$(info) $red 错误：没有$1 文件$color";return 1;}
+    }
+    #读取
+    yml_load() {
+        yml_file "$1" && yq eval ".$2" "$1"
+    }
+    #新增/覆盖val
+    yml_add(){
+        [ ! -f "$1" ] && touch "$1"
+        yq eval ".$2 = \"$3\"" -i "$1"
+    }
+    #删除
+    yml_del() {
+        yml_file $1&&yq eval "del(.$2)" -i $1
+    }
+    #清空
+    yml_clear() {
+        >$1
+    }
+    #列出
+    yml_list() {
+        yml_file "$1" && cat "$1"
+    }
+    [[ -f $1 ]] && test_install yq
+    case "$1" in
+        add) shift; yml_add "$@" ;;
+        load) shift; yml_load "$@" ;;
+        del)  shift; yml_del "$@"  ;;
+        list) shift; yml_list "$@" ;;
+        clear) shift; yml_clear "$@" ;;
+    esac
+}
+
+#文件夹选择
+file_dir() {
+    file_var="${2:-file_dir_sc}"
+    file_dir_sc=$(dialog --clear --title "选择文件夹" --dselect "${1:-$HOME}" 0 0 2>&1 >/dev/tty)
+    eval "$file_var"="$file_dir_sc"
 }
 
 #文件选择器
@@ -441,21 +608,13 @@ get_greeting() {
 
 test_termux() {
     if [[ -n $TERMUX_VERSION ]]; then
-        $habit --msgbox "不支持termux终端" 0 0
+        $habit --msgbox "不支持Termux终端" 0 0
         break
     fi
 }
 
-# 检查dialog whiptail figlet安装
-test_install_jc() {
-    if [ $? -ne 0 ]; then
-        echo -e "$(info) $red 安装失败。$color"
-    else
-        echo -e "$(info) $green 安装成功。$color"
-    fi
-}
 
-
+#类figlet
 test_toilet() {
     if command -v toilet >/dev/null 2>&1; then
         echo -e "$green ◉ toilet已安装，跳过安装步骤 $color"
@@ -609,12 +768,9 @@ pipx_install() {
     fi
 }
 
-#--------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------
-
 #通用克隆
 git_clone(){
-    country #地区检测
+    github_speed_tool #地区检测
     git clone $github_speed/$1 $2
     if [ $? -ne 0 ]; then
         echo -e "$(info) $red 仓库克隆失败$color"
@@ -625,16 +781,31 @@ git_clone(){
 
 #通用下载
 dow() {
-    if command -v wget >/dev/null 2>&1; then
+    if command -v aria2c >/dev/null 2>&1; then
+        aria2c -c -m 2 -s 16 -x 16 "$1" -d "$2"
+        cw_test=$?
+    elif command -v wget >/dev/null 2>&1; then
         wget -O "$2" "$1"
-    elif command -v aria2c >/dev/null 2>&1; then
-        aria2c -o "$2" "$1"
+        cw_test=$?
     elif command -v curl >/dev/null 2>&1; then
         curl -o "$2" "$1"
+        cw_test=$?
     else
         echo -e "$(info) $red 系统没有可用的下载器$color"
+        esc
+    fi
+    if [[ $cw_test -eq 0 ]]; then
+        echo -e "$(info) $green 下载成功$color"
+    else
+        echo -e "$(info) $red 下载失败$color"
+        echo -e "$(info) $red 错误代码：$cw_test$color"
     fi
 }
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+
 
 #gg
 ad_gg () {
@@ -676,33 +847,32 @@ termux_PATH () {
     chmod +x $nasyt_dir/* >/dev/null 2>&1 #给予权限
 }
 
-
-PATH_set () {
-# PATH 行变量
-if ! grep -q "^export PATH=" $nasyt_dir/config.txt; then
-    echo "export PATH="$nasyt_dir:$PATH"" >> $nasyt_dir/config.txt
-else
-    echo -e "$(info) PATH 已存在于 $nasyt_dir，跳过添加"
-fi
-}
-
 # 检查脚本文件夹。
-check_script_folder () {
-    if [ -d "$nasyt_dir" ]; then
-        echo
-    else
-        mkdir -p "$nasyt_dir"
-    fi
-    if [ -d "$nasyt_dir/version" ]; then
-        echo
-    else
-        mkdir -p "$nasyt_dir/version"
-    fi
-    if [ -d "$nasyt_dir/acg" ]; then
-        echo
-    else
-        mkdir -p "$nasyt_dir/acg"
-    fi
+check_script_folder() {
+    check_script_folder_main() {
+        if [ -d "$nasyt_dir" ]; then
+            echo
+        else
+            mkdir -p "$nasyt_dir"
+        fi
+        if [ -d "$nasyt_dir/version" ]; then
+            echo
+        else
+            mkdir -p "$nasyt_dir/version"
+        fi
+        if [ -d "$nasyt_dir/acg" ]; then
+            echo
+        else
+            mkdir -p "$nasyt_dir/acg"
+        fi
+        if [ -d "$nasyt_dir/proot" ]; then
+            echo
+        else
+            mkdir -p "$nasyt_dir/proot"
+            mkdir -p "$nasyt_dir/proot/image"
+        fi
+    }
+    check_script_folder_main >/dev/null 2>&1
 }
 
 # 检查本脚本是否已安装
@@ -737,13 +907,13 @@ habit_xz () {
         case $habit_menu_xz in
            1)
                test_install dialog
-               echo "export habit="dialog"" >  $nasyt_dir/config.txt
+               config add habit dialog
                ;;
            2) 
                test_whiptail
-               echo "export habit="whiptail"" > $nasyt_dir/config.txt
+               config add habit whiptail
                ;;
-           3) sed -i '/^export=*/d' $nasyt_dir/config.txt ;;
+           3) config clear ;;
            *) break ;;
         esac
     elif [ -n "$habit" ]; then
@@ -874,6 +1044,37 @@ often_tool() {
     fi
     }
     often_tool_main
+}
+
+# 脚本设置
+nasyt_setup_menu () {
+   nasyt_setup_choice=$($habit --title "脚本设置" \
+   --menu "脚本设置" 0 0 10 \
+   1 ">_< 菜单个性化" \
+   2 "remove卸载脚本" \
+   3 "github加速设置" \
+   4 "脚本空间占用" \
+   5 "脚本备份/恢复" \
+   6 "默认文件打开设置" \
+   8 "补全完整功能" \
+   9 "删除脚本配置文件" \
+   10 "查看配置文件" \
+   0 "◀返回" \
+   2>&1 1>/dev/tty)
+}
+
+#默认打开设置
+default_open() {
+    default_open_xz=$($habit --clear --title "默认打开设置" \
+    --menu "当前方式：$(config load open)\n请选择" 0 0 10 \
+    1 "Micro" \
+    2 "Nano" \
+    3 "Vim/Nvim" \
+    4 "Emacs" \
+    5 "Helix" \
+    6 "自行设置" \
+    0 "◀返回" \
+    2>&1 1>/dev/tty)
 }
 
 # 软件安装
@@ -1079,7 +1280,7 @@ bot_install_menu() {
     7 "koishi机器人" \
     8 "MaiBot机器人" \
     9 "Karin机器人" \
-    10 "nonebot框架" \
+    10 "nonebot web" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     }
@@ -1091,6 +1292,7 @@ bot_install_menu() {
     4 "Napcat框架" \
     5 "TRSS OneBot脚本" \
     9 "Karin机器人" \
+    10 "nonebot web" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
     }
@@ -1320,8 +1522,6 @@ frp_menu() {
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
-
-
 
 #tunnelto_工具
 tunnelto_tool() {
@@ -1565,20 +1765,6 @@ other_tool_menu() {
     2>&1 1>/dev/tty)
 }
 
-# 脚本设置
-nasyt_setup_menu () {
-   nasyt_setup_choice=$($habit --title "脚本设置" \
-   --menu "脚本设置" 0 0 10 \
-   1 ">_<个性化" \
-   2 "remove卸载脚本" \
-   3 "github加速(暂未开发)" \
-   4 "脚本空间占用" \
-   5 "脚本备份/恢复" \
-   8 "补全完整功能" \
-   9 "删除脚本配置文件" \
-   0 "◀返回" \
-   2>&1 1>/dev/tty)
-}
 
 # 调试模式
 ts_menu() {
@@ -1646,9 +1832,10 @@ nvim_menu() {
 dow_tool_menu() {
     dow_tool_menu_xz=$($habit --clear --title "下载工具" \
     --menu "请选择:" 0 0 10 \
-    1 "nfq番茄小说下载工具" \
-    2 "Twitter视频下载工具" \
-    3 "bili YouTube视频下载工具" \
+    1 "🍅nfq番茄小说下载工具" \
+    2 "🌈Twitter视频下载工具" \
+    3 "🌈bili YouTube视频下载工具" \
+    4 "🔞jmcomic 本子下载工具" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -1688,6 +1875,179 @@ video_dow() {
         echo -e "$(info) 视频已保存到$PWD目录"
     fi
     esc
+}
+
+#jmcomic下载工具
+jm_tool() {
+    jm_env() {
+        if [[ -z $jm_dir ]]; then
+            config add jm_dir $nasyt_dir/jm
+        fi
+        if [[ ! -e $nasyt_dir/jm/config.yml ]]; then
+            mkdir -p $nasyt_dir/jm
+            echo "download:
+      image:
+        suffix: .jpg" > $nasyt_dir/jm/config.yml
+        fi
+    }
+    jm_menu() {
+        jm_menu_xz=$($habit --clear --title "📕JM本子下载" \
+        --menu "📕JM本子下载工具\n请选择：" 0 0 10 \
+        1 "📄查询本子" \
+        2 "🔽下载本子" \
+        3 "💻查看本子" \
+        8 "🛠 下载设置" \
+        9 "❌卸载工具" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    jm_config() {
+        jm_config_xz=$($habit --clear --title "📄配置文件" \
+        --menu "请选择" 0 0 10 \
+        1 "下载目录设置" \
+        2 "下载格式设置" \
+        8 "编辑配置文件" \
+        9 "删除配置文件" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    test_install yq
+    test_install python
+    pip_install jmcomic
+    if [[ -n $2 ]]; then
+        jm_env
+        echo -e "$(info) 🔄正在查询本子📕"
+        jmv $2 -y
+        cw_test=$?
+        if [ $cw_test -ne 0 ]; then
+            echo -e "$(info) $red ❌查询失败,错误代码：$cw_test $color"
+            exit $cw_test
+        else
+            echo -e "$(info) $green ✅查询成功$color"
+            exit 0
+        fi
+    elif [[ -n $1 ]]; then
+        jm_env
+        echo -e "$(info) 🔄正在下载本子📕"
+        cd $jm_dir
+        jmcomic $1 --option="$nasyt_dir/jm/config.yml"
+        cw_test=$?
+        if [ $cw_test -ne 0 ]; then
+            echo -e "$(info) $red ❌下载失败,错误代码：$cw_test $color"
+            exit $cw_test
+        else
+            echo -e "$(info) $green ✅下载成功$color"
+            echo -e "$(info) 位于$nasyt_dir/jm目录"
+            exit 0
+        fi
+    fi
+    while true
+    do
+        jm_env
+        jm_menu
+        case $jm_menu_xz in
+            1)
+                jm_id=$($habit --clear --title "ID" \
+                --inputbox "请输入JM车牌号：(350234)" 0 0 \
+                2>&1 1>/dev/tty)
+                if [ $? -ne 0 ]; then
+                    break
+                fi
+                jmv $jm_id -y
+                esc
+                ;;
+            2)
+                jm_id=$($habit --clear --title "ID" \
+                --inputbox "请输入JM车牌号：(350234)" 0 0 \
+                2>&1 1>/dev/tty)
+                if [ $? -ne 0 ]; then
+                    break
+                fi
+                cd $jm_dir
+                echo -e "$(info) 🔄正在下载本子📕"
+                #cd $jm_dir
+                jmcomic $jm_id --option="$nasyt_dir/jm/config.yml"
+                cw_test=$?
+                if [ $cw_test -ne 0 ]; then
+                    echo -e "$(info) $red ❌下载失败,错误代码：$cw_test $color"
+                else
+                    echo -e "$(info) $green ✅下载成功$color"
+                    echo -e "$(info) 位于$jm_dir目录"
+                fi
+                esc
+                ;;
+            8)
+                while true
+                do
+                    jm_config
+                    case $jm_config_xz in
+                        1)
+                            jm_dir=$($habit --clear --title "目录设置" \
+                            --inputbox "当前目录：$(config load jm_dir)请输入目录地址" 0 0 \
+                            2>&1 1>/dev/tty)
+                            if [ $? -ne 0 ]; then
+                                echo
+                            else
+                                config add jm_dir "$jm_dir"
+                                echo -e "$(info) $green 设置完成$color"
+                            fi
+                            ;;
+                        2)
+                            while true
+                            do
+                                jm_gs=$($habit --clear --title "文件格式" \
+                                --menu "当前格式：$(yml load "$nasyt_dir/jm/config.yml" download.image.suffix)\n请选择格式" 0 0 10 \
+                                webp "webp" \
+                                jpg "jpg" \
+                                jpeg "jpeg" \
+                                png "png" \
+                                bmp "bmp" \
+                                自定义 "自定义" \
+                                0 "◀返回" \
+                                2>&1 1>/dev/tty)
+                                if [[ $jm_gs == 0 ]]; then
+                                    break
+                                elif [[ $jm_gs == "自定义" ]]; then
+                                    jm_gs=$($habit --clear --title "自定义" \
+                                    --inputbox "请输入文件格式" 0 0 \
+                                    2>&1 1>/dev/tty)
+                                    if [ $? -ne 0 ]; then
+                                        jm_gs=jpg
+                                        break
+                                    fi
+                                fi
+                                yml add "$nasyt_dir/jm/config.yml" download.image.suffix ".$jm_gs"
+                            done
+                            ;;
+                        3)
+                            test_install yazi
+                            yazi $jm_dir
+                            ;;
+                        8)
+                            $open $nasyt_dir/jm/config.yml
+                            esc
+                            ;;
+                        9)
+                            config del jm_dir
+                            rm $nasyt_dir/jm/config.yml
+                            echo -e "$(info) $green 删除配置文件成功$color"
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                ;;
+            9)
+                echo -e "$(info) 正在卸载工具"
+                pip uninstall jmcomic
+                esc
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
 }
 
 cloudreve_menu() {
@@ -1760,6 +2120,14 @@ ssh_tool() {
                 ssh_add
                 esc
                 ;;
+            3)
+                delete_connection
+                esc
+                ;;
+            4)
+                $open "$nasyt_dir/.ssh_connections"
+                esc
+                ;;
             *)
                 break
                 ;;
@@ -1776,7 +2144,8 @@ ssh_menu() {
     --menu "请选择" 0 0 10 \
     1 "📄连接列表" \
     2 "➕添加连接" \
-    4 "🚫删除连接" \
+    3 "🚫删除连接" \
+    4 "📄配置文件" \
     0 "◀退出" \
     2>&1 1>/dev/tty)
 }
@@ -1939,6 +2308,7 @@ ping2() {
     --inputbox "ip" 0 0 \
     2>&1 1>/dev/tty)
     ping $ping_sr
+    esc
 }
 
 
@@ -2024,16 +2394,73 @@ Ajenti_menu() {
     2>&1 1>/dev/tty)
 }
 
-# Secluded菜单
-Secluded_menu() {
-    Secluded_menu_xz=$($habit --title "Secluded菜单" \
-    --menu "欢迎使用Secluded机器人\n本脚本由NAS油条制作" 0 0 5 \
-    1 "安装" \
-    2 "启动" \
-    3 "卸载" \
-    4 "问题" \
-    0 "◀返回" \
-    2>&1 1>/dev/tty)
+sec_tool() {
+    # Secluded菜单
+    Secluded_menu() {
+        Secluded_menu_xz=$($habit --title "Secluded菜单" \
+        --menu "欢迎使用Secluded机器人\n本脚本由NAS油条制作" 0 0 10 \
+        1 "安装" \
+        2 "启动" \
+        3 "卸载" \
+        4 "问题" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    while true
+    do
+        test_termux
+        Secluded_menu
+        case $Secluded_menu_xz in
+        1)
+            test_install git #检查git是否安装函数
+            if [[ -e "$nasyt_dir/Secluded/SecludedLauncher.out.sh" ]]; then
+                $habit --msgbox "Secluded已安装>_<" 0 0
+            else
+                $habit --title "确认操作" --yesno "确定安装Secluded吗？\nSecluded将会安装到以下目录\n$nasyt_dir/Secluded" 0 0
+                if [ $? -ne 0 ]; then
+                    $habit --msgbox "取消操作" 0 0
+                    break
+                fi
+                cd $HOME #切换到根目录。
+                $habit --title "确认操作" --yesno "你的服务器位于 <国外>还是<国内>？\n国内请选择yes 国外请选择no" 0 0
+                if [ $? -ne 0 ]; then
+                    git clone https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
+                else
+                    git clone $github_speed/https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
+                fi
+                echo "chmod 777 "$nasyt_dir/Secluded/*"" > $nasyt_dir/sec
+                echo "cd $nasyt_dir/Secluded && bash SecludedLauncher.out.sh" >> $nasyt_dir/sec
+                chmod 777 "$nasyt_dir/sec"
+                $habit --msgbox "Secluded安装完成,请重启终端以生效\n启动命令为sec" 0 0
+            fi
+            ;;
+        2)
+            bash sec
+            br
+            esc
+            ;;
+        3)
+            $habit --title "确认操作" --yesno "你确定要删除Secluded吗？" 0 0
+            if [ $? -ne 0 ]; then
+                break
+            fi
+            echo -e "$(info) 正在删除Secluded"
+            rm $nasyt_dir/sec
+            rm -rfv0 $nasyt_dir/Secluded
+            if [ $? -ne 0 ]; then
+                $habit --msgbox "删除失败,请手动删除。" 0 0
+            else
+                $habit --msgbox "Secluded删除成功>_<" 0 0
+            fi
+            ;;
+        4)
+            $habit --msgbox "fp命令设置端口\n推荐使用tmux工具后台启动" 0 0
+            ;;
+        *)
+            break
+            ;;
+    esac
+    done
 }
 
 # 安装TRSS机器人
@@ -2378,6 +2805,7 @@ nasyt_backup() {
         esac
     done
 }
+
 
 
 upsource() {
@@ -2854,6 +3282,77 @@ acg() {
         fi
     done
 }
+
+#proot管理
+proot_tool() {
+    proot_dir="$nasyt_dir/proot/container"
+    mkdir -p "$proot_dir/"
+    test_install curl
+    test_install proot
+    while true
+    do
+        proot_menu_xz=$($habit --clear --title "proot容器管理" \
+        --menu "当前页面尚未完成，只有下载解压功能\n请选择" 0 0 10 \
+        1 "下载镜像" \
+        2 "进入容器" \
+        3 "管理容器" \
+        4 "管理镜像" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+        case $proot_menu_xz in
+            1)
+                while true
+                do
+                    proot_install_xz=$($habit --clear --title "容器安装" \
+                    --menu "目前只写了Alpine\n请选择" 0 0 10 \
+                    1 "Alpine" \
+                    2 "Debian" \
+                    3 "Ubuntu" \
+                    4 "CentOS" \
+                    5 "Fedora" \
+                    6 "Arch" \
+                    7 "termux" \
+                    0 "◀返回" \
+                    2>&1 1>/dev/tty)
+                    case $proot_install_xz in
+                        1)
+                            proot_install_sz="alpine"
+                            url="http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$(uname -m)/alpine-minirootfs-3.23.4-$(uname -m).tar.gz"
+                            echo -e "$(info) 正在下载镜像文件"
+                            dow $url $nasyt_dir/proot/image
+                            echo -e "$(info) 正在解压镜像文件"
+                            sha $nasyt_dir/proot/image/alpine-minirootfs-3.23.4-$(uname -m).tar.gz "$(cat $nasyt_dir/proot/image/alpine-minirootfs-3.23.4-$(uname -m).tar.gz.sha256)"
+                            mkdir -p $proot_dir/alpine >/dev/null 2>&1
+                            cd $nasyt_dir/proot/image
+                            x $nasyt_dir/proot/image/alpine-minirootfs-3.23.4-$(uname -m).tar.gz $proot_dir/alpine
+                            esc
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                    
+                done
+                ;;
+            2)
+                # proot_manage
+                config add sys arch $nasyt_dir/proot/config.txt
+                config list 1 2 $nasyt_dir/proot/config.txt
+                esc
+                ;;
+            3)
+                $habit --msgbox "开发中" 0 0
+                ;;
+            4)
+                $habit --msgbox "开发中" 0 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+}
+
 # 同步上海时间函数
 sync_shanghai_time() {
     if [[ -n $TERMUX_VERSION ]]; then
@@ -2899,7 +3398,7 @@ get_os_info() {
 introduce() {
     #export LANG=zh_CN.UTF-8 # 设置编码为中文。
     termux_PATH #termux环境变量设置
-    PATH_set #环境变量设置
+    #PATH_set #环境变量设置
     source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
     #default_habit #检查函数并设置默认值
     #check_pkg_install # 检查包管理器。
@@ -2924,7 +3423,7 @@ index_main() {
         read -p "回车键启动脚本,Ctrl+C退出" 
     fi
     source $nasyt_dir/config.txt >/dev/null # 何咦魏,加载脚本配置
-    source $HOME/.bashrc >/dev/null 2>&1 # 加载用户启动文件
+    # source $HOME/.bashrc >/dev/null 2>&1 # 加载用户启动文件
     clear
     while true
     do
@@ -2944,7 +3443,7 @@ index_main() {
                         4) ifneofetch ;;
                         5) $habit --msgbox "$(curl -sSL https://slow-api.hoha.top/ip.php)" 0 0;;
                         6) test_install htop;htop ;;
-                        7) uptime_cn;;
+                        7) uptime_cn;$habit --msgbox "系统: $uptime_sc" 0 0;;
                         8) resources_show;esc;;
                         0) break ;;
                         *) break ;;
@@ -3507,7 +4006,7 @@ index_main() {
                                                 ;;
                                             2)
                                                 test_install nano
-                                                nano /etc/ajenti/config.yml
+                                                $open /etc/ajenti/config.yml
                                                 esc
                                                 ;;
                                             *)
@@ -3573,65 +4072,7 @@ index_main() {
                                 bot_install_menu
                                 case $bot_install_xz in
                                     1)
-                                        test_termux
-                                        while true
-                                        do
-                                            test_termux
-                                            Secluded_menu
-                                            case $Secluded_menu_xz in
-                                            1)
-                                                test_install git #检查git是否安装函数
-                                                if [ -e "$nasyt_dir/Secluded/SecludedLauncher.out.sh" ]; then
-                                                    $habit --msgbox "Secluded已安装>_<" 0 0
-                                                else
-                                                    $habit --title "确认操作" --yesno "确定安装Secluded吗？\nSecluded将会安装到以下目录\n$nasyt_dir/Secluded" 0 0
-                                                    if [ $? -ne 0 ]; then
-                                                        $habit --msgbox "取消操作" 0 0
-                                                        break
-                                                    fi
-                                                    cd $HOME #切换到根目录。
-                                                    $habit --title "确认操作" --yesno "你的服务器位于 <国外>还是<国内>？\n国内请选择yes 国外请选择no" 0 0
-                                                    if [ $? -ne 0 ]; then
-                                                        git clone https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
-                                                    else
-                                                        git clone https://ghfast.top/https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
-                                                    fi
-                                                    echo "chmod 777 "$nasyt_dir/Secluded/*"" > $nasyt_dir/sec
-                                                    echo "cd $nasyt_dir/Secluded && bash SecludedLauncher.out.sh" >> $nasyt_dir/sec
-                                                    chmod 777 "$nasyt_dir/sec"
-                                                    $habit --msgbox "Secluded安装完成,请重启终端以生效\n启动命令为sec" 0 0
-                                                fi
-                                                ;;
-                                            2)
-                                                bash sec
-                                                br
-                                                esc
-                                                ;;
-                                            3)
-                                                $habit --title "确认操作" --yesno "你确定要删除Secluded吗？" 0 0
-                                                if [ $? -ne 0 ]; then
-                                                    break
-                                                fi
-                                                echo "正在删除Secluded"
-                                                rm $nasyt_dir/sec
-                                                rm -rf $nasyt_dir/Secluded
-                                                if [ $? -ne 0 ]; then
-                                                    $habit --msgbox "删除失败,请手动删除。" 0 0
-                                                else
-                                                    $habit --msgbox "Secluded删除成功>_<" 0 0
-                                                fi
-                                                ;;
-                                            4)
-                                                $habit --msgbox "fp命令设置端口\n推荐使用tmux工具后台启动" 0 0
-                                                ;;
-                                            0)
-                                                break
-                                                ;;
-                                            *)
-                                                break
-                                                ;;
-                                        esac
-                                        done
+                                        sec_tool
                                         ;;
                                     2)
                                         while true
@@ -3657,10 +4098,6 @@ index_main() {
                                                     clear
                                                     tsab
                                                     esc
-                                                    ;;
-                                                0)
-                                                    clear
-                                                    break
                                                     ;;
                                                 *)
                                                     clear
@@ -3782,7 +4219,7 @@ index_main() {
                                                     #fi
                                                     test_install git #git安装检测
                                                     clear;echo -e "$(info) 正在克隆github仓库。"
-                                                    country #国家检测
+                                                    github_speed_tool #国家检测
                                                     git clone $github_speed/https://github.com/AstrBotDevs/AstrBot $nasyt_dir/AstrBot
                                                     cd $nasyt_dir/AstrBot
                                                     echo -e "$(info) 正在检查python安装"
@@ -4015,21 +4452,26 @@ index_main() {
                                                     setfacl -R -m u:nbwebui:rwx /path/to/your/bot
                                                     ;;
                                                 2)
-                                                    test_install docker
-                                                    nonebot_docker_port=$($habit --title "端口开放" \
-                                                    --inputbox "请输入开放管理面板的端口" 0 0 \
-                                                    2>&1 1>/dev/tty)
-                                                    nonebot_docker_dir=$($habit --title "安装位置" \
-                                                    none--inputbox "请输入安装的位置\n如果不知道的话请输入/opt/nb-webui" 0 0 \
-                                                    2>&1 1>/dev/tty)
-                                                    echo -e "$(info) docker正在安装中。"
-                                                    docker run -d  \
-                                                    -p $nonebot_docker_port:8025 \
-                                                    -p 2519:2519 \
-                                                    -v $nonebot_docker_dir:/data \
-                                                    --name nonebot-webui \
-                                                    --restart=always \
-                                                    myxuebi/nonebot-webui:latest
+                                                    if [[ -n $PREFIX ]]; then
+                                                        $habit --msgbox "docker不支持termux" 0 0
+                                                    else
+                                                        test_install docker
+                                                        nonebot_docker_port=$($habit --title "端口开放" \
+                                                        --inputbox "请输入开放管理面板的端口" 0 0 \
+                                                        2>&1 1>/dev/tty)
+                                                        nonebot_docker_dir=$($habit --title "安装位置" \
+                                                        none--inputbox "请输入安装的位置\n如果不知道的话请输入/opt/nb-webui" 0 0 \
+                                                        2>&1 1>/dev/tty)
+                                                        echo -e "$(info) docker正在安装中。"
+                                                        docker run -d  \
+                                                        -p $nonebot_docker_port:8025 \
+                                                        -p 2519:2519 \
+                                                        -v $nonebot_docker_dir:/data \
+                                                        --name nonebot-webui \
+                                                        --restart=always \
+                                                        myxuebi/nonebot-webui:latest
+                                                    fi
+                                                    esc
                                                     ;;
                                                 *)
                                                     break
@@ -4256,17 +4698,18 @@ index_main() {
                                             case $nvim_menu_xz in
                                                 Lazy)
                                                     echo -e "$(info) 正在备份原nvim配置"
-                                                    mv ~/.config/nvim ~/.config/nvim.bak
-                                                    mv ~/.local/share/nvim ~/.local/share/nvim.bak
-                                                    
-                                                    country #国内外检测
+                                                    mv ~/.config/nvim{,.bak}
+                                                    mv ~/.local/share/nvim{,.bak}
+                                                    mv ~/.local/state/nvim{,.bak}
+                                                    mv ~/.cache/nvim{,.bak}
+                                                    github_speed_tool #国内外检测
                                                     test_install git #检查git安装
                                                     
                                                     if [[ -d $HOME/.config/nvim ]]; then
                                                         echo -e "$(info) $yellow 仓库已克隆安装。 $color"
                                                     else
                                                         echo -e "$(info) 正在克隆仓库"
-                                                        git clone ${github_speed}/https://github.com/LazyVim/starter ~/.config/nvim
+                                                        git clone $github_speed/https://github.com/LazyVim/starter ~/.config/nvim
                                                         cw_test=$?
                                                         echo $cw_test
                                                         if [ $cw_test -eq 128 ]; then
@@ -4363,6 +4806,10 @@ index_main() {
                                         video_dow $video_url
                                         esc
                                         ;;
+                                    4)
+                                        jm_tool
+                                        esc
+                                        ;;
                                     *)
                                         break
                                         ;;
@@ -4407,7 +4854,7 @@ index_main() {
                                                     $habit --msgbox "主题安装完成，请输入zsh进行p10k个性配置" 0 0
                                                     ;;
                                                 2)
-                                                    country
+                                                    github_speed_tool
                                                     echo -e "$(info) 现在从github拉取脚本数据。"
                                                     sh -c "$(curl -fsSL $github_speed/https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
                                                     esc
@@ -5202,9 +5649,9 @@ index_main() {
                     1)
                         habit_menu
                         case $habit_menu_xz in
-                            1) echo "export habit="dialog"" >  $nasyt_dir/config.txt ;;
-                            2) echo "export habit="whiptail"" > $nasyt_dir/config.txt ;;
-                            3) sed -i '/^export=*/d' $nasyt_dir/config.txt ;;
+                            1) config add habit dialog ;;
+                            2) config add habit whiptail ;;
+                            3) config clear ;;
                             *) break ;;
                         esac
                         echo -e "$(info) $green 习惯设置成功,请重新进入脚本$color"
@@ -5212,23 +5659,12 @@ index_main() {
                         ;;
                     2)  
                         shell_uninstall
-                        exit 1
+                        exit 0
                         ;;
                     3)
-                        if ! grep -q "^export github_speed=" $nasyt_dir/config.txt; then
-                           $habit --msgbox "已存在github加速地址\n并且地址为:\n$github_speed\n是否删除？" 0 0
-                           sed -i '/export github_speed=/d' $nasyt_dir/config.txt
-                        else
-                           github_speed_address=$($habit --title "github加速地址" \
-                           --inputbox "例如: https://ghfast.top/ \n\n请输入" 0 0 \
-                           2>&1 1>/dev/tty)
-                           if [ $? -ne 0 ]; then
-                              break
-                           fi
-                        fi
-                        echo "export github_speed=https://ghfast.top/" >> $nasyt_dir/config.txt
-                        $habit --msgbox "地址添加成功，请重启脚本。" 0 0
-                        exit 0
+                        github_speed_skip=1
+                        github_speed_tool
+                        esc
                         ;;
                     4)
                         test_install ncdu
@@ -5248,6 +5684,57 @@ index_main() {
                             esac
                         done
                         ;;
+                    6)
+                        while true
+                        do
+                            default_open
+                            case $default_open_xz in
+                                1)
+                                    test_install micro
+                                    config add open micro
+                                    esc
+                                    ;;
+                                2)
+                                    test_install nano
+                                    config add open nano
+                                    ;;
+                                3)
+                                    test_install vim
+                                    if command -v nvim >/dev/null 2>&1; then
+                                        config add open nvim
+                                    else
+                                        config add open vim
+                                    fi
+                                    ;;
+                                4)
+                                    test_install emacs
+                                    config add open emacs
+                                    ;;
+                                5)
+                                    test_install helix
+                                    config add open helix
+                                    ;;
+                                6)
+                                    default_open_diy=$($habit --clear --title "自定义" \
+                                    --inputbox "请输入已安装的软件包名字" 0 0 \
+                                    2>&1 1>/dev/tty)
+                                    config add open $default_open_diy
+                                    ;;
+                                *)
+                                    break
+                                    ;;
+                            esac
+                            echo -e "$(info) $green 设置完成$color"
+                        done
+                        ;;
+                    7)
+                        if [[ -e $nasyt_dir/shell.log ]]; then
+                            rm $nasyt_dir/shell.log
+                            $habit --msgbox "日志清理完成" 0 0
+                        else
+                            $habit --msgbox "没有日志文件" 0 0
+                        fi
+                        ;;
                     8)
                         echo -e "$(info) 正在补全文件中"
                         test_install figlet
@@ -5263,6 +5750,10 @@ index_main() {
                         rm $nasyt_dir/config.txt
                         $habit --msgbox "删除配置文件完成。" 0 0
                         exit
+                        ;;
+                    10)
+                        $open $nasyt_dir/config.txt
+                        esc
                         ;;
                     *)  break;;
                 esac
@@ -5281,6 +5772,9 @@ index_main() {
 #
 #
 #
+check_script_folder #文件夹检测
+yml #yml配置文件操作函数
+config #txt配置文件操作函数
 color_variable # 定义颜色变量
 all_variable # 全部变量
 #country #国内外检测
@@ -5289,164 +5783,222 @@ check_pkg_install # 检测包管理器
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
-    bilibili|-b|--bili)
-        video_dow $2
-        exit
-        ;;
-    aria2c|-c|--aria2c)
-        test_install aria2c
-        echo -e "$(info) 正在下载文件"
-        aria2c "$2" -s 16 -x 16 -c
-        cw_test=$?
-        if [ $cw_test -ne 0 ]; then
-            echo -e "$(info) $red 文件下载失败，请检查你的网络和链接是否正确。$color"
-            echo -e "$(info) $red 错误代码: $cw_test $color"
-        else
-            echo -e "$(info) $green 文件下载成功$color"
-        fi
-        exit
-        ;;
-    twitter|-x|--dowx|--twitter)
-        if [[ -z $2 ]]; then
+        log|-log|--log)
+            > $nasyt_dir/shell.log
+            exec > >(tee -a "$nasyt_dir/shell.log") 2>&1
+            echo -e "$(info) 日志保存在：$nasyt_dir/shell.log"
+            ;;
+        debug)
+            "$2"
+            exit
+            ;;
+        p|proot|-p|--proot)
+            proot_tool
+            exit
+            ;;
+        yml|-yml|--yml)
+            yml $2
+            exit
+            ;;
+        config|-config|--config)
+            config $2
+            exit
+            ;;
+        sec|-sec|--sec)
+            sec_tool
+            exit
+            ;;
+        j|jmcomic|jm|-jm|-j|--jmcomic)
+            jm_tool $2
+            exit
+            ;;
+        jv|-jv|--jv)
+            jm_tool info $2
+            exit
+            ;;
+        bilibili|-y|--bili)
+            video_dow $2
+            exit
+            ;;
+        c|aria2c|-c|--aria2c)
+            test_install aria2c
+            echo -e "$(info) 正在下载文件"
+            aria2c "$2" -m 2 -s 16 -x 16 -c
+            cw_test=$?
+            if [ $cw_test -ne 0 ]; then
+                echo -e "$(info) $red 文件下载失败，请检查你的网络和链接是否正确。$color"
+                echo -e "$(info) $red 错误代码: $cw_test $color"
+            else
+                echo -e "$(info) $green 文件下载成功$color"
+            fi
+            exit
+            ;;
+        x|twitter|-x|--dowx|--twitter)
+            if [[ -z $2 ]]; then
+                echo ""
+                echo "用法:"
+                echo "nasyt -x [链接]"
+                echo ""
+                exit 0
+            else
+                dow_x_mp4 "$2"
+            fi
+            exit 0
+            ;;
+        a|acg|-a|--acg)
+            if [[ $2 -eq 0 ]]; then
+                case $2 in
+                    help|-h|--help|-help)
+                        echo
+                        echo "用法:"
+                        echo "  nasyt -a [参数]"
+                        echo "参数:"
+                        echo "  nasyt -a pc 随机输出横屏acg图片"
+                        echo "  nasyt -a pe 随机输出竖屏acg图片"
+                        echo "  nasyt -a help 输出帮助"
+                        echo
+                        exit 0
+                        ;;
+                    pc|--pc)
+                        tp_curl=https://www.loliapi.com/acg/pc
+                        acg_menu_sz=pc
+                        tp_r18=acg
+                        acg $2
+                        ;;
+                    pe|--pe)
+                        tp_curl=https://www.loliapi.com/acg/pe
+                        acg_menu_sz=pe
+                        tp_r18=acg
+                        acg $2
+                        ;;
+                    *)
+                        shell_2=$2
+                        if [[ $shell_2 =~ ^http ]]; then
+                            acg $2
+                        else
+                            acg
+                        fi
+                        ;;
+                esac
+            fi
+            exit
+            ;;
+        d|docker|-d|--docker)
+            docker_menu
+            exit
+            ;;
+        e|edge_tts|-e|--edge_tts)
+            if [[ -n $2 ]] && [[ -n $3 ]]; then
+                edge_tts $2 $3 $4
+            elif [[ $2 == help ]]; then
+                echo;echo "用法: nasyt $1 [文字] [输出文件名] [音色(可选)]"
+            elif [[ $# -ne 1 ]]; then
+                echo -e "$red 还需要一个参数进行输出 $color"
+            else
+                edge_tts
+            fi
+            exit
+            ;;
+        b|backup|-b|--backup)
+            nasyt_backup
+            exit
+            ;;
+        u|update|-u|--update)
+            gx
+            ;;
+        l|lolcat|-l|--lolcat)
+            nasyt $3| lolcat
+            exit
+            ;;
+        m|mirror|-m|--mirror)
+            upsource
+            exit
+            ;;
+        t|tmux|-t|--tmux)
+            tmux_tool
+            exit
+            ;;
+        turn|-turn|--turn)
+            test_install truncate
+            truncate -s $2 $3
+            exit
+            ;;
+        k|skip|-k|--skip)
+            shell_skip=1
+            ;;
+        s|ssh|-s|--ssh)
+            ssh_tool
+            exit
+            ;;
+        v|version|-v|-version|--version)
+            echo
+            echo "名称: nasyt"
+            echo "版本: $version"
+            #echo "来源: $nasyt_from"
+            echo "更新时间：$time_date"
+            echo "操作系统: $PRETTY_NAME"
+            echo "终端类型：$(basename $SHELL)"
+            echo "位于目录: $(command -v nasyt)"
+            echo
+            echo "运行时间：$(uptime_cn;echo $uptime_sc)"
+            echo "软件包数：$deb_size"
+            echo "内存剩余：$(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
+            echo "进程数量: $(ps -e --no-headers | wc -l)"
+            echo
+            exit
+            ;;
+        n|nlist|-n|--nlist)
+            nlist_tool $2 $3 $4
+            exit
+            ;;
+        r|remove|-r|--remove)
+            shell_uninstall
+            ;;
+        h|help|-h|-help|--help)
             echo ""
             echo "用法:"
-            echo "nasyt -x [链接]"
-            echo ""
-            exit 0
-        else
-            dow_x_mp4 "$2"
-        fi
-        exit 0
-        ;;
-    acg|-a|--acg)
-        if [[ $2 -eq 0 ]]; then
-            case $2 in
-                help|-h|--help|-help)
-                    echo
-                    echo "用法:"
-                    echo "  nasyt -a [参数]"
-                    echo "参数:"
-                    echo "  nasyt -a pc 随机输出横屏acg图片"
-                    echo "  nasyt -a pe 随机输出竖屏acg图片"
-                    echo "  nasyt -a help 输出帮助"
-                    echo
-                    exit 0
-                    ;;
-                pc|--pc)
-                    tp_curl=https://www.loliapi.com/acg/pc
-                    acg_menu_sz=pc
-                    tp_r18=acg
-                    acg $2
-                    ;;
-                pe|--pe)
-                    tp_curl=https://www.loliapi.com/acg/pe
-                    acg_menu_sz=pe
-                    tp_r18=acg
-                    acg $2
-                    ;;
-                *)
-                    shell_2=$2
-                    if [[ $shell_2 =~ ^http ]]; then
-                        acg $2
-                    else
-                        acg
-                    fi
-                    ;;
-            esac
-        fi
-        exit
-        ;;
-    docker|-d|--docker)
-        docker_menu
-        exit
-        ;;
-    edge_tts|-e|--edge_tts)
-        if [[ -n $2 ]] && [[ -n $3 ]]; then
-            edge_tts $2 $3 $4
-        elif [[ $2 == help ]]; then
-            echo;echo "用法: nasyt $1 [文字] [输出文件名] [音色(可选)]"
-        elif [[ $# -ne 1 ]]; then
-            echo -e "$red 还需要一个参数进行输出 $color"
-        else
-            edge_tts
-        fi
-        exit
-        ;;
-    backup|-b|--backup)
-        nasyt_backup
-        exit
-        ;;
-    update|-u|--update)
-        gx
-        ;;
-    mirror|-m|--mirror)
-        upsource
-        exit
-        ;;
-    tmux|-t|--tmux)
-        tmux_tool
-        exit
-        ;;
-    turn|-turn|--turn)
-        truncate -s $2 $3
-        exit 0
-        ;;
-    skip|-k|--skip)
-        shell_skip=1
-        ;;
-    ssh|-s|--ssh)
-        ssh_tool
-        exit
-        ;;
-    version|-v|-version|--version)
-        echo
-        echo "名称: nasyt"
-        echo "版本: $version"
-        #echo "来源: $nasyt_from"
-        echo "操作系统: $PRETTY_NAME"
-        echo "位于目录: $(command -v nasyt)"
-        echo
-        exit
-        ;;
-    nlist|-n|--nlist)
-        nlist_tool $2 $3 $4
-        exit
-        ;;
-    remove|-r|--remove)
-        shell_uninstall
-        ;;
-    help|-h|-help|--help)
-        echo
-        echo "用法:"
-        echo -e "  ${blue}nasyt [参数]$color"
-        echo "参数:"
-        echo "  -b  --bili b站 YouTube视频下载工具"
-        echo "  -c  --aria2c 快捷多线程下载"
-        echo "  -x, --dowx 快捷下载twitter视频"
-        echo "  -a, --acg 快捷随机acg图片"
-        echo "  -d, --docker 快捷docker管理"
-        echo "  -e, --edge_tts 文字转语音"
-        echo "  -u, --update 快捷更新脚本"
-        echo "  -m, --mirror 快捷换软件源"
-        echo "  -t, --tmux 快捷进入tmux管理"
-        echo "  -k, --skip 直接进入菜单部分"
-        echo "  -s, --ssh 进入ssh管理工具"
-        echo "  -v, --version 输出脚本版本"
-        echo "  -h, --help  输出命令帮助"
-        echo "  -b, --backup  快捷备份恢复脚本"
-        echo "  -n, --nlist  生成网页目录结构"
-        echo "  -r, --remove 卸载本脚本工具"
-        echo
-        echo "有关更多详细信息，请参见"
-        echo -e "$green https://gitcode.com/nasyt/nasyt-linux-tool$color"
-        echo
-        exit
-        ;;
-    *)
-        echo
-        echo -e "$red $@ 是无效的参数$color"
-        echo -e "$blue 请输入nasyt help查看帮助$color"
-        exit 1
+            echo -e "  ${blue}nasyt [参数] (参数)$color"
+            echo "参数:"
+            echo "  -a, --acg  随机输出acg图片"
+            echo "  -b, --backup 备份恢复脚本"
+            echo "  -c  --aria2c 多线程下载"
+            echo "  -d, --docker docker管理"
+            echo "  -e, --edge_tts 文字转语音"
+            echo "  -h, --help  输出命令帮助"
+            echo "  -j, --jmcomic JM本子下载"
+            echo "  -k, --skip 直接进入菜单部分"
+            echo "  -l, --lolcat 彩色输出模式"
+            echo "  -m, --mirror 快捷换软件源"
+            echo "  -n, --nlist  生成网页目录结构"
+            echo "  -p, --proot  proot容器管理"
+            echo "  -r, --remove 卸载本脚本工具"
+            echo "  -s, --ssh 进入ssh管理工具"
+            echo "  -t, --tmux tmux后台管理"
+            echo "  -u, --update 更新脚本至最新"
+            echo "  -v, --version 输出脚本版本"
+            echo "  -x, --dowx 下载twitter视频"
+            echo "  -y, --bili b站YT视频下载"
+            echo
+            echo "其他参数:"
+            echo "  log  日志输出模式运行"
+            echo "  jv   jmcomic本子查询"
+            echo "  sec    Secluded管理"
+            echo "  turn    疏散文件生成"
+            echo "  debug   函数调试测试"
+            echo "  config 用于管理配置文件"
+            echo "  yml    用于管理yml文件"
+            echo
+            echo "有关更多详细信息，请参见"
+            echo -e "$green https://github.com/nasyt233/nasyt-linux-tool$color"
+            echo
+            exit
+            ;;
+        *)
+            echo
+            echo -e "$red $@ 是无效的参数$color"
+            echo -e "$blue 请输入nasyt help查看帮助$color"
+            exit 1
+            ;;
     esac
 fi
 
