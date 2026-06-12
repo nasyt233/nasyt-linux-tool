@@ -3,6 +3,21 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年6月12日更新v2.4.3.8版"
+    echo "更新 sfs模组翻译工具(A Future star)"
+    echo "更新 SFS管理工具选项和快捷方式"
+    echo "优化 脚本菜单界面布局改变"
+    echo "优化 优化help帮助界面"
+    echo "更新 脚本多语言支持"
+    echo "优化 视频解析循环系统"
+    echo "移除 启动界面的随机美图"
+    echo "修复 脚本一些权限问题"
+    echo "修复 lolcat安装检测问题"
+    echo "修复 python版本判断问题"
+    echo "修复 脚本卸载不退出问题"
+    echo "优化 代码结构与稳定性"
+    br
+    read
     echo "2026年6月4日更新v2.4.3.7版"
     echo "更新 脚本运行日志清理"
     echo "更新 nasyt log日志输出模式"

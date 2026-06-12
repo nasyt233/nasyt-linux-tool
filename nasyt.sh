@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/6/4"
-version="v2.4.3.7"
+time_date="2026/6/12"
+version="v2.4.3.8"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 #config_file="$nasyt_dir/config.txt" #脚本配置文件
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
@@ -35,18 +35,14 @@ menu_jc() {
             br
             echo "感谢QQ:2738136724提供下载服务"
             br
-            if command -v nasyt &> /dev/null
-            then
-               echo "1) Linux工具箱 (更新)"
-               echo "2) Linux工具箱 (启动)"
+            if command -v nasyt >/dev/null 2>&1; then
+               echo "1) Linux工具箱 (更新 update)"
+               echo "2) Linux工具箱 (启动 start)"
             else
-               echo "1) Linux工具箱 (安装)"
+               echo "1) Linux工具箱 (安装 install)"
                #echo "2) Linux工具箱 (启动)"
             fi
-            if command -v chafa >/dev/null 2>&1; then
-                echo "3) 随机美图"
-            fi
-            echo "0) 退出"
+            echo "0) 退出 exit"
             br
             gx_show 
             read -p "请选择(回车键默认): " menu
@@ -83,15 +79,19 @@ check_pkg_install() {
     fi
     if [[ -n $TERMUX_VERSION ]]; then
         sys="(Termux 终端)"
-        PRETTY_NAME="Termux终端"
+        PRETTY_NAME="Termux"
         sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
         pkg_install="pkg install"
         pkg_remove="pkg remove"
         pkg_update="pkg update"
         deb_sys="pkg"
         yes_tg="-y"
-        deb_size="共$(dpkg -l | wc -l) 个软件包" >/dev/null 2>&1
-        termux-toast "欢迎使用NAS油条termux脚本" &
+        deb_size="$(dpkg -l | wc -l)" >/dev/null 2>&1
+        if [[ $language == "China" ]]; then
+            termux-toast "欢迎使用NAS油条termux脚本" >/dev/null 2>&1
+        else
+            termux-toast "Welcome to the NAS Youtiao termux script" >/dev/null 2>&1
+        fi
         
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
@@ -101,7 +101,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="apt"
         yes_tg="-y"
-        deb_size="共$(dpkg -l | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(dpkg -l | wc -l)" >/dev/null 2>&1
         
     elif command -v dnf >/dev/null 2>&1; then
         sys="(Fedora/RHEL/CentOS 8 及更高版本)"
@@ -111,7 +111,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="dnf"
         yes_tg="-y"
-        deb_size="共$(rpm -qa | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(rpm -qa | wc -l)" >/dev/null 2>&1
         
     elif command -v yum >/dev/null 2>&1; then
         sys="(Fedora/RHEL/Rocky/CentOS 7 及更早版本)"
@@ -121,7 +121,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="yum"
         yes_tg="-y"
-        deb_size="共$(rpm -qa | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(rpm -qa | wc -l)" >/dev/null 2>&1
         
     elif command -v pacman >/dev/null 2>&1; then
         sys="(Arch Linux 系列)"
@@ -131,7 +131,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="pacman"
         yes_tg="-y"
-        deb_size="共$(pacman -Q | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(pacman -Q | wc -l)" >/dev/null 2>&1
         
     elif command -v zypper >/dev/null 2>&1; then
         sys="(openSUSE 系列)"
@@ -140,7 +140,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="zypper"
         yes_tg="-y"
-        deb_size="共$(zypper se -i | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(zypper se -i | wc -l)" >/dev/null 2>&1
         
     elif command -v apk >/dev/null 2>&1; then
         sys="(Alpine/PostmarketOS系统)"
@@ -151,7 +151,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="apk"
         yes_tg=""
-        deb_size="共$(apk info | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(apk info | wc -l)" >/dev/null 2>&1
         
     elif command -v emerge >/dev/null 2>&1; then
         sys="(gentoo/funtoo 系统)"
@@ -160,7 +160,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="emerge"
         yes_tg="-y"
-        deb_size="共$(qlist -I | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(qlist -I | wc -l)" >/dev/null 2>&1
         
     elif [[ "$(uname -s)" == "Darwin" ]]; then
         brew_install #brew安装检测
@@ -169,7 +169,7 @@ check_pkg_install() {
         sudo_setup="sudo"
         deb_sys="brew"
         yes_tg="-y"
-        deb_size="共$(brew list | wc -l) 个软件包" >/dev/null 2>&1
+        deb_size="$(brew list | wc -l)" >/dev/null 2>&1
         read -p "抱歉，目前没有完全适配MacOS系统"
         
     else
@@ -236,7 +236,13 @@ br_2() {
 }
 
 esc() {
-    echo -e "$(info) 按$green回车键$color$blue返回$color,按$yellow Ctrl+C$color$red退出$color"
+    if [[ $language == "China" ]]; then
+        echo -e "$(info) 按$green回车键$color$blue返回$color,按$yellow Ctrl+C$color$red退出$color"
+    elif [[ $language == "English" ]]; then
+        echo -e "$(info) Press $green Enter$color$blue to return$color, press $yellow Ctrl C$color$red to exit$color"
+    else
+        echo -e "$(info) Press $green Enter$color$blue to return$color, press $yellow Ctrl C$color$red to exit$color"
+    fi
     read
 }
 
@@ -261,11 +267,13 @@ x() {
 country() {
     country=$(curl -s https://myip.ipip.net | grep -oE "中国|China" 2>/dev/null)
     if [ -n "$country" ]; then
-        echo "当前在中国"
+        echo -e "$(info) 当前在中国 Currently in China"
         github_speed="https://gh-proxy.com"
+        config add language China
     else
-        echo "当前不在中国"
+        echo -e "$(info) 当前不在中国 Currently not in China"
         github_speed=""
+        config add language English
     fi
 }
 
@@ -378,10 +386,13 @@ disclaimer() {
     if [[ -f "$nasyt_dir/disclaimer" ]]; then
         return 0
     fi
-    
-    $habit --title "免责声明" \
-    --yesno "本工具仅限合法使用\n带来的后果由使用者承担全部责任\n运行所造成的损失作者依不承担\n你是否同意使用条款？" 0 0
-
+    if [[ $language == "China" ]]; then
+        $habit --title "免责声明" \
+        --yesno "本工具仅限合法使用\n带来的后果由使用者承担全部责任\n运行所造成的损失作者依不承担\n你是否同意使用条款？" 0 0
+    else
+        $habit --title "Disclaimer" \
+        --yesno "This tool is for legal use only\nUsers are fully responsible for the consequences\nThe author is not responsible for any losses caused by running it\nDo you agree to the terms of use?" 0 0
+    fi
     if [ $? -eq 0 ]; then
         touch "$nasyt_dir/disclaimer"
         return 0
@@ -516,7 +527,7 @@ file_xz() {
                 
                 #如果不是根目录，添加返回选项
                 if [[ "$current_dir" != "." ]]; then
-                    menu_items+=(".." "📁 ◀返回上级目录")
+                    menu_items+=(".." "📁 ◀返回上级目录 Back to Previous Directory")
                 fi
                 
                 #添加当前目录内容
@@ -530,8 +541,8 @@ file_xz() {
                     fi
                 done < <(ls -a "$current_dir" --group-directories-first)
                 
-                dir_xz=$($habit --title "文件选择器" \
-                --menu "文件浏览器: $current_dir 🤓👇" 0 0 15 \
+                dir_xz=$($habit --title "文件选择器/File Explorer" \
+                --menu "文件浏览器/File Explorer: $current_dir 🤓👇" 0 0 15 \
                 "${menu_items[@]}" \
                 2>&1 1>/dev/tty)
                 
@@ -544,7 +555,7 @@ file_xz() {
                 elif [[ -d "$current_dir/$dir_xz" ]]; then
                     current_dir="$current_dir/$dir_xz"
                 else
-                    $habit --yesno "确认文件: $current_dir/$dir_xz" 0 0
+                    $habit --yesno "确认文件 Confirmation document: $current_dir/$dir_xz" 0 0
                     if [ $? -eq 0 ]; then
                         eval "$file_var"="$current_dir/$dir_xz"
                         break
@@ -585,6 +596,35 @@ resources_show() {
     $habit --msgbox "操作系统: $PRETTY_NAME \n\n$resources_show_notermux \n    $cpu_core\n内存总量：$mem_total 使用率：$mem_usage%\n    可用：$mem_available  \n\nSwap总量：$swap_total $swap_usage\n    可用：$swap_free \n\n进程数量: $ps_quantity" 0 0
 }
 
+# 脚本信息
+shell_info() {
+    if [[ anguage == "China" ]]; then
+        echo "名称: nasyt"
+        echo "版本: $version"
+        echo "更新时间：$time_date"
+        echo "操作系统: $PRETTY_NAME"
+        echo "终端类型：$(basename $SHELL)"
+        echo "脚本语言：$language"
+        echo "位于目录: $(command -v nasyt)"
+        echo "运行时间：$(uptime_cn;echo $uptime_sc)"
+        echo "软件包数：共 $deb_size 个软件包"
+        echo "内存剩余：$(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
+        echo "进程数量: $(ps -e --no-headers | wc -l)"
+    else
+        echo "Name: nasyt"
+        echo "Version: $version"
+        echo "Update time: $time_date"
+        echo "System : $PRETTY_NAME"
+        echo "Terminal : $(basename $SHELL)"
+        echo "language : $language"
+        echo "Located in directory: $(command -v nasyt)"
+        echo "Uptime: $(uptime -p)"
+        echo "packages: $deb_size"
+        echo "Memory available: $(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
+        echo "Number of processes: $(ps -e --no-headers | wc -l)"
+    fi
+}
+
 # 根据时间返回问候语
 get_greeting() {
     local hour=$(date +"%H")
@@ -593,22 +633,40 @@ get_greeting() {
     else
         get_sys=Linux
     fi
-    case $hour in
-        05|06|07|08|09|10|11)
-            echo "🌅 早上好！欢迎使用$get_sys工具箱"
-            ;;
-        12|13|14|15|16|17|18)
-            echo "☀️ 下午好！欢迎使用$get_sys工具箱"
-            ;;
-        *)
-            echo "🌙 晚上好！欢迎使用$get_sys工具箱"
-            ;;
-    esac
+    if [[ $language == "China" ]]; then
+        case $hour in
+            05|06|07|08|09|10|11)
+                echo "🌅 早上好！欢迎使用$get_sys工具箱"
+                ;;
+            12|13|14|15|16|17|18)
+                echo "☀️ 下午好！欢迎使用$get_sys工具箱"
+                ;;
+            *)
+                echo "🌙 晚上好！欢迎使用$get_sys工具箱"
+                ;;
+        esac
+    else
+        case $hour in
+            05|06|07|08|09|10|11)
+                echo "🌅 Good morning! Welcome to use the $get_sys toolbox"
+                ;;
+            12|13|14|15|16|17|18)
+                echo "☀️ Good afternoon! Welcome to use the $get_sys toolbox"
+                ;;
+            *)
+                echo "🌙 Good evening! Welcome to use the $get_sys toolbox"
+                ;;
+        esac
+    fi
 }
 
 test_termux() {
     if [[ -n $TERMUX_VERSION ]]; then
-        $habit --msgbox "不支持Termux终端" 0 0
+        if [[ $language == "China" ]]; then
+            $habit --msgbox "不支持Termux终端" 0 0
+        else
+            $habit --msgbox "Termux terminal not supported" 0 0
+        fi
         break
     fi
 }
@@ -643,6 +701,12 @@ test_whiptail() {
             test_install whiptail newt
         fi
     fi
+}
+
+#python安装
+test_python() {
+    test_install python || test_install python3
+    [[ -z $PREFIX ]] && test_install python-is-python3
 }
 
 test_eatmydata() {
@@ -693,29 +757,57 @@ test_bastet() {
 
 #通用安装
 test_install() {
-    if command -v $* >/dev/null 2>&1; then
-        echo -e "$(info) $green $*已安装,跳过安装$color"
-    else
-        echo -e "$(info) 正在安装$*"
-        if command -v eatmydata >/dev/null 2>&1; then
-            eatmydata_setup=eatmydata
-        fi
-        $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
-        install_error=$?
-        if [ $install_error -ne 0 ]; then
-            echo -e "$(info) $red $*安装失败。$color"
-            echo -e "$(info) $red 错误代码$install_error $color"
-            echo -e "$(info) 正在尝试更新软件包"
-            $sudo_setup $pkg_update $yes_tg
-            if [ $? -ne 0 ]; then
-                echo -e "$(info) $red 更新软件包失败$color"
-                esc
-            else
-                echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
-                $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
-            fi
+    if [[ $language == "China" ]]; then
+        if command -v $* >/dev/null 2>&1; then
+            echo -e "$(info) $green $*已安装,跳过安装$color"
         else
-            echo -e "$(info) $green $*安装成功。$color"
+            echo -e "$(info) 正在安装$*"
+            if command -v eatmydata >/dev/null 2>&1; then
+                eatmydata_setup=eatmydata
+            fi
+            $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
+            install_error=$?
+            if [ $install_error -ne 0 ]; then
+                echo -e "$(info) $red $*安装失败。$color"
+                echo -e "$(info) $red 错误代码$install_error $color"
+                echo -e "$(info) 正在尝试更新软件包"
+                $sudo_setup $pkg_update $yes_tg
+                if [ $? -ne 0 ]; then
+                    echo -e "$(info) $red 更新软件包失败$color"
+                    esc
+                else
+                    echo -e "$(info) $green 更新软件包成功,正在尝试重新安装。$color"
+                    $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
+                fi
+            else
+                echo -e "$(info) $green $*安装成功。$color"
+            fi
+        fi
+    else
+        if command -v $* >/dev/null 2>&1; then
+            echo -e "$(info) $green $* is installed, skipping installation $color"
+        else
+            echo -e "$(info) Installing $*"
+            if command -v eatmydata >/dev/null 2>&1; then
+                eatmydata_setup=eatmydata
+            fi
+            $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
+            install_error=$?
+            if [ $install_error -ne 0 ]; then
+                echo -e "$(info) $red $* installation failed. $color"
+                echo -e "$(info) $red Error code $install_error $color"
+                echo -e "$(info) Attempting to update packages"
+                $sudo_setup $pkg_update $yes_tg
+                if [ $? -ne 0 ]; then
+                    echo -e "$(info) $red Package update failed $color"
+                    esc
+                else
+                    echo -e "$(info) $green Package update succeeded, attempting reinstall. $color"
+                    $sudo_setup $eatmydata_setup $pkg_install $* $yes_tg
+                fi
+            else
+                echo -e "$(info) $green $* installation succeeded. $color"
+            fi
         fi
     fi
 }
@@ -735,12 +827,14 @@ test_remove() {
 
 #pip通用安装
 pip_install() {
+    [[ -z $PREFIX ]] && test_install python-is-python3
+    test_install pip
     echo -e "$(info) 正在搜索本地pip库"
     if pip show "$*" > /dev/null 2>&1; then
        echo -e "$(info) $green ◉ $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在使用pip安装$*"
-        pip install $*
+        pip install --break-system-packages $*
         if [ $? -ne 0 ]; then
             echo -e "$(info) $red pip安装$*失败$color"
         else
@@ -769,14 +863,28 @@ pipx_install() {
 }
 
 #通用克隆
-git_clone(){
+git_clone() {
     github_speed_tool #地区检测
-    git clone $github_speed/$1 $2
-    if [ $? -ne 0 ]; then
-        echo -e "$(info) $red 仓库克隆失败$color"
+    if [[ -d $2 ]]; then
+        $habit --title "确认操作" --yesno "当前仓库已克隆\n是否重新克隆一遍？\nThe repository has already been cloned.\nDo you want to clone it again?" 0 0
+        if [ $? -ne 0 ]; then
+            echo -e "$(info) 仓库重复，跳过克隆环节"
+        else
+            rm -rf $2
+            git clone $github_speed/$1 $2
+            cw_test=$?
+        fi
     else
-        echo -e "$green 仓库克隆成功 $color"
+        git clone $github_speed/$1 $2
+        cw_test=$?
     fi
+    if [[ $cw_test -ne 0 ]]; then
+        echo -e "$(info) $red 仓库克隆失败 Repository clone failed$color"
+        echo -e "$(info) $red 错误代码 Error Code：$cw_test$color"
+    else
+        echo -e "$(info) $green 仓库克隆成功 Repository cloned successfully$color"
+    fi
+    esc
 }
 
 #通用下载
@@ -792,16 +900,20 @@ dow() {
         cw_test=$?
     else
         echo -e "$(info) $red 系统没有可用的下载器$color"
+        echo -e "$(info) $red No downloaders are available on the system$color"
         esc
     fi
     if [[ $cw_test -eq 0 ]]; then
-        echo -e "$(info) $green 下载成功$color"
+        echo -e "$(info) $green 下载成功 Download successful$color"
     else
-        echo -e "$(info) $red 下载失败$color"
-        echo -e "$(info) $red 错误代码：$cw_test$color"
+        echo -e "$(info) $red 下载失败 Download failed$color"
+        echo -e "$(info) $red 错误代码 Error Code：$cw_test$color"
     fi
 }
 
+lsp() {
+dialog;whiptail
+}
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
 
@@ -865,10 +977,9 @@ check_script_folder() {
         else
             mkdir -p "$nasyt_dir/acg"
         fi
-        if [ -d "$nasyt_dir/proot" ]; then
+        if [ -d "$nasyt_dir/proot/image" ]; then
             echo
         else
-            mkdir -p "$nasyt_dir/proot"
             mkdir -p "$nasyt_dir/proot/image"
         fi
     }
@@ -891,13 +1002,23 @@ check_Script_Install() {
 # 菜单使用习惯选择
 habit_menu () {
     clear
-    echo "功能都支持使用箭头进行选择"
-    br
-    echo "1) dialog屏幕点击(适合鼠标)"
-    echo "2) whiptail屏幕滑动（适合触屏)"
-    echo "3) 重置选择"
-    br
-    read -p "请选择菜单使用习惯: " habit_menu_xz
+    if [[ $language == "China" ]]; then
+        echo "功能都支持使用箭头进行选择"
+        br
+        echo "1) dialog屏幕点击(适合鼠标)"
+        echo "2) whiptail屏幕滑动（适合触屏)"
+        echo "3) 重置选择"
+        br
+        read -p "请选择菜单使用习惯: " habit_menu_xz
+    else
+        echo "All functions support selection using the arrow keys"
+        br
+        echo "1) Click on the dialog screen (suitable for mouse)"
+        echo "2) Slide on the whiptail screen (suitable for touchscreen)"
+        echo "3) Reset selection"
+        br
+        read -p "Please choose your menu usage preference: " habit_menu_xz
+    fi
 }
 
 #习惯选择
@@ -917,117 +1038,277 @@ habit_xz () {
            *) break ;;
         esac
     elif [ -n "$habit" ]; then
-        echo -e "菜单方式为: $yellow$habit$color"
+        echo -e "menu: $yellow$habit$color"
     fi
-    if command -v $habit >/dev/null 2>&1; then
-        echo -e "$green $habit 已安装，跳过安装步骤$color"
-    else
-        echo "$habit 未安装，正在安装。"
-        test_install $habit
-        if [ $? -ne 0 ]; then
-            echo -e "$red 安装失败 $color"
-        fi
-    fi
+    test_install $habit
     
 }
+
+#语言检测
+language_jc() {
+    if [[ ! -v language ]]; then
+        language
+    fi
+}
+
+language() {
+    if [[ ! -v habit ]]; then
+        temp=1
+        if command -v whiptail >/dev/null 2>&1; then
+            habit="whiptail"
+        elif command -v dialog >/dev/null 2>&1; then
+            habit="dialog"
+        else
+            test_whiptail
+            habit="whiptail"
+        fi
+    fi
+    if [[ -v 1 ]]; then
+        if [[ $1 == "info" ]]; then
+            echo -e "$(info) $language"
+        elif [[ $1 == "list" ]]; then
+            echo -e "$(info) 简体中文"
+            echo -e "$(info) 繁体中文"
+            echo -e "$(info) English"
+            echo -e "$(info) Japanese"
+        else
+            config add language $1
+        fi
+        exit 0
+    fi
+    language_tx() {
+        $habit --msgbox "语言设置完成\nlanguage Setup complete" 0 0
+    }
+    language_menu() {
+        language_menu_xz=$($habit --clear --title "语言地区|language" \
+            --menu "請選擇您的地區語言.\nPlease select your regional language.\n当前语言/present:$language" 0 0 10 \
+            1 "自动检测   Auto" \
+            2 "简体中文  China" \
+            3 "英语   English" \
+            0 "退出选择   quit" \
+            2>&1 1>/dev/tty)
+    }
+    language_menu
+    case $language_menu_xz in
+        1)
+            country
+            language_tx
+            ;;
+        2)
+            config add language China
+            language_tx
+            ;;
+        3)
+            config add language English
+            language_tx
+            ;;
+        5)
+            config add language Japan
+            language_tx
+            ;;
+        *)
+            if [[ ! -v language ]]; then
+                config add language English
+            fi
+            ;;
+    esac
+    if [[ $temp -eq 1 ]]; then
+        unset habit
+    fi
+}
+
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
 
 # 主菜单
 show_menu() {
-    index_menu_xz=$($habit --title "NAS油条Linux工具箱" \
-    --backtitle "版本:$version    更新时间:$time_date"\
-    --menu "本工具箱由NAS油条制作\nQQ群:610699712\n请使用方向键+回车键进行操作\n请选择你要启动的项目：" \
-    0 0 10 \
-    1 "系统信息" \
-    2 "系统工具" \
-    3 "网络工具" \
-    4 "常用工具" \
-    5 "软件安装" \
-    6 "其它脚本" \
-    7 "更新脚本" \
-    8 "脚本设置" \
-    9 "随机美图" \
-    0 "退出脚本" \
-    2>&1 1>/dev/tty)
-    
+    if [[ $language == "China" ]]; then
+        index_menu_xz=$($habit --title "NAS油条Linux工具箱" \
+        --backtitle "版本 version:$version    更新时间 update date:$time_date"\
+        --menu "本工具箱由NAS油条制作\nQQ群:610699712\n请使用方向键+回车键进行选择\n请选择你要启动的项目：\nThis toolbox is made by NAS Youtiao\nPlease select the project you want to start:" \
+        0 0 10 \
+        1 "📋 系统信息(system info)" \
+        2 "💻 系统工具(System tools)" \
+        3 "🌍 网络工具(Network tool)" \
+        4 "✨ 常用工具(Common tools)" \
+        5 "📦 软件安装(Software install)" \
+        6 "🍷 其它脚本(Other scripts)" \
+        7 "🆕 更新脚本(Update script)" \
+        8 "🔧 脚本设置(language config)" \
+        9 "🌌 随机美图(Random picture)" \
+        0 "❌ 退出脚本(Exit script)" \
+        2>&1 1>/dev/tty)
+    else
+        index_menu_xz=$($habit --title "NAS Youtiao Linux Toolbox" \
+        --backtitle "Version:$version    Updated on:$time_date"\
+        --menu "This toolbox is made by NAS Youtiao\nQQ Group:610699712\nPlease use the arrow keys and Enter to operate\nPlease select the item you want to launch:" \
+        0 0 10 \
+        1 "📋 System Information" \
+        2 "💻 System Tools" \
+        3 "🌍 Network Tools" \
+        4 "✨ Common Tools" \
+        5 "📦 Software Installation" \
+        6 "🍷 Other Scripts" \
+        7 "🆕 Update Scripts" \
+        8 "🔧 Script Settings" \
+        9 "🌌 Random Beautiful Pictures" \
+        0 "❌ Exit Script" \
+        2>&1 1>/dev/tty)
+    fi
 }
 
 # 查看菜单
 look_menu() {
-    look_choice=$($habit --title "查询菜单" \
-    --menu "请选择" 0 0 10 \
-    1 "当前时间" \
-    2 "配置信息" \
-    3 "当前 IP" \
-    4 "系统logo" \
-    5 "地理位置" \
-    6 "进程列表" \
-    7 "运行时间" \
-    8 "监控资源" \
-    0 "◀返回" \
-    2>&1 1>/dev/tty)
+    if [[ $language == "China" ]]; then
+        look_choice=$($habit --title "查询菜单" \
+        --menu "请选择" 0 0 10 \
+        1 "当前时间" \
+        2 "配置信息" \
+        3 "当前 IP" \
+        4 "系统logo" \
+        5 "地理位置" \
+        6 "进程列表" \
+        7 "运行时间" \
+        8 "监控资源" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    else
+        look_choice=$($habit --title "Query Menu" \
+        --menu "Please choose" 0 0 10 \
+        1 "Current Time" \
+        2 "Configuration Information" \
+        3 "Current IP" \
+        4 "System Logo" \
+        5 "Geographical Location" \
+        6 "Process List" \
+        7 "Uptime" \
+        8 "Resource Monitoring" \
+        0 "◀Back" \
+        2>&1 1>/dev/tty)
+    fi
 }
 
 # 系统操作
 system_menu() {
-    system_choice=$($habit --title "系统菜单" \
-    --menu "请选择" 0 0 10 \
-    1 "软件包管理" \
-    2 "更换镜像源(大多数系统)" \
-    3 "更新软件包" \
-    4 "文件解压缩" \
-    5 "ssh管理工具" \
-    6 "安装jvav（debian系列)" \
-    7 "language设置" \
-    8 "磁盘挂载设置" \
-    9 "虚拟内存设置" \
-    10 "系统清理"  \
-    11 "切换pip国内源" \
-    12 "同步上海时间" \
-    13 "系统密码设置" \
-    14 "修改主机名" \
-    0 "◀返回" \
-    2>&1 1>/dev/tty)
+    if [[ $language == "China" ]]; then
+        system_choice=$($habit --title "系统菜单" \
+        --menu "请选择" 0 0 10 \
+        1 "软件包管理" \
+        2 "更换镜像源(大多数系统)" \
+        3 "更新软件包" \
+        4 "文件解压缩" \
+        5 "ssh管理工具" \
+        6 "安装jvav（debian系列)" \
+        7 "language设置" \
+        8 "磁盘挂载设置" \
+        9 "虚拟内存设置" \
+        10 "系统清理"  \
+        11 "切换pip国内源" \
+        12 "同步上海时间" \
+        13 "系统密码设置" \
+        14 "修改主机名" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    else
+        system_choice=$($habit --title "System Menu" \
+        --menu "Please Select" 0 0 10 \
+        1 "Package Management" \
+        2 "Switch Mirror Source (Most Systems)" \
+        3 "Update Packages" \
+        4 "File Decompression" \
+        5 "SSH Management Tools" \
+        6 "Install Java (Debian Series)" \
+        7 "Language Settings" \
+        8 "Disk Mount Settings" \
+        9 "Virtual Memory Settings" \
+        10 "System Cleanup"  \
+        11 "Switch Pip to Domestic Source" \
+        12 "Synchronize Shanghai Time" \
+        13 "System Password Settings" \
+        14 "Modify Hostname" \
+        0 "◀Return" \
+        2>&1 1>/dev/tty)
+    fi
 }
 
 # 安装常用工具。
 often_tool() {
-   often_tool_linux() {
-    often_tool_choice=$($habit --title "安装linux常用工具" \
-    --menu "请选择" 0 0 10 \
-    1 "🐳docker管理"\
-    2 "🖥各种面板" \
-    3 "🤖bot机器人" \
-    4 "👾娱乐游戏" \
-    5 "🚀各种服务端" \
-    6 "🌍穿透工具" \
-    7 "📄编辑工具" \
-    8 "📥下载工具" \
-    9 "🔄转换工具" \
-    10 "🌌终端美化" \
-    11 "📁文件管理" \
-    12 "🦞AI工具" \
-    20 "☰ 其他工具" \
-    0 "◀返回上层菜单" \
-    2>&1 1>/dev/tty)
+    often_tool_linux() {
+        if [[ $language == "China" ]]; then
+            often_tool_choice=$($habit --title "安装linux常用工具" \
+            --menu "请选择" 0 0 10 \
+            1 "🐳docker管理"\
+            2 "🖥各种面板" \
+            3 "🤖bot机器人" \
+            4 "👾娱乐游戏" \
+            5 "🚀各种服务端" \
+            6 "🌍穿透工具" \
+            7 "📄编辑工具" \
+            8 "📥下载工具" \
+            9 "🔄转换工具" \
+            10 "🌌终端美化" \
+            11 "📁文件管理" \
+            12 "🦞AI工具" \
+            13 "🚀SFS工具" \
+            20 "☰ 其他工具" \
+            0 "◀返回上层菜单" \
+            2>&1 1>/dev/tty)
+        else
+            often_tool_choice=$($habit --title "Install Common Linux Tools" \
+            --menu "Please Choose" 0 0 10 \
+            1 "🐳 Docker Management"\
+            2 "🖥 Various Panels" \
+            3 "🤖 Bot Robots" \
+            4 "👾 Entertainment Games" \
+            5 "🚀 Various Servers" \
+            6 "🌍 Penetration Tools" \
+            7 "📄 Editing Tools" \
+            8 "📥 Download Tools" \
+            9 "🔄 Conversion Tools" \
+            10 "🌌 Terminal Beautification" \
+            11 "📁 File Management" \
+            12 "🦞 AI Tools" \
+            13 "🚀 SFS Tool" \
+            20 "☰ Other Tools" \
+            0 "◀ Return to Previous Menu" \
+            2>&1 1>/dev/tty)
+        fi
     }
     
-   often_tool_termux() {
-    often_tool_choice=$($habit --title "安装termux常用工具" \
-    --menu "请选择" 0 0 10 \
-    3 "🤖bot机器人相关" \
-    4 "👾娱乐相关" \
-    6 "🌍穿透工具" \
-    7 "📄编辑工具" \
-    8 "📥下载工具" \
-    9 "🔄转换工具" \
-    10 "🌌终端美化" \
-    11 "📁文件管理" \
-    12 "🦞AI工具" \
-    20 "其他工具" \
-    0 "◀返回上层菜单" \
-    2>&1 1>/dev/tty)
+    often_tool_termux() {
+        if [[ $language == "China" ]]; then
+            often_tool_choice=$($habit --title "安装termux常用工具" \
+            --menu "请选择" 0 0 10 \
+            3 "🤖bot机器人" \
+            4 "👾娱乐相关" \
+            6 "🌍穿透工具" \
+            7 "📄编辑工具" \
+            8 "📥下载工具" \
+            9 "🔄转换工具" \
+            10 "🌌终端美化" \
+            11 "📁文件管理" \
+            12 "🦞AI工具" \
+            13 "🚀SFS工具" \
+            20 "其他工具" \
+            0 "◀返回上层菜单" \
+            2>&1 1>/dev/tty)
+        else
+            often_tool_choice=$($habit --title "Install Common Termux Tools" \
+            --menu "Please choose" 0 0 10 \
+            3 "🤖 Bot Robot" \
+            4 "👾 Entertainment Related" \
+            6 "🌍 Penetration Tools" \
+            7 "📄 Editing Tools" \
+            8 "📥 Download Tools" \
+            9 "🔄 Conversion Tools" \
+            10 "🌌 Terminal Customization" \
+            11 "📁 File Management" \
+            12 "🦞 AI Tools" \
+            13 "🚀 SFS Tool" \
+            20 "☰ Other Tools" \
+            0 "◀ Return to Previous Menu" \
+            2>&1 1>/dev/tty)
+        fi
     }
     
     #检查当前系统
@@ -1048,19 +1329,37 @@ often_tool() {
 
 # 脚本设置
 nasyt_setup_menu () {
-   nasyt_setup_choice=$($habit --title "脚本设置" \
-   --menu "脚本设置" 0 0 10 \
-   1 ">_< 菜单个性化" \
-   2 "remove卸载脚本" \
-   3 "github加速设置" \
-   4 "脚本空间占用" \
-   5 "脚本备份/恢复" \
-   6 "默认文件打开设置" \
-   8 "补全完整功能" \
-   9 "删除脚本配置文件" \
-   10 "查看配置文件" \
-   0 "◀返回" \
-   2>&1 1>/dev/tty)
+    if [[ $language == "China" ]]; then
+       nasyt_setup_choice=$($habit --title "脚本设置" \
+       --menu "脚本设置" 0 0 10 \
+       1 ">_< 菜单个性化" \
+       2 "remove卸载脚本" \
+       3 "github加速设置" \
+       4 "脚本空间占用" \
+       5 "脚本备份/恢复" \
+       6 "默认文件打开设置" \
+       8 "补全完整功能" \
+       9 "删除脚本配置文件" \
+       10 "查看配置文件" \
+       11 "脚本语言设置" \
+       0 "◀返回" \
+       2>&1 1>/dev/tty)
+    else
+        nasyt_setup_choice=$($habit --title "Script Settings" \
+        --menu "Script Settings" 0 0 10 \
+        1 ">_< Menu Personalization" \
+        2 "Remove/Uninstall Script" \
+        3 "GitHub Acceleration Settings" \
+        4 "Script Space Usage" \
+        5 "Script Backup/Restore" \
+        6 "Default File Open Settings" \
+        8 "Complete Full Features" \
+        9 "Delete Script Configuration Files" \
+        10 "View Configuration Files" \
+        11 "Script Language Settings" \
+        0 "◀ Back" \
+        2>&1 1>/dev/tty)
+    fi
 }
 
 #默认打开设置
@@ -1912,7 +2211,7 @@ jm_tool() {
         2>&1 1>/dev/tty)
     }
     test_install yq
-    test_install python
+    test_python
     pip_install jmcomic
     if [[ -n $2 ]]; then
         jm_env
@@ -2314,12 +2613,21 @@ ping2() {
 
 # tmux快捷键
 tmux_keys() {
-    echo -e "$(info) Ctrl+b c：创建一个新窗口，状态栏会显示多个窗口的信息。"
-    echo -e "$(info) Ctrl+b p：切换到上一个窗口（按照状态栏上的顺序）。"
-    echo -e "$(info) Ctrl+b n：切换到下一个窗口。"
-    echo -e "$(info) Ctrl+b <number>：切换到指定编号的窗口，其中的<number>是状态栏上的窗口编号。"
-    echo -e "$(info) Ctrl+b w：从列表中选择窗口。"
-    echo -e "$(info) Ctrl+b ,：窗口重命名。"
+    if [[ $language == "China" ]]; then
+        echo -e "$(info) Ctrl+b c：创建一个新窗口，状态栏会显示多个窗口的信息。"
+        echo -e "$(info) Ctrl+b p：切换到上一个窗口（按照状态栏上的顺序）。"
+        echo -e "$(info) Ctrl+b n：切换到下一个窗口。"
+        echo -e "$(info) Ctrl+b <number>：切换到指定编号的窗口，其中的<number>是状态栏上的窗口编号。"
+        echo -e "$(info) Ctrl+b w：从列表中选择窗口。"
+        echo -e "$(info) Ctrl+b ,：窗口重命名。"
+    else
+        echo -e "$(info) Ctrl b c: Create a new window, and the status bar will show information of multiple windows."
+        echo -e "$(info) Ctrl b p: Switch to the previous window (according to the order on the status bar)."
+        echo -e "$(info) Ctrl b n: Switch to the next window."
+        echo -e "$(info) Ctrl b <number>: Switch to the specified window number, where <number> is the window number on the status bar."
+        echo -e "$(info) Ctrl b w: Choose a window from the list."
+        echo -e "$(info) Ctrl b ,: Rename the window."
+    fi
 }
 
 # cpolar内网穿透一键安装。
@@ -2368,10 +2676,10 @@ dpanel_menu() {
 # 安装1panel面板
 1panel_menu() {
     br
-    echo "1) RedHat / CentOS系统"
-    echo "2) Ubuntu系统"
-    echo "3) Debian系统"
-    echo "4) OpenEuler / 其他"
+    echo "1) RedHat/CentOS/Fedora"
+    echo "2) Ubuntu"
+    echo "3) Debian"
+    echo "4) OpenEuler/其他"
     echo "0) ◀返回"
     br
 }
@@ -2700,7 +3008,8 @@ gx_show() {
 
 #更新链接来源
 version_update() {
-    new_version=$(curl "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/version.txt") 
+    new_version=$(curl "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/version.txt")
+    config add new $new_version
 }
 
 #更新以及安装
@@ -2717,9 +3026,9 @@ gx() {
             cp nasyt $PREFIX/bin >/dev/null 2>&1
             mv nasyt $nasyt_dir/nasyt >/dev/null 2>&1
             echo -e "$(info) 正在给予权限 $color"
-            chmod 777 $nasyt_dir/nasyt >/dev/null 2>&1
-            chmod 777 /usr/bin/nasyt >/dev/null 2>&1
-            chmod 777 $PREFIX/bin/nasyt >/dev/null 2>&1
+            chmod +x $nasyt_dir/nasyt >/dev/null 2>&1
+            chmod +x /usr/bin/nasyt >/dev/null 2>&1
+            chmod +x $PREFIX/bin/nasyt >/dev/null 2>&1
             echo -e "$(info) 正在写入启动文件 $color"
             source $HOME/.bashrc >/dev/null 2>&1
             if command -v nasyt >/dev/null 2>&1; then
@@ -3285,6 +3594,27 @@ acg() {
 
 #proot管理
 proot_tool() {
+start_alpine() {
+	bin=${PREFIX}/bin/startalpine
+	cat > $bin <<- EOM
+#!/data/data/com.termux/files/usr/bin/bash -e
+unset LD_PRELOAD
+# thnx to @j16180339887 for DNS picker
+addresolvconf ()
+{
+  android=\$(getprop ro.build.version.release)
+  if [ \${android%%.*} -lt 8 ]; then
+  [ \$(command -v getprop) ] && getprop | sed -n -e 's/^\[net\.dns.\]: \[\(.*\)\]/\1/p' | sed '/^\s*$/d' | sed 's/^/nameserver /' > \${PREFIX}/share/TermuxAlpine/etc/resolv.conf
+  fi
+}
+addresolvconf
+exec proot --link2symlink -0 -r \.nasyt/proot/container/alpine/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b \$HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="\$TERM" LANG=\$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/sh --login
+EOM
+
+	chmod 700 $bin
+}
+   
+    
     proot_dir="$nasyt_dir/proot/container"
     mkdir -p "$proot_dir/"
     test_install curl
@@ -3325,6 +3655,7 @@ proot_tool() {
                             mkdir -p $proot_dir/alpine >/dev/null 2>&1
                             cd $nasyt_dir/proot/image
                             x $nasyt_dir/proot/image/alpine-minirootfs-3.23.4-$(uname -m).tar.gz $proot_dir/alpine
+                            start_alpine
                             esc
                             ;;
                         *)
@@ -3393,6 +3724,126 @@ get_os_info() {
 
 }
 
+sfs_tool() {
+    if [[ $language == "China" ]]; then
+        sfs_menu() {
+            sfs_menu_xz=$($habit --clear --title "SFS工具 sfs_tool" \
+            --menu "请选择" 0 0 10 \
+            1 "🌍 SFS模组翻译工具" \
+            2 "🗄 SFS联机服务端" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
+        }
+        sfs_fy_menu() {
+            sfs_fy_xz=$($habit --clear --title "SFS模组翻译" \
+            --menu "项目来自\nhttps://github.com/aaaa111ssf/SFS-Pack-Mod-Tools\n请选择" 0 0 10 \
+            1 "安装工具" \
+            2 "导入原模组" \
+            3 "编辑原文本" \
+            4 "写入汉化" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
+        }
+    else
+        sfs_menu() {
+            sfs_menu_xz=$($habit --clear --title "SFS Tool sfs_tool" \
+            --menu "Please choose" 0 0 10 \
+            1 "🌍 SFS Mod Translation Tool" \
+            2 "🗄 SFS Online Server" \
+            0 "◀Back" \
+            2>&1 1>/dev/tty)
+        }
+        sfs_fy_menu() {
+            sfs_fy_xz=$($habit --clear --title "SFS Mod Translation" \
+            --menu "Project from\nhttps://github.com/aaaa111ssf/SFS-Pack-Mod-Tools\nPlease choose" 0 0 10 \
+            1 "Install Tool" \
+            2 "Import Original Mod" \
+            3 "Edit Original Text" \
+            4 "Write Chinese Translation" \
+            0 "◀Back" \
+            2>&1 1>/dev/tty)
+        }
+    fi
+    
+    while true
+    do
+        sfs_menu
+        case $sfs_menu_xz in
+            1)
+                while true
+                do
+                    sfs_fy_menu
+                    case $sfs_fy_xz in
+                        1)
+                            test_install git
+                            git_clone "https://github.com/aaaa111ssf/SFS-Pack-Mod-Tools" "$nasyt_dir/SFS-Pack-Mod-Tools"
+                            test_python
+                            test_install pip
+                            pip_install unitypy
+                            esc
+                            ;;
+                        2)
+                            $habit --msgbox "请在接下来的选项中选择一个.pack模组文件" 0 0
+                            file_xz $nasyt_dir sfs_file_xz
+                            python "$nasyt_dir/SFS-Pack-Mod-Tools/SFS Mod Toolv18.py" extract -i $sfs_file_xz -e $nasyt_dir/txt_en.json
+                            cp $nasyt_dir/txt_en.json $nasyt_dir/txt_zh.json
+                            ;;
+                        3)
+                            $open $HOME/txt_zh.json
+                            esc
+                            ;;
+                        4)
+                            if [[ ! -v sfs_file_xz ]]; then
+                                file_xz $nasyt_dir sfs_file_xz
+                            fi
+                            python "$nasyt_dir/SFS-Pack-Mod-Tools/SFS Mod Toolv18.py" write -i $sfs_file_xz -t $nasyt_dir/txt_zh.json
+                            echo -e "$(info) $green 写入成功$color"
+                            echo "$(info)  模组文件保存在$HOME/mod_CN.pack$color"
+                            esc
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                ;;
+            2)
+                sfs_online
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+}
+
+sfs_online() {
+    $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
+    echo "脚本作者:NAS油条"
+    echo "感谢:"
+    echo "SFSGamer(QQ:3818483936)"
+    echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
+    echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
+    $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
+    if [ $? -ne 0 ]; then
+        break
+        return 1
+    fi
+    echo -e "$(info) 正在下载服务端文件"
+    dow "https://nasyt.hoha.top/shell/sfs_server" $HOME
+    mv sfs /usr/bin >/dev/null 2>&1
+    chmod +x /usr/bin/sfs >/dev/null 2>&1
+    echo "$(info) 快捷启动命令为: sfs"
+    clear; echo "$(info) 正在运行。"; br
+    sfs; br
+    esc
+}
+
+
+# --------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
+
+
 
 # 检查
 introduce() {
@@ -3422,7 +3873,7 @@ index_main() {
         disclaimer # 免责声明
         read -p "回车键启动脚本,Ctrl+C退出" 
     fi
-    source $nasyt_dir/config.txt >/dev/null # 何咦魏,加载脚本配置
+    source $nasyt_dir/config.txt >/dev/null # hyw加载脚本配置
     # source $HOME/.bashrc >/dev/null 2>&1 # 加载用户启动文件
     clear
     while true
@@ -4223,7 +4674,7 @@ index_main() {
                                                     git clone $github_speed/https://github.com/AstrBotDevs/AstrBot $nasyt_dir/AstrBot
                                                     cd $nasyt_dir/AstrBot
                                                     echo -e "$(info) 正在检查python安装"
-                                                    test_install python3
+                                                    test_python
                                                     echo -e "$(info) 正在检查并添加python环境"
                                                     $sudo_setup $pkg_install python3*venv $yes_tg
                                                     python3 -m venv ./venv
@@ -4593,23 +5044,7 @@ index_main() {
                                 server_install_menu
                                 case $server_install_xz in
                                     1)
-                                        $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
-                                        echo "脚本作者:NAS油条"
-                                        echo "感谢:"
-                                        echo "SFSGamer(QQ:3818483936)"
-                                        echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
-                                        echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
-                                        $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
-                                        if [ $? -ne 0 ]; then
-                                            break
-                                        fi
-                                        curl --progress-bar --output sfs -o /$HOME/sfs https://linux.class2.icu/shell/sfs_server
-                                        mv sfs /usr/bin >/dev/null 2>&1
-                                        chmod +x /usr/bin/sfs
-                                        echo "$(info) 快捷启动命令为: sfs"
-                                        clear; echo "$(info) 正在运行。"; br
-                                        sfs; br
-                                        esc
+                                        sfs_online
                                         ;;
                                     2)
                                         if [ -e $nasyt_dir/phira/phira_linux_server_amd64 ]; then
@@ -4800,10 +5235,16 @@ index_main() {
                                         esc
                                         ;;
                                     3)
+                                        while true
+                                        do
                                         video_url=$($habit --clear --title "视频解析工具" \
                                         --inputbox "请输入链接" 0 0 \
                                         2>&1 1>/dev/tty)
+                                        if [ $? -ne 0 ]; then
+                                            break
+                                        fi
                                         video_dow $video_url
+                                        done
                                         esc
                                         ;;
                                     4)
@@ -5010,6 +5451,9 @@ index_main() {
                                         ;;
                                 esac
                             done
+                            ;;
+                        13)
+                            sfs_tool
                             ;;
                         20)
                             while true
@@ -5484,7 +5928,8 @@ index_main() {
                             while true
                             do
                                 if [ -e "$nasyt_dir/MinecraftMotdStressTest/motd_stress_test_optimized.py" ]; then
-                                    test_install python pip #调用函数检测
+                                    test_python
+                                    test_install pip #调用函数检测
                                     pip_install mcstatus
                                     pip_install colorama  #调用函数安装/检测
                                     br;sleep 1
@@ -5513,7 +5958,8 @@ index_main() {
                                    echo -e "$(info) 正在克隆github仓库"
                                    git_clone https://github.com/konsheng/MinecraftMotdStressTest.git $nasyt_dir/MinecraftMotdStressTest
                                    echo -e "$(info) 正在检查,脚本所需资源"
-                                   test_install python pip #调用函数安装/检测
+                                   test_python
+                                   test_install pip #调用函数安装/检测
                                    pip_mcstatus;pip_colorama  #调用函数安装/检测
                                    $habit --msgbox "安装完成,请重新打开脚本" 0 0
                                 fi
@@ -5755,6 +6201,9 @@ index_main() {
                         $open $nasyt_dir/config.txt
                         esc
                         ;;
+                    11)
+                        language
+                        ;;
                     *)  break;;
                 esac
                 done
@@ -5773,16 +6222,21 @@ index_main() {
 #
 #
 check_script_folder #文件夹检测
-yml #yml配置文件操作函数
+yml #加载yml配置文件操作函数
 config #txt配置文件操作函数
 color_variable # 定义颜色变量
 all_variable # 全部变量
 #country #国内外检测
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 check_pkg_install # 检测包管理器
+language_jc #脚本语言设置
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+        language|--language|lang|--lang)
+            language $2
+            exit
+            ;;
         log|-log|--log)
             > $nasyt_dir/shell.log
             exec > >(tee -a "$nasyt_dir/shell.log") 2>&1
@@ -5806,6 +6260,10 @@ if [ $# -ne 0 ]; then
             ;;
         sec|-sec|--sec)
             sec_tool
+            exit
+            ;;
+        sfs|-sfs|--sfs)
+            sfs_tool
             exit
             ;;
         j|jmcomic|jm|-jm|-j|--jmcomic)
@@ -5907,6 +6365,7 @@ if [ $# -ne 0 ]; then
             gx
             ;;
         l|lolcat|-l|--lolcat)
+            test_install lolcat
             nasyt $3| lolcat
             exit
             ;;
@@ -5932,18 +6391,7 @@ if [ $# -ne 0 ]; then
             ;;
         v|version|-v|-version|--version)
             echo
-            echo "名称: nasyt"
-            echo "版本: $version"
-            #echo "来源: $nasyt_from"
-            echo "更新时间：$time_date"
-            echo "操作系统: $PRETTY_NAME"
-            echo "终端类型：$(basename $SHELL)"
-            echo "位于目录: $(command -v nasyt)"
-            echo
-            echo "运行时间：$(uptime_cn;echo $uptime_sc)"
-            echo "软件包数：$deb_size"
-            echo "内存剩余：$(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
-            echo "进程数量: $(ps -e --no-headers | wc -l)"
+            shell_info
             echo
             exit
             ;;
@@ -5953,43 +6401,85 @@ if [ $# -ne 0 ]; then
             ;;
         r|remove|-r|--remove)
             shell_uninstall
+            exit
             ;;
         h|help|-h|-help|--help)
             echo ""
-            echo "用法:"
-            echo -e "  ${blue}nasyt [参数] (参数)$color"
-            echo "参数:"
-            echo "  -a, --acg  随机输出acg图片"
-            echo "  -b, --backup 备份恢复脚本"
-            echo "  -c  --aria2c 多线程下载"
-            echo "  -d, --docker docker管理"
-            echo "  -e, --edge_tts 文字转语音"
-            echo "  -h, --help  输出命令帮助"
-            echo "  -j, --jmcomic JM本子下载"
-            echo "  -k, --skip 直接进入菜单部分"
-            echo "  -l, --lolcat 彩色输出模式"
-            echo "  -m, --mirror 快捷换软件源"
-            echo "  -n, --nlist  生成网页目录结构"
-            echo "  -p, --proot  proot容器管理"
-            echo "  -r, --remove 卸载本脚本工具"
-            echo "  -s, --ssh 进入ssh管理工具"
-            echo "  -t, --tmux tmux后台管理"
-            echo "  -u, --update 更新脚本至最新"
-            echo "  -v, --version 输出脚本版本"
-            echo "  -x, --dowx 下载twitter视频"
-            echo "  -y, --bili b站YT视频下载"
-            echo
-            echo "其他参数:"
-            echo "  log  日志输出模式运行"
-            echo "  jv   jmcomic本子查询"
-            echo "  sec    Secluded管理"
-            echo "  turn    疏散文件生成"
-            echo "  debug   函数调试测试"
-            echo "  config 用于管理配置文件"
-            echo "  yml    用于管理yml文件"
-            echo
-            echo "有关更多详细信息，请参见"
-            echo -e "$green https://github.com/nasyt233/nasyt-linux-tool$color"
+            if [[ $language == "China" ]]; then
+                echo "用法:"
+                echo -e "  ${blue}nasyt [参数] (参数)$color"
+                echo "参数:"
+                echo "  -a, --acg     acg图片输出"
+                echo "  -b, --backup  备份恢复脚本"
+                echo "  -c  --aria2c   多线程下载"
+                echo "  -d, --docker  docker管理"
+                echo "  -e, --edge_tts 文字转语音"
+                echo "  -h, --help    输出命令帮助"
+                echo "  -j, --jmcomic  JM本子下载"
+                echo "  -k, --skip     进入菜单部分"
+                echo "  -l, --lolcat   彩色输出模式"
+                echo "  -m, --mirror   快捷换软件源"
+                echo "  -n, --nlist 生成网页目录结构"
+                echo "  -p, --proot  proot容器管理"
+                echo "  -r, --remove 卸载本脚本工具"
+                echo "  -s, --ssh      ssh管理工具"
+                echo "  -t, --tmux    tmux后台管理"
+                echo "  -u, --update 更新脚本至最新"
+                echo "  -v, --version 输出脚本版本"
+                echo "  -x, --dowx 下载twitter视频"
+                echo "  -y, --bili    b站YT视频下载"
+                echo
+                echo "其他参数:"
+                echo "  sfs      SFS管理工具"
+                echo "  lang     脚本语言设置"
+                echo "  log   日志输出模式运行"
+                echo "  jv    jmcomic本子查询"
+                echo "  sec     Secluded管理"
+                echo "  turn     疏散文件生成"
+                echo "  debug    函数调试测试"
+                echo "  config 用于管理配置文件"
+                echo "  yml    用于管理yml文件"
+                echo
+                echo "有关更多详细信息，请参见"
+                echo -e "$green https://github.com/nasyt233/nasyt-linux-tool$color"
+            else
+                echo "Usage:"
+                echo -e "  ${blue}nasyt [options] (parameters)$color"
+                echo "Options:"
+                echo "  -a, --acg       Randomly output a picture"
+                echo "  -b, --backup    Backup and restore script"
+                echo "  -c, --aria2c    Multi-threaded download"
+                echo "  -d, --docker    Docker management"
+                echo "  -e, --edge_tts  Text-to-speech"
+                echo "  -h, --help      Display command help"
+                echo "  -j, --jmcomic   JM comics download"
+                echo "  -k, --skip      Enter menu section"
+                echo "  -l, --lolcat    Color output mode"
+                echo "  -m, --mirror    Fast software source switching"
+                echo "  -n, --nlist     Generate web directory structure"
+                echo "  -p, --proot     Proot container management"
+                echo "  -r, --remove    Uninstall this script tool"
+                echo "  -s, --ssh       SSH management tool"
+                echo "  -t, --tmux      TMUX background management"
+                echo "  -u, --update    Update the script to the latest version"
+                echo "  -v, --version   Display script version"
+                echo "  -x, --dowx      Download Twitter videos"
+                echo "  -y, --bili      Bilibili/YouTube video download"
+                echo
+                echo "Other parameters:"
+                echo "  sfs      SFS management tool"
+                echo "  lang     Script language settings"
+                echo "  log      Log output mode operation"
+                echo "  jv       jmcomic book query"
+                echo "  sec      Secluded management"
+                echo "  turn     Evacuation file generation"
+                echo "  debug    Function debug testing"
+                echo "  config   For managing configuration files"
+                echo "  yml      For managing yml files"
+                echo
+                echo "For more details, please refer to"
+                echo -e "$green https://github.com/nasyt233/nasyt-linux-tool$color"
+            fi
             echo
             exit
             ;;
