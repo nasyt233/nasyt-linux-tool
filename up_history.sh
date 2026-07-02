@@ -3,6 +3,18 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年7月2日更新v2.4.3.9版"
+    echo "更新 配置文件添加版本信息"
+    echo "优化 github加速检测问题"
+    echo "优化 nvim编辑器安装过程"
+    echo "修复 aria2安装检测问题"
+    echo "修复 docker安装无法退出问题"
+    echo "修复 python检测问题"
+    echo "优化 代码结构与稳定性"
+    echo "更新 cpufetch信息显示"
+    echo "更新 screenfetch显示"
+    br
+    read
     echo "2026年6月12日更新v2.4.3.8版"
     echo "更新 sfs模组翻译工具(A Future star)"
     echo "更新 SFS管理工具选项和快捷方式"

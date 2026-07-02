@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/6/12"
-version="v2.4.3.8"
+time_date="2026/7/2"
+version="v2.4.3.9"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 #config_file="$nasyt_dir/config.txt" #脚本配置文件
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
@@ -598,7 +598,7 @@ resources_show() {
 
 # 脚本信息
 shell_info() {
-    if [[ anguage == "China" ]]; then
+    if [[ $language == "China" ]]; then
         echo "名称: nasyt"
         echo "版本: $version"
         echo "更新时间：$time_date"
@@ -703,10 +703,14 @@ test_whiptail() {
     fi
 }
 
-#python安装
+# python安装
 test_python() {
-    test_install python || test_install python3
-    [[ -z $PREFIX ]] && test_install python-is-python3
+    if [[ -z $PREFIX ]]; then
+        test_install python3
+        test_install python-is-python3
+    else
+        test_install python
+    fi
 }
 
 test_eatmydata() {
@@ -1640,7 +1644,6 @@ docker_menu() {
         else
             $habit --title "docker管理" --yesno "docker未安装是否安装?" 0 0
             if [ $? -ne 0 ]; then
-                continue
                 break
             else
                 test_docker
@@ -2734,6 +2737,7 @@ sec_tool() {
                 if [ $? -ne 0 ]; then
                     git clone https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
                 else
+                    github_speed_tool
                     git clone $github_speed/https://github.com/MCSQNXY/Secluded-x64-linux.git $nasyt_dir/Secluded
                 fi
                 echo "chmod 777 "$nasyt_dir/Secluded/*"" > $nasyt_dir/sec
@@ -2955,20 +2959,6 @@ deb_remove() {
     esc
 }
 
-# ranger文件管理工具
-ranger_install() {
-    if command -v ranger &> /dev/null
-    then
-        read -p "ranger 已安装。按回车键进入。"
-        ranger
-    else 
-        echo -e "$(info) 未安装ranger正在安装。"
-        $pkg_install ranger $yes_tg
-        echo -e "$(info) ranger安装完成。"
-        read-p "按回车键启动。"
-        ranger
-    fi
-}
 
 #脚本卸载
 shell_uninstall() {
@@ -3002,13 +2992,14 @@ gx_show() {
     if [[ $new_version == $version ]]; then
         echo -e "$green 当前版本已是最新。 $color"
     else
+        echo -e " 当前版本 $version"
         echo -e "$red 有新版本更新$new_version $color"
     fi
 }
 
 #更新链接来源
 version_update() {
-    new_version=$(curl "https://raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/version.txt")
+    new_version=$(curl "https://raw.giteeusercontent.com/nasyt/version/raw/master/version")
     config add new $new_version
 }
 
@@ -3373,6 +3364,8 @@ ifneofetch() {
         --menu "请选择" 0 0 5\
         1 "neofetch" \
         2 "fastfetch" \
+        3 "screenfetch" \
+        4 "cpufetch" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
         
@@ -3406,6 +3399,15 @@ ifneofetch() {
                     $habit --msgbox "一些系统软件包可能没有screenfetch" 0 0
                 else
                     screenfetch
+                fi
+                esc
+                ;;
+            4)
+                test_install cpufetch
+                if [ $? -ne 0 ]; then
+                    $habit --msgbox "一些系统软件包可能没有fastfetch" 0 0
+                else
+                    cpufetch
                 fi
                 esc
                 ;;
@@ -3789,7 +3791,7 @@ sfs_tool() {
                             cp $nasyt_dir/txt_en.json $nasyt_dir/txt_zh.json
                             ;;
                         3)
-                            $open $HOME/txt_zh.json
+                            $open $nasyt_dir/txt_zh.json
                             esc
                             ;;
                         4)
@@ -4214,8 +4216,8 @@ index_main() {
                             esc
                             ;;
                         6)
-                            clear
-                            ranger_install
+                            test_install ranger
+                            ranger
                             esc
                             ;;
                         7)
@@ -4235,7 +4237,7 @@ index_main() {
                             ;;
                         10)
                             echo -e "$(info) $blue 正在拉取脚本$color"
-                            bash -c "$(curl -L https://www.mxzc.top/tool/mailtest.sh)"
+                            bash -c "$(curl -sSL https://www.mxzc.top/tool/mailtest.sh)"
                             esc
                             ;;
                         0) 
@@ -5203,7 +5205,14 @@ index_main() {
                                             echo -e "$(info)$yellow nvim未安装，正在执行安装步骤$color"
                                             if [[ $deb_sys == apt ]]; then
                                                 echo -e "$(info) 检测到apt软件包管理,正在安装"
-                                                snap install nvim --classic
+                                                github_speed_tool
+                                                dow "$github_speed/https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage" "/usr/bin"
+                                                mv /usr/bin/nvim-linux-x86_64.appimage /usr/bin/nvim
+                                                echo -e "$(info) 正在给予运行权限"
+                                                chmod +x /usr/bin/nvim
+                                                $habit --msgbox "nvim安装完成\n回车键进入管理菜单" 0 0
+                                                # test_install snap
+                                                # snap install nvim --classic
                                             else
                                                 test_install nvim
                                             fi
@@ -5444,6 +5453,16 @@ index_main() {
                                                     deepseek
                                                 fi
                                             fi
+                                        fi
+                                        ;;
+                                    3)
+                                        if [[ -n $PREFIX ]]; then
+                                            $habit --msgbox "不支持termux" 0 0
+                                        else
+                                            test_install nodejs
+                                            echo -e "$(info) 正在拉取官方安装脚本"
+                                            curl -fsSL https://opencode.ai/install | bash
+                                            esc
                                         fi
                                         ;;
                                     *)
@@ -6228,6 +6247,7 @@ color_variable # 定义颜色变量
 all_variable # 全部变量
 #country #国内外检测
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
+config add version "$version" #添加版本信息
 check_pkg_install # 检测包管理器
 language_jc #脚本语言设置
 # 启动参数
@@ -6279,7 +6299,7 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         c|aria2c|-c|--aria2c)
-            test_install aria2c
+            test_install aria2 || test_install aria2c
             echo -e "$(info) 正在下载文件"
             aria2c "$2" -m 2 -s 16 -x 16 -c
             cw_test=$?
