@@ -3,6 +3,20 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年7月6日更新bata2.4.4.0版"
+    echo "更新 脚本终端颜色输出设置"
+    echo "修复 ssh连接工具退出问题"
+    echo "同步 English语言更新"
+    echo "添加 -z shell快捷管理"
+    echo "重构 Shell终端管理界面"
+    echo "更新 fish shell管理工具"
+    echo "更新 starship  管理工具"
+    echo "优化 yazi文件管理器的安装"
+    echo "更新 find文件快捷搜索工具"
+    echo "修复 Arch系统eatmydata安装问题"
+    echo "修复 JB全家桶系列安装问题"
+    br
+    read
     echo "2026年7月2日更新v2.4.3.9版"
     echo "更新 配置文件添加版本信息"
     echo "优化 github加速检测问题"
