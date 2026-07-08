@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/7/6"
-version="bata2.4.4.0"
+time_date="2026/7/8"
+version="2.4.4.0"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 #config_file="$nasyt_dir/config.txt" #脚本配置文件
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
@@ -747,7 +747,9 @@ test_whiptail() {
 test_python() {
     if [[ -z $PREFIX ]]; then
         test_install python3
-        test_install python-is-python3
+        if ! command -v python >/dev/null 2>&1; then
+            test_install python-is-python3
+        fi
     else
         test_install python
     fi
@@ -1113,10 +1115,10 @@ language() {
         if [[ $1 == "info" ]]; then
             echo -e "$(info) $language"
         elif [[ $1 == "list" ]]; then
-            echo -e "$(info) 简体中文"
-            echo -e "$(info) 繁体中文"
-            echo -e "$(info) English"
-            echo -e "$(info) Japanese"
+            echo -e "简体中文"
+            echo -e "繁体中文"
+            echo -e "English"
+            echo -e "Japanese"
         else
             config add language $1
         fi
@@ -1360,7 +1362,7 @@ often_tool() {
     #检查当前系统
     often_tool_main() {
     if [[ -n $TERMUX_VERSION ]]; then
-        if [[ $shell_skip == 1 ]]; then
+        if [[ $shell_skip == true ]]; then
             echo -e "$(info) 已跳过"
             often_tool_linux
         else
@@ -1389,6 +1391,7 @@ nasyt_setup_menu () {
        10 "查看配置文件" \
        11 "脚本语言设置" \
        12 "颜色显示习惯" \
+       13 "跳过检测设置" \
        0 "◀返回" \
        2>&1 1>/dev/tty)
     else
@@ -1514,7 +1517,7 @@ app_install() {
         break
     }
     app_install_main() {
-        if [[ $shell_skip -eq 1 ]]; then
+        if [[ $shell_skip -eq true ]]; then
             app_install_linux
         elif [[ -n $TERMUX_VERSION ]]; then
             app_install_termux
@@ -1586,7 +1589,7 @@ Linux_shell() {
     
     }
     linux_shell_main() {    
-        if [[ $shell_skip -eq 1 ]]; then
+        if [[ $shell_skip -eq true ]]; then
             linux_shell_linux
         elif [[ -n $TERMUX_VERSION ]]; then
             linux_shell_termux
@@ -1643,7 +1646,7 @@ bot_install_menu() {
     0 "◀返回" \
     2>&1 1>/dev/tty)
     }
-    if [[ $shell_skip -eq 1 ]]; then
+    if [[ $shell_skip -eq true ]]; then
         bot_linux_menu
     elif [[ -n $TERMUX_VERSION ]]; then
         bot_termux_menu
@@ -1654,7 +1657,7 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    if [[ $shell_skip == 1 ]]; then
+    if [[ $shell_skip == true ]]; then
         echo
     elif [[ -n $TERMUX_VERSION ]]; then
         $habit --msgbox "termux爬一边去" 0 0
@@ -2040,14 +2043,6 @@ nlist_tool() {
 
 shell_tool() {
     #终端主题美化
-    shell_menu() {
-        shell_menu_xz=$($habit --clear --title "shell管理工具" \
-        --menu "请选择" 0 0 10 \
-        1 "安装与管理" \
-        2 "设置默认shell" \
-        0 "◀返回" \
-        2>&1 1>/dev/tty)
-    }
     bash_menu() {
         bash_menu_xz=$($habit --clear --title "bash管理" \
         --menu "请选择" 0 0 10 \
@@ -2057,11 +2052,19 @@ shell_tool() {
         2>&1 1>/dev/tty)
     }
     starship_menu() {
+        starship_install() {
+            if command -v starship >/dev/null 2>&1; then
+                echo "已安装"
+            else
+                echo "末安装"
+            fi
+        }
         starship_menu_xz=$($habit --clear --title "starship 管理工具" \
-        --menu "请选择" 0 0 10 \
+        --menu "工具安装情况: $(starship_install)\n请选择" 0 0 10 \
         1 "❗ 安装工具" \
         2 "📜 选择shell" \
-        3 "🌌 安装主题" \
+        3 "🌌 选择主题" \
+        7 "🚫 清理美化" \
         8 "📝 配置文件" \
         9 "❌ 卸载工具" \
         0 "◀返回" \
@@ -2086,8 +2089,8 @@ shell_tool() {
         3 "🌌 主题管理" \
         4 "🚩 安装插件" \
         5 "🛄 添加环境" \
-        6 "🔝 更新工具" \
-        7 "❌ 卸载工具" \
+        8 "🔝 更新工具" \
+        9 "❌ 卸载工具" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     
@@ -2101,6 +2104,18 @@ shell_tool() {
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
+    starship_theme() {
+        p=($(starship preset -l));m=()
+        for n in "${p[@]}"
+            do
+                m+=("$n" "$n")
+            done
+        starship_theme_xz=$($habit --clear --title "starship主题安装" \
+        --menu "主题效果请查看:https://starship.rs/presets 网站\n请选择要安装或切换的主题" 0 0 0 \
+        "${m[@]}" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
     #管理与设置shell
     index_shell() {
         index_shell_xz=$($habit --clear --title "🌌 Shell管理 配置与安装" \
@@ -2108,84 +2123,58 @@ shell_tool() {
         1 "zsh       (美化扩展丰富    📋可配置)" \
         2 "bash      (主流默认脚本    📋可配置)" \
         3 "fish      (简单易用新手    📋可配置)" \
-        4 "starship  (兼容强速度快    📋可配置)" \
+        4 "starship  (美化其他终端    📋可配置)" \
         5 "ksh       (适合脚本开发   📜脚本编程)" \
         6 "ash       (较小轻量启动快  💻兼容好)" \
         7 "nushell   (结构数据处理   🔬数据处理)" \
         8 "sh        (基础兼容过时   🏴久远过时)" \
+        9 "默认终端shell设置" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
-    
+    shell_index_menu() {
+        shell_index_xz=$($habit --clear --title "shell选择" \
+        --menu "当前正使用：$(basename $SHELL) \n请选择:" 0 0 10 \
+        zsh "(美化扩展丰富    📋可配置)" \
+        bash "(主流默认脚本    📋可配置)" \
+        fish "(简单易用新手    📋可配置)" \
+        ksh "(适合脚本开发   📜脚本编程)" \
+        ash "(较小轻量启动快  💻兼容好)" \
+        nushell "(结构数据处理   🔬数据处理)" \
+        sh "(基础兼容过时   🏴久远过时)" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
     while true
     do
-        shell_menu
-        case $shell_menu_xz in
+        index_shell
+        case $index_shell_xz in
             1)
                 while true
                 do
-                    index_shell
-                    case $index_shell_xz in
+                    zsh_menu
+                    case $zsh_menu_xz in
                         1)
-                            while true
-                            do
-                                zsh_menu
-                                case $zsh_menu_xz in
-                                    1)
-                                        test_install git;test_install zsh
-                                        test_install eza || test_install exa
-                                        $habit --msgbox "基础工具安装完成" 0 0
-                                        ;;
-                                    2)
-                                        while true
-                                        do
-                                            zsh_themes
-                                            case $zsh_themes_xz in
-                                                1)
-                                                    echo "正在从gitee克隆p10k仓库"
-                                                    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.nasyt/zsh/powerlevel10k
-                                                    echo 'source ~/.nasyt/zsh/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
-                                                    $habit --msgbox "主题安装完成，请输入zsh进行p10k个性配置" 0 0
-                                                    ;;
-                                                2)
-                                                    github_speed_tool
-                                                    echo -e "$(info) 现在从github拉取脚本数据。"
-                                                    sh -c "$(curl -fsSL $github_speed/https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-                                                    esc
-                                                    ;;
-                                                *)
-                                                    break
-                                                    ;;
-                                            esac
-                                        done
-                                        ;;
-                                    3)
-                                        $habit --msgbox "开发中" 0 0
-                                        ;;
-                                    4)
-                                        index_shell
-                                        ;;
-                                    *)
-                                        break
-                                        ;;
-                                esac
-                            done
+                            test_install git;test_install zsh
+                            test_install eza || test_install exa
+                            $habit --msgbox "基础工具安装完成" 0 0
                             ;;
                         2)
                             while true
                             do
-                                bash_menu
-                                case $bash_menu_xz in
+                                zsh_themes
+                                case $zsh_themes_xz in
                                     1)
-                                        rm $HOME/.bashrc
-                                        $habit --msgbox "删除完成" 0 0
+                                        echo "正在从gitee克隆p10k仓库"
+                                        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.nasyt/zsh/powerlevel10k
+                                        echo 'source ~/.nasyt/zsh/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
+                                        $habit --msgbox "主题安装完成，请输入zsh进行p10k个性配置" 0 0
                                         ;;
                                     2)
-                                        rm $HOME/.bash_history
-                                        $habit --msgbox "删除完成" 0 0
-                                        ;;
-                                    9)
-                                        index_shell
+                                        github_speed_tool
+                                        echo -e "$(info) 现在从github拉取脚本数据。"
+                                        sh -c "$(curl -fsSL $github_speed/https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+                                        esc
                                         ;;
                                     *)
                                         break
@@ -2194,43 +2183,10 @@ shell_tool() {
                             done
                             ;;
                         3)
-                            while true
-                            do
-                                test_install curl
-                                test_install git
-                                test_install fish
-                                fish_menu
-                                case $fish_menu_xz in
-                                    1)
-                                        github_speed_tool
-                                        echo -e "$(info) 正在拉取脚本"
-                                        curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install | fish
-                                        ;;
-                                    *)
-                                        break
-                                        ;;
-                                esac
-                            done
+                            $habit --msgbox "开发中" 0 0
                             ;;
                         4)
-                            while true
-                            do
-                                starship_menu
-                                case starship_menu_xz in
-                                    1)
-                                        test_install starship
-                                        $habit --msgbox "开发中" 0 0
-                                        ;;
-                                    2)
-                                        shell_menu
-                                        $habit --msgbox "开发中" 0 0
-                                        ;;
-                                    *)
-                                        $habit --msgbox "开发中" 0 0
-                                        break
-                                        ;;
-                                esac
-                            done
+                            index_shell
                             ;;
                         *)
                             break
@@ -2239,15 +2195,144 @@ shell_tool() {
                 done
                 ;;
             2)
-                index_shell
-                case $index_menu_xz in
-                    1)
-                        $habit --msgbox "开发中" 0 0
-                        ;;
-                    *)
-                        break
-                        ;;
-                esac
+                while true
+                do
+                    bash_menu
+                    case $bash_menu_xz in
+                        1)
+                            rm $HOME/.bashrc
+                            $habit --msgbox "删除完成" 0 0
+                            ;;
+                        2)
+                            rm $HOME/.bash_history
+                            $habit --msgbox "删除完成" 0 0
+                            ;;
+                        9)
+                            index_shell
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                ;;
+            3)
+                while true
+                do
+                    test_install curl
+                    test_install git
+                    test_install fish
+                    fish_menu
+                    case $fish_menu_xz in
+                        1)
+                            github_speed_tool
+                            echo -e "$(info) 正在拉取脚本"
+                            curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install | fish
+                            ;;
+                        2)
+                            $habit --msgbox "某种原因写不了，后面处理" 0 0
+                            ;;
+                        3)
+                            $habit --msgbox "某种原因写不，后面处理了" 0 0
+                            ;;
+                        4)
+                            $habit --msgbox "某种原因写不了，后面处理" 0 0
+                            ;;
+                        5)
+                            fist_path=$($habit --clear --title "目录输入" \
+                            --inputbox "请输入目录" 0 0 \
+                            2>&1 1>/dev/tty)
+                            fish_add_path $fish_path
+                            $habit --msgbox "目录添加完成" 0 0
+                            ;;
+                        8)
+                            $habit --msgbox "不想写了" 0 0
+                            ;;
+                        9)
+                            $habit --msgbox "不想写了" 0 0
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                ;;
+            4)
+                while true
+                do
+                    starship_menu
+                    case $starship_menu_xz in
+                        1)
+                            test_install starship && $habit --msgbox "安装完成" 0 0
+                            ;;
+                        2)
+                            shell_index_menu
+                            case $shell_index_xz in
+                                bash)
+                                    echo 'eval "$(starship init bash)"' >> .bashrc;;
+                                zsh)
+                                    echo 'eval "$(starship init zsh)"' >> .zshrc;;
+                                fish)
+                                    echo 'starship init fish | source' >> .config/fish/config.fish;;
+                                tcsh)
+                                    echo 'eval `starship init tcsh`' >> ~/.tcshrc;;
+                                0)
+                                    break;;
+                                *)
+                                    $habit --msgbox "暂时未支持" 0 0;;
+                            esac
+                            $habit --msgbox "设置完之后请勿重复设置，如果有问题再设置" 0 0
+                            ;;
+                        3)
+                            while true
+                            do
+                                starship_theme
+                                [[ $starship_theme_xz == 0 ]] && break || starship preset $starship_theme_xz -o ~/.config/starship.toml
+                                $habit --msgbox "$starship_theme_xz 主题安装完成" 0 0;exit
+                            done
+                            ;;
+                        7)
+                            rm ~/.config/starship.toml
+                            $habit --msgbox "已清理美化" 0 0
+                            ;;
+                        8)
+                            $open ~/.config/starship.toml
+                            ;;
+                        9)
+                            rm ~/.config/starship.toml
+                            test_remove starship
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                ;;
+            5)
+                test_install loksh || test_install ksh
+                esc
+                ;;
+            6)
+                test_install busybox
+                $habit --msgbox "这是给系统环境受限用的。" 0 0
+                esc
+                ;;
+            7)
+                test_install nushell
+                esc
+                ;;
+            8)
+                test_install sh
+                $habit --msgbox "哥们，这是系统自带的。" 0 0
+                ;;
+            9)
+                shell_index_menu
+                if ! command -v $shell_index_menu >/dev/null 2>&1; then
+                    $habit --msgbox "$shell_index_menu 未安装请先安装。" 0 0
+                    break
+                fi
+                chsh -s $shell_index_xz
+                $habit --msgbox "设置完成，重连终端生效" 0 0
                 ;;
             *)
                 break
@@ -3241,6 +3326,14 @@ version_update() {
 #更新以及安装
 gx() {
     # 下载安装更新
+    if [[ -n $1 ]]; then
+        cp $1 /usr/bin/ >/dev/null 2>&1
+        cp $1 $PREFIX/bin >/dev/null 2>&1
+        chmod +x $nasyt_dir/nasyt >/dev/null 2>&1
+        chmod +x /usr/bin/nasyt >/dev/null 2>&1
+        chmod +x $PREFIX/bin/nasyt >/dev/null 2>&1
+        echo -e "$(info) 手动更新完成"
+    fi
     br
     if command -v nasyt >/dev/null 2>&1; then
         shell_backup
@@ -3255,8 +3348,6 @@ gx() {
             chmod +x $nasyt_dir/nasyt >/dev/null 2>&1
             chmod +x /usr/bin/nasyt >/dev/null 2>&1
             chmod +x $PREFIX/bin/nasyt >/dev/null 2>&1
-            echo -e "$(info) 正在写入启动文件 $color"
-            source $HOME/.bashrc >/dev/null 2>&1
             if command -v nasyt >/dev/null 2>&1; then
                 echo -e "$(info)$green 脚本更新成功 $color"
                 #rm $nasyt_dir/nasyt.bak >/dev/null 2>&1
@@ -4085,6 +4176,29 @@ find_tool() {
     fi
 }
 
+skip_menu() {
+    while true
+    do
+        skip_menu_xz=$($habit --clear --title "跳过检测与提示部分" \
+        --menu "当前设置:$(config load shell_skip)\n跳过检测与提示部分" 0 0 10 \
+        1 "开启" \
+        2 "关闭" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+        case $skip_menu_xz in
+            1)
+                config add shell_skip true
+                ;;
+            2)
+                config add shell_skip false
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+}
+
 # --------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------
 
@@ -4106,7 +4220,7 @@ introduce() {
 # 开始
 index_main() {
     introduce # 检查
-    if [[ $shell_skip == 1 ]]; then
+    if [[ $shell_skip == true ]]; then
         echo "已跳过"
     else
         menu_jc # 菜单发布页
@@ -6416,6 +6530,9 @@ index_main() {
                         color_menu
                         esc
                         ;;
+                    13)
+                        skip_menu
+                        ;;
                     *)  break;;
                 esac
                 done
@@ -6433,14 +6550,14 @@ index_main() {
 #
 #
 #
+color_variable # 定义颜色变量
 check_script_folder #文件夹检测
 yml #加载yml配置文件操作函数
 config #txt配置文件操作函数
-color_variable # 定义颜色变量
 all_variable # 全部变量
 #country #国内外检测
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
-config add version "$version" #添加版本信息
+config add ver "$version" #添加版本信息
 check_pkg_install # 检测包管理器
 language_jc #脚本语言设置
 # 启动参数
@@ -6448,6 +6565,10 @@ if [ $# -ne 0 ]; then
     case $1 in
         color|--color)
             color_menu
+            exit
+            ;;
+        skip|--skip)
+            skip_menu
             exit
             ;;
         sh|--sh|z|zsh|-z|--z|--zsh)
@@ -6594,11 +6715,11 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         u|update|-u|--update)
-            gx
+            gx $2
             ;;
         l|lolcat|-l|--lolcat)
             test_install lolcat
-            nasyt $3| lolcat
+            nasyt $2 | lolcat
             exit
             ;;
         m|mirror|-m|--mirror)
@@ -6665,6 +6786,7 @@ if [ $# -ne 0 ]; then
                 echo
                 echo "其他参数:"
                 echo "  color 文字提示颜色设置"
+                echo "  skip     跳过检测设置"
                 echo "  sh     shell管理工具"
                 echo "  sfs      SFS管理工具"
                 echo "  lang     脚本语言设置"
@@ -6704,16 +6826,18 @@ if [ $# -ne 0 ]; then
                 echo "  -y, --bili      Bilibili/YouTube video download"
                 echo
                 echo "Other parameters:"
-                echo "  color    text prompt color setting"
+                echo "  color    Text prompt color setting"
+                echo "  skip     Skip detection setting"
+                echo "  sh       Shell management tool"
                 echo "  sfs      SFS management tool"
-                echo "  lang     Script language settings"
+                echo "  lang     Script language setting"
                 echo "  log      Log output mode operation"
                 echo "  jv       jmcomic book query"
                 echo "  sec      Secluded management"
                 echo "  turn     Evacuation file generation"
                 echo "  debug    Function debug testing"
-                echo "  config   For managing configuration files"
-                echo "  yml      For managing yml files"
+                echo "  config   Used to manage configuration files"
+                echo "  yml      Used to manage yml files"
                 echo
                 echo "For more details, please refer to"
                 echo -e "$green https://github.com/nasyt233/nasyt-linux-tool$color"

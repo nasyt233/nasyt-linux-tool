@@ -3,6 +3,17 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年7月8日更新2.4.4.0版"
+    echo "修复 python检测问题"
+    echo "完善 shell管理工具"
+    echo "更新 脚本跳过更新检测设置"
+    echo "优化 彩色输出支持参数显示"
+    echo "更新 支持本地脚本手动更新"
+    echo "修复 脚本更新无PATH问题"
+    echo "优化 脚本结构与启动顺序"
+    echo "修复 版本更新检测问题"
+    br
+    read
     echo "2026年7月6日更新bata2.4.4.0版"
     echo "更新 脚本终端颜色输出设置"
     echo "修复 ssh连接工具退出问题"
@@ -10,7 +21,7 @@ br() {
     echo "添加 -z shell快捷管理"
     echo "重构 Shell终端管理界面"
     echo "更新 fish shell管理工具"
-    echo "更新 starship  管理工具"
+    echo "更新 starship 管理工具"
     echo "优化 yazi文件管理器的安装"
     echo "更新 find文件快捷搜索工具"
     echo "修复 Arch系统eatmydata安装问题"
