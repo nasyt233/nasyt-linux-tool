@@ -2982,23 +2982,69 @@ tmux_keys() {
 }
 
 # cpolar内网穿透一键安装。
-cpolar_instell() {
+cpolar_tool() {
+    cpolar_tips() {
+        $habit --msgbox "已启动服务" 0 0
+    }
     while true
     do
-        cpolar_install_xz=$($habit --title "cpolar.com" \
-        --menu "选择你的框架" 0 0 10\
-        1 "x86_64通用安装" \
-        2 "Termux安装" \
-        3 "卸载cpolar" \
-        0 "◀返回" \
-        2>&1 1>/dev/tty)
-        case $cpolar_install_xz in
-            1) curl --progress-bar -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash ;;
-            2) test_install dnsutils;bash -c "$(curl raw.gitcode.com/nasyt/nasyt-linux-tool/raw/master/cpolar/aarch64.sh)" ;;
-            3) curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash -s -- --remove ;;
-            *) break;;
-        esac
-        esc
+        if ! command -v cpolar >/dev/null 2>&1; then
+            if [[ -n $PREFIX ]]; then
+                mkdir -p $PREFIX/etc/apt/sources.list.d
+                echo "deb [trusted=yes] http://termux.cpolar.com termux extras" >> $PREFIX/etc/apt/sources.list.d/cpolar.list
+                pkg update;pkg install cpolar
+            else
+                curl --progress-bar -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash
+            fi
+        else
+            cpolar_menu_xz=$($habit --clear --title "cpolar管理" \
+            --menu "官网地址: www.cpolar.com\n密钥获取:dashboard.cpolar.com/auth \n默认启动为前台启动,推荐搭配tmux使用\n请选择" 0 0 10 \
+            1 "密钥验证登录" \
+            2 "http 开网站" \
+            3 "tcp 联机" \
+            4 "ftp 传文件" \
+            8 "tmux后台管理工具" \
+            9 "卸载本工具" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
+            case $cpolar_menu_xz in
+                1)
+                    cpolar_key=$($habit --clear --title "密钥输入" \
+                    --inputbox "密钥获取:dashboard.cpolar.com/auth\n请输入密钥:" 0 0 \
+                    2>&1 1>/dev/tty)
+                    cpolar authtoken $cpolar_key
+                    $habit --msgbox "验证完成" 0 0
+                    ;;
+                2)
+                    cpolar_http=$($habit --clear --title "端口输入" \
+                    --inputbox "请输入端口" 0 0 \
+                    2>&1 1>/dev/tty)
+                    cpolar http $cpolar_http
+                    ;;
+                3)
+                    cpolar_tcp=$($habit --clear --title "端口输入" \
+                    --inputbox "请输入端口" 0 0 \
+                    2>&1 1>/dev/tty)
+                    cpolar http $cpolar_tcp
+                    ;;
+                4)
+                    cpolar_ftp=$($habit --clear --title "端口输入" \
+                    --inputbox "请输入端口" 0 0 \
+                    2>&1 1>/dev/tty)
+                    cpolar http $cpolar_ftp
+                    ;;
+                8)
+                    tmux_tool
+                    ;;
+                9)
+                    pkg_remove cpolar
+                    $habit --msgbox "卸载完成" 0 0
+                    ;;
+                *)
+                    break
+                    ;;
+            esac
+        fi
     done
 }
 
@@ -5494,7 +5540,7 @@ index_main() {
                                 frp_menu
                                 case $frp_menu_xz in
                                     1)
-                                        cpolar_instell
+                                        cpolar_tool
                                         esc
                                         ;;
                                     2)
@@ -6631,6 +6677,10 @@ if [ $# -ne 0 ]; then
             config $2
             exit
             ;;
+        cpolar|--cpolar)
+            cpolar_tool
+            exit
+            ;;
         sec|-sec|--sec)
             sec_tool
             exit
@@ -6816,6 +6866,7 @@ if [ $# -ne 0 ]; then
                 echo "  -z, --zsh    shell管理工具"
                 echo
                 echo "其他参数:"
+                echo "  cpolar内网穿透管理工具"
                 echo "  color 文字提示颜色设置"
                 echo "  skip     跳过检测设置"
                 echo "  sh     shell管理工具"
@@ -6857,6 +6908,7 @@ if [ $# -ne 0 ]; then
                 echo "  -y, --bili      Bilibili/YouTube video download"
                 echo
                 echo "Other parameters:"
+                echo "  cpolar   intranet penetration management"
                 echo "  color    Text prompt color setting"
                 echo "  skip     Skip detection setting"
                 echo "  sh       Shell management tool"
