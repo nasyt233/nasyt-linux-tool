@@ -3,6 +3,17 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年7月13日更新2.4.4.1版"
+    echo "优化 脚本逻辑，优化加载速度"
+    echo "删除 去除一些没必要功能"
+    echo "更新 时间显示添加日期显示"
+    echo "更新 nasyt -v更新显示时间"
+    echo "修复 服务器IP归属地检测"
+    echo "更新 English语言更新"
+    echo "修复 致命错误shell默认设置(感谢牢J公益)"
+    echo "更新 X黑手版kali安装脚本"
+    br
+    read
     echo "2026年7月8日更新2.4.4.0版"
     echo "修复 python检测问题"
     echo "完善 shell管理工具"

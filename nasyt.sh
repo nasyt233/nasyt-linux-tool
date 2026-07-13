@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/7/8"
-version="2.4.4.0"
+time_date="2026/7/13"
+version="2.4.4.1"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 #config_file="$nasyt_dir/config.txt" #脚本配置文件
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
@@ -87,11 +87,6 @@ check_pkg_install() {
         deb_sys="pkg"
         yes_tg="-y"
         deb_size="$(dpkg -l | wc -l)" >/dev/null 2>&1
-        if [[ $language == "China" ]]; then
-            termux-toast "欢迎使用NAS油条termux脚本" >/dev/null 2>&1
-        else
-            termux-toast "Welcome to the NAS Youtiao termux script" >/dev/null 2>&1
-        fi
         
     elif command -v apt-get >/dev/null 2>&1; then
         sys="(Debian/Ubuntu 系列)"
@@ -639,29 +634,31 @@ resources_show() {
 # 脚本信息
 shell_info() {
     if [[ $language == "China" ]]; then
-        echo "名称: nasyt"
-        echo "版本: $version"
-        echo "更新时间：$time_date"
+        echo "脚本名称: nasyt"
+        echo "当前版本: $version"
+        echo "更新时间: $time_date"
         echo "操作系统: $PRETTY_NAME"
-        echo "终端类型：$(basename $SHELL)"
-        echo "脚本语言：$language"
+        echo "终端类型: $(basename $SHELL)"
+        echo "脚本语言: $language"
         echo "位于目录: $(command -v nasyt)"
-        echo "运行时间：$(uptime_cn;echo $uptime_sc)"
-        echo "软件包数：共 $deb_size 个软件包"
-        echo "内存剩余：$(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
+        echo "当前时间: $(date +"%Y-%m-%d %H:%M.%S")"
+        echo "运行时间: $(uptime_cn;echo $uptime_sc)"
+        echo "软件包数: 共 $deb_size 个软件包"
+        echo "内存剩余: $(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
         echo "进程数量: $(ps -e --no-headers | wc -l)"
     else
-        echo "Name: nasyt"
-        echo "Version: $version"
-        echo "Update time: $time_date"
-        echo "System : $PRETTY_NAME"
-        echo "Terminal : $(basename $SHELL)"
-        echo "language : $language"
-        echo "Located in directory: $(command -v nasyt)"
-        echo "Uptime: $(uptime -p)"
-        echo "packages: $deb_size"
-        echo "Memory available: $(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
-        echo "Number of processes: $(ps -e --no-headers | wc -l)"
+        echo "Script Name: nasyt"
+        echo "Current Version: $version"
+        echo "Update Time: $time_date"
+        echo "Operating System: $PRETTY_NAME"
+        echo "Terminal Type: $(basename $SHELL)"
+        echo "Script Language: $language"
+        echo "Located Directory: $(command -v nasyt)"
+        echo "Current Time: $(date  "%Y-%m-%d %H:%M.%S")"
+        echo "Uptime: $(uptime_cn;echo $uptime_sc)"
+        echo "Number of Packages: Total $deb_size packages"
+        echo "Available Memory: $(grep MemAvailable /proc/meminfo | awk '{printf "%.1fGiB", $2/1024/1024}')"
+        echo "Number of Processes: $(ps -e --no-headers | wc -l)"
     fi
 }
 
@@ -1009,29 +1006,26 @@ termux_PATH () {
 
 # 检查脚本文件夹。
 check_script_folder() {
-    check_script_folder_main() {
-        if [ -d "$nasyt_dir" ]; then
-            echo
-        else
-            mkdir -p "$nasyt_dir"
-        fi
-        if [ -d "$nasyt_dir/version" ]; then
-            echo
-        else
-            mkdir -p "$nasyt_dir/version"
-        fi
-        if [ -d "$nasyt_dir/acg" ]; then
-            echo
-        else
-            mkdir -p "$nasyt_dir/acg"
-        fi
-        if [ -d "$nasyt_dir/proot/image" ]; then
-            echo
-        else
-            mkdir -p "$nasyt_dir/proot/image"
-        fi
-    }
-    check_script_folder_main >/dev/null 2>&1
+    if [ -d "$nasyt_dir" ]; then
+        echo
+    else
+        mkdir -p "$nasyt_dir"
+    fi
+    if [ -d "$nasyt_dir/version" ]; then
+        echo
+    else
+        mkdir -p "$nasyt_dir/version"
+    fi
+    if [ -d "$nasyt_dir/acg" ]; then
+        echo
+    else
+        mkdir -p "$nasyt_dir/acg"
+    fi
+    if [ -d "$nasyt_dir/proot/image" ]; then
+        echo
+    else
+        mkdir -p "$nasyt_dir/proot/image"
+    fi
 }
 
 # 检查本脚本是否已安装
@@ -1564,6 +1558,7 @@ Linux_shell() {
     3 "MC 压力测试 脚本工具" \
     4 "Docker 安装与换源脚本" \
     5 "神秘脚本 (纯整活)" \
+    6 "Termux版kali一键安装脚本" \
     7 "TMOE脚本工具" \
     8 "git管理脚本" \
     9 "kejilion脚本工具" \
@@ -1591,7 +1586,7 @@ Linux_shell() {
     linux_shell_main() {    
         if [[ $shell_skip -eq true ]]; then
             linux_shell_linux
-        elif [[ -n $TERMUX_VERSION ]]; then
+        elif [[ -n $PREFIX ]]; then
             linux_shell_termux
         else
             linux_shell_linux
@@ -2016,7 +2011,7 @@ edge_tts() {
 #nlist工具
 nlist_tool() {
     chmod +x $nasyt_dir/* >/dev/null 2>&1
-    nlist_version_new=1.1
+    nlist_version_new=1.2
     if command -v nlist >/dev/null 2>&1; then
         nlist_version=$(grep version $nasyt_dir/nlist | cut -d'=' -f2 )
     fi
@@ -2118,32 +2113,62 @@ shell_tool() {
     }
     #管理与设置shell
     index_shell() {
-        index_shell_xz=$($habit --clear --title "🌌 Shell管理 配置与安装" \
-        --menu "当前正使用：$(basename $SHELL) \n请选择:" 0 0 10 \
-        1 "zsh       (美化扩展丰富    📋可配置)" \
-        2 "bash      (主流默认脚本    📋可配置)" \
-        3 "fish      (简单易用新手    📋可配置)" \
-        4 "starship  (美化其他终端    📋可配置)" \
-        5 "ksh       (适合脚本开发   📜脚本编程)" \
-        6 "ash       (较小轻量启动快  💻兼容好)" \
-        7 "nushell   (结构数据处理   🔬数据处理)" \
-        8 "sh        (基础兼容过时   🏴久远过时)" \
-        9 "默认终端shell设置" \
-        0 "◀返回" \
-        2>&1 1>/dev/tty)
+        if [[ $language == "China" ]]; then
+            index_shell_xz=$($habit --clear --title "🌌 Shell管理 配置与安装" \
+            --menu "当前正使用：$(basename $SHELL) \n请选择:" 0 0 10 \
+            1 "zsh       (美化扩展丰富    📋可配置)" \
+            2 "bash      (主流默认脚本    📋可配置)" \
+            3 "fish      (简单易用新手    📋可配置)" \
+            4 "starship  (美化其他终端    📋可配置)" \
+            5 "ksh       (适合脚本开发   📜脚本编程)" \
+            6 "ash       (较小轻量启动快  💻兼容好)" \
+            7 "nushell   (结构数据处理   🔬数据处理)" \
+            8 "sh        (基础兼容过时   🏴久远过时)" \
+            9 "默认终端shell设置" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
+        else
+            index_shell_xz=$($habit --clear --title "🌌 Shell Management Configuration and Installation" \
+            --menu "Currently in use: $(basename $SHELL) \nPlease choose:" 0 0 10 \
+            1 "zsh       (Beautiful and feature-rich    📋 Configurable)" \
+            2 "bash      (Mainstream default script    📋 Configurable)" \
+            3 "fish      (Simple and beginner-friendly    📋 Configurable)" \
+            4 "starship  (Beautify other terminals    📋 Configurable)" \
+            5 "ksh       (Suitable for script development   📜 Script programming)" \
+            6 "ash       (Small and lightweight, fast startup  💻 Highly compatible)" \
+            7 "nushell   (Structured data processing   🔬 Data processing)" \
+            8 "sh        (Basic and outdated compatibility   🏴 Long outdated)" \
+            9 "Set default terminal shell" \
+            0 "◀Back" \
+            2>&1 1>/dev/tty)
+        fi
     }
     shell_index_menu() {
-        shell_index_xz=$($habit --clear --title "shell选择" \
-        --menu "当前正使用：$(basename $SHELL) \n请选择:" 0 0 10 \
-        zsh "(美化扩展丰富    📋可配置)" \
-        bash "(主流默认脚本    📋可配置)" \
-        fish "(简单易用新手    📋可配置)" \
-        ksh "(适合脚本开发   📜脚本编程)" \
-        ash "(较小轻量启动快  💻兼容好)" \
-        nushell "(结构数据处理   🔬数据处理)" \
-        sh "(基础兼容过时   🏴久远过时)" \
-        0 "◀返回" \
-        2>&1 1>/dev/tty)
+        if [[ $language == "China" ]]; then
+            shell_index_xz=$($habit --clear --title "shell选择" \
+            --menu "当前正使用：$(basename $SHELL) \n请选择:" 0 0 10 \
+            zsh "(美化扩展丰富    📋可配置)" \
+            bash "(主流默认脚本    📋可配置)" \
+            fish "(简单易用新手    📋可配置)" \
+            ksh "(适合脚本开发   📜脚本编程)" \
+            ash "(较小轻量启动快  💻兼容好)" \
+            nushell "(结构数据处理   🔬数据处理)" \
+            sh "(基础兼容过时   🏴久远过时)" \
+            0 "◀返回" \
+            2>&1 1>/dev/tty)
+        else
+            shell_index_xz=$($habit --clear --title "shell Selection" \
+            --menu "Currently in use: $(basename $SHELL) \nPlease choose:" 0 0 10 \
+            zsh "(Rich beautification extensions    📋 Configurable)" \
+            bash "(Mainstream default scripts    📋 Configurable)" \
+            fish "(Simple and beginner-friendly    📋 Configurable)" \
+            ksh "(Suitable for script development   📜 Scripting)" \
+            ash "(Lightweight and fast startup  💻 Good compatibility)" \
+            nushell "(Structured data processing   🔬 Data processing)" \
+            sh "(Basic, compatible but outdated   🏴 Long outdated)" \
+            0 "◀ Back" \
+            2>&1 1>/dev/tty)
+        fi
     }
     while true
     do
@@ -2166,7 +2191,8 @@ shell_tool() {
                                 case $zsh_themes_xz in
                                     1)
                                         echo "正在从gitee克隆p10k仓库"
-                                        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.nasyt/zsh/powerlevel10k
+                                        github_speed_tool
+                                        git clone --depth=1 $github_speed/https://github.com/romkatv/powerlevel10k.git ~/.nasyt/zsh/powerlevel10k
                                         echo 'source ~/.nasyt/zsh/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
                                         $habit --msgbox "主题安装完成，请输入zsh进行p10k个性配置" 0 0
                                         ;;
@@ -2330,9 +2356,10 @@ shell_tool() {
                 if ! command -v $shell_index_menu >/dev/null 2>&1; then
                     $habit --msgbox "$shell_index_menu 未安装请先安装。" 0 0
                     break
+                else
+                    chsh -s $(which $shell_index_xz)
+                    $habit --msgbox "设置完成，重连终端生效" 0 0
                 fi
-                chsh -s $shell_index_xz
-                $habit --msgbox "设置完成，重连终端生效" 0 0
                 ;;
             *)
                 break
@@ -2897,11 +2924,12 @@ java_install_menu () {
 
 termux_kali_install() {
   termux_kali_install_xz=$($habit --title "安装源选择" \
-  --menu "采用proot运行rootfs并且构建\n请选择kali的安装方式\n官方源:kali官方rootfs镜像（完整|最新|可能速度慢）\n国内源:来自国内大佬整合出来的kali优化版(速度快|已停更) \n官方修改:作者自己维护的脚本（同步官方|汉化|安全|自定义)\n" 0 0 5 \
-  1 "官方源(kali.download)" \
-  2 "国内源(gitee.com/zhang-955/clone)" \
+  --menu "采用proot运行rootfs并且构建\n请选择kali的安装方式\n官方源:kali官方rootfs镜像（完整|最新|可能速度慢）\n国内源:来自国内大佬整合出来的kali优化版(速度快|已停更) \n官方修改:作者自己维护的脚本（同步官方|汉化|安全|自定义)\nX黑手版 由TermuxX团队提供(汉化|更为专业)" 0 0 0 \
+  1 "官方源  (kali.download)" \
+  2 "国内源  (gitee.com/zhang-955/clone)" \
   3 "官方修改 (推荐|方便)" \
-  4 "如果有更多安装方式可以提交给我们。" \
+  4 "X黑手版 (更全面|汉化|详细)" \
+  5 "如果有更多安装方式可以提交给我们。" \
   0 "◀返回" \
   2>&1 1>/dev/tty)
   if [ $? -ne 0 ]; then
@@ -4209,10 +4237,10 @@ introduce() {
     #export LANG=zh_CN.UTF-8 # 设置编码为中文。
     termux_PATH #termux环境变量设置
     #PATH_set #环境变量设置
-    source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
+    #source $nasyt_dir/config.txt >/dev/null # 加载脚本配置
     #default_habit #检查函数并设置默认值
     #check_pkg_install # 检查包管理器。
-    check_script_folder # 检查脚本文件夹。
+    #check_script_folder # 检查脚本文件夹。
     test_eatmydata # 检查eatmydata是否安装。
     check_Script_Install # 检查本脚本是否安装。
 }
@@ -4247,15 +4275,14 @@ index_main() {
                     clear
                     look_menu
                     case $look_choice in
-                        1) $habit --msgbox "$(date +"%r")" 0 0;;
+                        1) $habit --msgbox "$(date +"%Y-%m-%d %H:%M.%S")" 0 0;;
                         2) show_server_config;;
                         3) $habit --msgbox "$(curl iplark.com)" 0 0 ;;
                         4) ifneofetch ;;
-                        5) $habit --msgbox "$(curl -sSL https://slow-api.hoha.top/ip.php)" 0 0;;
+                        5) $habit --msgbox "$(curl -s https://myip.ipip.net)" 0 0;;
                         6) test_install htop;htop ;;
                         7) uptime_cn;$habit --msgbox "系统: $uptime_sc" 0 0;;
                         8) resources_show;esc;;
-                        0) break ;;
                         *) break ;;
                     esac
                 done
@@ -6338,7 +6365,11 @@ index_main() {
                                     bash -c "$(curl -L https://gitee.com/nasyt/termux_install_kali/raw/master/termux_install_kali.sh)"
                                     esc
                                     ;;
-                                0)
+                                4)
+                                    bash -c "$(curl -L https://gitee.com/nasyt/termux_install_kali/raw/master/xkali.sh)"
+                                    esc
+                                    ;;
+                                *)
                                     break
                                     ;;
                             esac
@@ -6550,8 +6581,8 @@ index_main() {
 #
 #
 #
-color_variable # 定义颜色变量
-check_script_folder #文件夹检测
+color_variable >/dev/null 2>&1 # 定义颜色变量
+check_script_folder >/dev/null 2>&1 #文件夹检测
 yml #加载yml配置文件操作函数
 config #txt配置文件操作函数
 all_variable # 全部变量
