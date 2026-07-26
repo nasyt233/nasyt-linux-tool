@@ -10,8 +10,8 @@
 # gum_tool dust
 
 cd $HOME
-time_date="2026/7/13"
-version="2.4.4.1"
+time_date="2026/7/26"
+version="2.4.4.2"
 nasyt_dir="$HOME/.nasyt" #脚本工作目录
 #config_file="$nasyt_dir/config.txt" #脚本配置文件
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
@@ -537,7 +537,7 @@ yml() {
 #文件夹选择
 file_dir() {
     file_var="${2:-file_dir_sc}"
-    file_dir_sc=$(dialog --clear --title "选择文件夹" --dselect "${1:-$HOME}" 0 0 2>&1 >/dev/tty)
+    file_dir_sc=$($habit --clear --title "选择文件夹" --dselect "${1:-$HOME}" 0 0 2>&1 >/dev/tty)
     eval "$file_var"="$file_dir_sc"
 }
 
@@ -576,23 +576,23 @@ file_xz() {
                     fi
                 done < <(ls -a "$current_dir" --group-directories-first)
                 
-                dir_xz=$($habit --title "文件选择器/File Explorer" \
+                file_dir_xz=$($habit --title "文件选择器/File Explorer" \
                 --menu "文件浏览器/File Explorer: $current_dir 🤓👇" 0 0 15 \
                 "${menu_items[@]}" \
                 2>&1 1>/dev/tty)
                 
-                if [[ -z "$dir_xz" ]]; then
+                if [[ -z "$file_dir_xz" ]]; then
                     break
                 fi
                 
-                if [[ "$dir_xz" == ".." ]]; then
+                if [[ "$file_dir_xz" == ".." ]]; then
                     current_dir=$(dirname "$current_dir")
-                elif [[ -d "$current_dir/$dir_xz" ]]; then
-                    current_dir="$current_dir/$dir_xz"
+                elif [[ -d "$current_dir/$file_dir_xz" ]]; then
+                    current_dir="$current_dir/$file_dir_xz"
                 else
-                    $habit --yesno "确认文件 Confirmation document: $current_dir/$dir_xz" 0 0
+                    $habit --yesno "确认文件 Confirmation document: $current_dir/$file_dir_xz" 0 0
                     if [ $? -eq 0 ]; then
-                        eval "$file_var"="$current_dir/$dir_xz"
+                        eval "$file_var"="$current_dir/$file_dir_xz"
                         break
                     fi
                 fi
@@ -872,7 +872,6 @@ test_remove() {
 
 #pip通用安装
 pip_install() {
-    [[ -z $PREFIX ]] && test_install python-is-python3
     test_install pip
     echo -e "$(info) 正在搜索本地pip库"
     if pip show "$*" > /dev/null 2>&1; then
@@ -1083,7 +1082,6 @@ habit_xz () {
         echo -e "menu: $yellow$habit$color"
     fi
     test_install $habit
-    
 }
 
 #语言检测
@@ -2462,12 +2460,13 @@ edit_tool_menu() {
 # nvim配置菜单
 nvim_menu() {
     nvim_menu_xz=$($habit --clear --title "nvim管理" \
-    --menu "推荐安装LazyVim整合插件\n请选择:" 0 0 10 \
-    Lazy "安装LazyVim整合插件" \
+    --menu "整合插件均需要访问github,确保你能访问\n推荐安装LazyVim整合插件\n请选择:" 0 0 10 \
+    Lazy "整合插件" \
+    EternityShen "整合插件" \
     1 "启动nvim" \
     2 "备份nvim" \
     3 "恢复nvim" \
-    3 "卸载nvim" \
+    4 "卸载nvim" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -2487,10 +2486,10 @@ dow_tool_menu() {
 #bilibili视频解析
 video_jx() {
     if [[ $* == *"bilibili.com/video/"* ]]; then
-        echo -e "$(info)  检测到B站链接，正在解析。"
+        echo -e "$(info)  检测到B站视频链接，正在解析。"
         video_jg=$(echo "$*" | grep -o "https://www.bilibili.com/video/[^?]*")
     elif [[ $* == *"b23.tv"* ]]; then
-        echo -e "$(info)  检测到BV链接正在进行二次解析"
+        echo -e "$(info)  检测到BV链接,正在进行二次解析"
         video_jg=$(curl -s "$(echo "$*" | grep -o "https://b23.tv/[^*]*")" | grep -o "https://www.bilibili.com/video/[^?]*")
     elif [[ $* == *"https://v.douyin.com/"* ]]; then
         $habit --msgbox "检测到抖音链接请选择Cookie文件" 0 0
@@ -2537,11 +2536,12 @@ jm_tool() {
     jm_menu() {
         jm_menu_xz=$($habit --clear --title "📕JM本子下载" \
         --menu "📕JM本子下载工具\n请选择：" 0 0 10 \
-        1 "📄查询本子" \
-        2 "🔽下载本子" \
-        3 "💻查看本子" \
+        1 "📄 查询本子" \
+        2 "🔽 下载本子" \
+        3 "💻 查看本子" \
+        7 "⏫ 更新工具" \
         8 "🛠 下载设置" \
-        9 "❌卸载工具" \
+        9 "❌ 卸载工具" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
@@ -2619,6 +2619,9 @@ jm_tool() {
                     echo -e "$(info) 位于$jm_dir目录"
                 fi
                 esc
+                ;;
+            7)
+                pip install jmcomic --upgrade
                 ;;
             8)
                 while true
@@ -3787,7 +3790,16 @@ ifneofetch() {
             2)
                 test_install fastfetch
                 if [ $? -ne 0 ]; then
-                    $habit --msgbox "一些系统软件包可能没有fastfetch" 0 0
+                    if [[ -z $PREFIX ]]; then
+                        github_speed_tool
+                        dow "$github_speed/https://github.com/fastfetch-cli/fastfetch/releases/download/stable/fastfetch-linux-amd64.tar.gz"
+                        tar -xzvf fastfetch-linux-amd64.tar.gz -C / --strip-components=1
+                        if [ $? -ne 0 ]; then
+                            $habit --msgbox "安装失败" 0 0
+                        else
+                            $habit --msgbox "fastfetch安装完成" 0 0
+                        fi
+                    fi
                 else
                     fastfetch
                 fi
@@ -3805,7 +3817,7 @@ ifneofetch() {
             4)
                 test_install cpufetch
                 if [ $? -ne 0 ]; then
-                    $habit --msgbox "一些系统软件包可能没有fastfetch" 0 0
+                    $habit --msgbox "一些系统软件包可能没有cpufetch" 0 0
                 else
                     cpufetch
                 fi
@@ -5583,12 +5595,21 @@ index_main() {
                                                             echo -e "$(info) $yellow 仓库克隆失败 $color"
                                                         elif [ $cw_test -ne 0 ]; then
                                                             echo -e "$(info) $red 仓库克隆失败，请检查你的网络后重试。$color"
-                                                            esc
-                                                            break
                                                         else
                                                             echo -e "$(info) $green 仓库克隆成功$color"
                                                         fi
                                                     fi
+                                                    esc
+                                                    ;;
+                                                EternityShen)
+                                                    echo -e "$(info) 正在备份原nvim配置"
+                                                    mv ~/.config/nvim{,.bak} >/dev/null 2>&1
+                                                    mv ~/.local/share/nvim{,.bak} >/dev/null 2>&1
+                                                    mv ~/.local/state/nvim{,.bak} >/dev/null 2>&1
+                                                    mv ~/.cache/nvim{,.bak} >/dev/null 2>&1
+                                                    github_speed_tool #国内外检测
+                                                    test_install git #检查git安装
+                                                    git_clone https://github.com/EternityShen/My_NeoVim_Configs.git ~/.config/nvim
                                                     esc
                                                     ;;
                                                 1)
@@ -5606,7 +5627,7 @@ index_main() {
                                                 3)
                                                     if [[ -d $HOME/.config/nvim.bak ]]; then
                                                         echo -e "$(info) 检测到备份文件，正在恢复备份"
-                                                        rm -rf $HOME/.config/nvim
+                                                        rm -rfv $HOME/.config/nvim
                                                         mv $HOME/.config/nvim.bak $HOME/.config/nvim
                                                         if [ $? -ne 0 ]; then
                                                             echo -e "$(info) $red 备份恢复失败$color"
@@ -5618,7 +5639,7 @@ index_main() {
                                                     fi
                                                     esc
                                                     ;;
-                                                3)
+                                                4)
                                                     if [[ $deb_sys == apt ]]; then
                                                         echo -e "$(info) 正在卸载nvim"
                                                         snap remove nvim
@@ -5938,17 +5959,8 @@ index_main() {
                                             nweb_menu
                                             case $nweb_menu_xz in
                                                 1)
-                                                    echo -e "$(info) 正在检查wget安装"
-                                                    test_install wget
-                                                    echo -e "$(info) 正在下载文件"
-                                                    if [[ -n $TERMUX_VERSION ]]; then
-                                                        wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_termux_aarch64_0.1.0"
-                                                    else
-                                                        wget -O $nasyt_dir/nweb "https://gitcode.com/nasyt/nweb/releases/download/nweb_v1.0/nweb_linux_amd64_0.1.0"
-                                                    fi
-                                                    echo -e "$(info) 正在给予权限"
-                                                    chmod 777 $nasyt_dir/*
-                                                    esc
+                                                    bash -c "$(curl -L https://raw.gitcode.com/nasyt/nweb/raw/master/install.sh)"
+                                                    $habit --msgbox "安装完成" 0 0
                                                     ;;
                                                 2)
                                                     chmod 777 $nasyt_dir/*
@@ -6697,7 +6709,7 @@ if [ $# -ne 0 ]; then
             jm_tool info $2
             exit
             ;;
-        bilibili|-y|--bili)
+        y|bilibili|-y|--bili)
             video_dow $2
             exit
             ;;

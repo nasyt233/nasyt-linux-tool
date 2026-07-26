@@ -3,7 +3,21 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年7月26日更新2.4.4.2版"
+    echo "优化 其他工具/nweb安装脚本"
+    echo "优化 脚本结构,错误处理"
+    echo "优化 fastfetch安装过程"
+    echo "更新 EternityShen的nvim配置"
+    echo "修复 nvim选项选择问题"
+    echo "优化 yt-dlp视频解析工具"
+    echo "更新 jmcomic版本更新"
+    echo "修复 jmcomic部分问题"
+    echo "修复 python安装检测问题"
+    echo "优化 部分函数功能"
+    br
+    read
     echo "2026年7月13日更新2.4.4.1版"
+    echo "修复 python安装检测问题"
     echo "更新 cpolar快捷启动管理"
     echo "重构 cpolar内网穿透工具"
     echo "优化 脚本逻辑，优化加载速度"
