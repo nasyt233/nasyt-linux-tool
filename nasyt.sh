@@ -7,31 +7,26 @@
 # 欢迎加入NAS油条技术交流群
 # 有什么技术可以进来交流
 # 群号:610699712
-# gum_tool dust
+# dust
 
 cd $HOME
-time_date="2026/7/26"
-version="2.4.4.2"
-nasyt_dir="$HOME/.nasyt" #脚本工作目录
-#config_file="$nasyt_dir/config.txt" #脚本配置文件
+time_date="2026/8/1"
+version="2.4.4.3"
+nasyt_dir="$HOME/.nasyt"
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
-#bin_dir="usr/bin" #bin目录
-#nasyt_from="gitcode" # 脚本来源
+
 
 # 主菜单
 menu_jc() {
     menu() {
         while true
         do
-            clear
-            echo
             # 根据时间返回问候语
             get_greeting
             version_update >/dev/null 2>&1
             if command -v figlet >/dev/null 2>&1; then
                 figlet N A S
             fi
-            check_Script_Install
             br
             echo "感谢QQ:2738136724提供下载服务"
             br
@@ -40,7 +35,6 @@ menu_jc() {
                echo "2) Linux工具箱 (启动 start)"
             else
                echo "1) Linux工具箱 (安装 install)"
-               #echo "2) Linux工具箱 (启动)"
             fi
             echo "0) 退出 exit"
             br
@@ -67,7 +61,7 @@ menu_jc() {
         done
     }
     
-    menu
+    [[ $(config load update) == "true" ]] && menu
 }
 
 #--------------------------------------------------------------------------------
@@ -80,7 +74,7 @@ check_pkg_install() {
     if [[ -n $TERMUX_VERSION ]]; then
         sys="(Termux 终端)"
         PRETTY_NAME="Termux"
-        sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
+        # sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
         pkg_install="pkg install"
         pkg_remove="pkg remove"
         pkg_update="pkg update"
@@ -416,23 +410,26 @@ sha() {
     fi
 }
 
-# 网络工具使用限制检查
-disclaimer() {
-    if [[ -f "$nasyt_dir/disclaimer" ]]; then
-        return 0
-    fi
+# 网络工具使用免责声明
+eula() {
+    [[ -n $eula ]] && return 0
     if [[ $language == "China" ]]; then
         $habit --title "免责声明" \
-        --yesno "本工具仅限合法使用\n带来的后果由使用者承担全部责任\n运行所造成的损失作者依不承担\n你是否同意使用条款？" 0 0
+        --yesno "本工具使用带来的后果由使用者承担全部责任\n运行所造成的损失作者依不承担\n你是否同意使用条款？" 0 0
     else
         $habit --title "Disclaimer" \
-        --yesno "This tool is for legal use only\nUsers are fully responsible for the consequences\nThe author is not responsible for any losses caused by running it\nDo you agree to the terms of use?" 0 0
+        --yesno "The user bears full responsibility for the consequences of using this tool.\nThe author does not assume any liability for any losses caused by its operation.\nDo you agree to the terms of use?" 0 0
     fi
     if [ $? -eq 0 ]; then
-        touch "$nasyt_dir/disclaimer"
+        config add eula true
+        if [[ -n $PREFIX ]]; then
+            sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
+        fi
         return 0
     else
         $habit --msgbox "未同意使用条款,脚本退出。" 0 0
+        rm $bin/nserver
+        rm $nasyt_dir/config.txt
         clear
         exit 0
     fi
@@ -888,15 +885,14 @@ pip_install() {
 }
 
 pipx_install() {
-    eval PATH=$PATH:$HOME/.local/bin >/dev/null 2>&1
-    
-    test_install python*-pip
+    eval PATH=$PATH:$HOME/.local/bin >/dev/null 2>&1    
+    test_python;test_install pip
     pip install pipx
     echo -e "$(info) 正在搜索本地pip库"
     if pip show "$*" > /dev/null 2>&1; then
-       echo -e "$(info) $green  $*已安装,跳过安装$color"
+        echo -e "$(info) $green  $*已安装,跳过安装$color"
     else
-        echo -e "$(info) 正在安装$*中"
+        echo -e "$(info) 正在安装 $* 中"
         pipx install $* --force --break-system-packages
         if [ $? -ne 0 ]; then
             echo -e "$(info) $red $*安装失败$color"
@@ -908,7 +904,7 @@ pipx_install() {
 
 #通用克隆
 git_clone() {
-    github_speed_tool #地区检测
+    github_speed_tool # 地区检测
     if [[ -d $2 ]]; then
         $habit --title "确认操作" --yesno "当前仓库已克隆\n是否重新克隆一遍？\nThe repository has already been cloned.\nDo you want to clone it again?" 0 0
         if [ $? -ne 0 ]; then
@@ -975,13 +971,13 @@ termux_PATH () {
         if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.bashrc; then
             echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
         else
-            echo -e "PATH 已存在于 $nasyt_dir，跳过添加"
+            echo -e "PATH 已存在于 $nasyt_dir，跳过添加" >/dev/null 2>&1
         fi
     else
         if ! grep -q "^export PATH="$nasyt_dir:"" $HOME/.bashrc; then
             echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.bashrc
         else
-            echo -e "PATH 已存在于 .bashrc  跳过添加"
+            echo -e "PATH 已存在于 .bashrc  跳过添加" >/dev/null 2>&1
         fi
     fi
     #对zsh检测
@@ -990,13 +986,13 @@ termux_PATH () {
             if ! grep -q "^export PATH=$HOME/.nasyt:" $HOME/.zshrc; then
                 echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.zshrc
             else
-                echo -e "$(info) PATH 已存在于 $nasyt_dir，跳过添加"
+                echo -e "$(info) PATH 已存在于 $nasyt_dir，跳过添加" >/dev/null 2>&1
             fi
     else
             if ! grep -q "^export PATH="$nasyt_dir:"" $HOME/.zshrc; then
                 echo "export PATH="$nasyt_dir:"$PATH""" >> $HOME/.zshrc
             else
-                echo -e "$(info) PATH 已存在于 .zshrc  跳过添加"
+                echo -e "$(info) PATH 已存在于 .zshrc  跳过添加" >/dev/null 2>&1
             fi
         fi
     fi
@@ -1027,27 +1023,14 @@ check_script_folder() {
     fi
 }
 
-# 检查本脚本是否已安装
-check_Script_Install() {
-    if command -v nasyt >/dev/null 2>&1; then
-        echo "◉ 可直接输入nasyt进入本界面"
-    else 
-        if [ -e "$nasyt_dir/nasyt" ]; then
-            echo "◉ 变量环境已安装,可直接输入nasyt进入本界面"
-        else
-            echo "$(info) 脚本未安装"
-        fi
-    fi
-}
-
 # 菜单使用习惯选择
 habit_menu () {
     clear
     if [[ $language == "China" ]]; then
         echo "功能都支持使用箭头进行选择"
         br
-        echo "1) dialog屏幕点击(适合鼠标)"
-        echo "2) whiptail屏幕滑动（适合触屏)"
+        echo "1) dialog屏幕点击    (适合鼠标)"
+        echo "2) whiptail屏幕滑动  (适合触屏)"
         echo "3) 重置选择"
         br
         read -p "请选择菜单使用习惯: " habit_menu_xz
@@ -1078,8 +1061,6 @@ habit_xz () {
            3) config clear ;;
            *) break ;;
         esac
-    elif [ -n "$habit" ]; then
-        echo -e "menu: $yellow$habit$color"
     fi
     test_install $habit
 }
@@ -1281,7 +1262,7 @@ often_tool() {
             2 "🖥各种面板" \
             3 "🤖bot机器人" \
             4 "👾娱乐游戏" \
-            5 "🚀各种服务端" \
+            5 "🚀服务端管理" \
             6 "🌍穿透工具" \
             7 "📄编辑工具" \
             8 "📥下载工具" \
@@ -1321,6 +1302,7 @@ often_tool() {
             --menu "请选择" 0 0 10 \
             3 "🤖bot机器人" \
             4 "👾娱乐相关" \
+            5 "🚀服务端管理" \
             6 "🌍穿透工具" \
             7 "📄编辑工具" \
             8 "📥下载工具" \
@@ -1336,6 +1318,7 @@ often_tool() {
             often_tool_choice=$($habit --title "Install Common Termux Tools" \
             --menu "Please choose" 0 0 10 \
             3 "🤖 Bot Robot" \
+            5 "🚀 Server Management" \
             4 "👾 Entertainment Related" \
             6 "🌍 Penetration Tools" \
             7 "📄 Editing Tools" \
@@ -1354,7 +1337,7 @@ often_tool() {
     #检查当前系统
     often_tool_main() {
     if [[ -n $TERMUX_VERSION ]]; then
-        if [[ $shell_skip == true ]]; then
+        if [[ $shell_test == true ]]; then
             echo -e "$(info) 已跳过"
             often_tool_linux
         else
@@ -1372,35 +1355,38 @@ nasyt_setup_menu () {
     if [[ $language == "China" ]]; then
        nasyt_setup_choice=$($habit --title "脚本设置" \
        --menu "脚本设置" 0 0 10 \
-       1 ">_< 菜单个性化" \
-       2 "remove卸载脚本" \
-       3 "github加速设置" \
-       4 "脚本空间占用" \
-       5 "脚本备份/恢复" \
-       6 "默认文件打开设置" \
-       8 "补全完整功能" \
-       9 "删除脚本配置文件" \
-       10 "查看配置文件" \
-       11 "脚本语言设置" \
-       12 "颜色显示习惯" \
-       13 "跳过检测设置" \
-       0 "◀返回" \
+       1 "🌈 菜单个性化" \
+       2 "🗑 卸载本脚本" \
+       3 "🚀 github加速" \
+       4 "🗂 脚本空间占用" \
+       5 "💾 脚本备份/恢复" \
+       6 "➕ 默认打开设置" \
+       8 "✨ 补全完整功能" \
+       9 "🔴 删除配置文件" \
+       10 "📝 编辑配置文件" \
+       11 "🌎 脚本语言设置" \
+       12 "🌈 颜色显示习惯" \
+       13 "✨ 自动检测更新" \
+       14 "🖍 开发者模式" \
+       0 "◀ 返回" \
        2>&1 1>/dev/tty)
     else
         nasyt_setup_choice=$($habit --title "Script Settings" \
         --menu "Script Settings" 0 0 10 \
-        1 ">_< Menu Personalization" \
-        2 "Remove/Uninstall Script" \
-        3 "GitHub Acceleration Settings" \
-        4 "Script Space Usage" \
-        5 "Script Backup/Restore" \
-        6 "Default File Open Settings" \
-        8 "Complete Full Features" \
-        9 "Delete Script Configuration Files" \
-        10 "View Configuration Files" \
-        11 "Script Language Settings" \
-        12 "Color Display Habits" \
-        0 "◀ Back" \
+        1"🌈 Menu Personalization" \
+        2 "🗑 Uninstall this script" \
+        3 "🚀 GitHub Acceleration" \
+        4 "🗂 Script Space Usage" \
+        5 "💾 Script Backup/Restore" \
+        6 " ➕ Default Settings Open" \
+        8 "✨ Complete Features" \
+        9 "🔴 Delete Configuration File" \
+        10 "📝 Edit Configuration File" \
+        11 "🌎 Scripting Language Settings" \
+        12 "🌈 Color Display Habits" \
+        13 "✨ Automatic Detection Updates" \
+        14 "🖍 Developer Mode" \
+        0 "◀ Return " \
         2>&1 1>/dev/tty)
     fi
 }
@@ -1509,7 +1495,7 @@ app_install() {
         break
     }
     app_install_main() {
-        if [[ $shell_skip -eq true ]]; then
+        if [[ $shell_test -eq true ]]; then
             app_install_linux
         elif [[ -n $TERMUX_VERSION ]]; then
             app_install_termux
@@ -1582,7 +1568,7 @@ Linux_shell() {
     
     }
     linux_shell_main() {    
-        if [[ $shell_skip -eq true ]]; then
+        if [[ $shell_test -eq true ]]; then
             linux_shell_linux
         elif [[ -n $PREFIX ]]; then
             linux_shell_termux
@@ -1639,7 +1625,7 @@ bot_install_menu() {
     0 "◀返回" \
     2>&1 1>/dev/tty)
     }
-    if [[ $shell_skip -eq true ]]; then
+    if [[ $shell_test -eq true ]]; then
         bot_linux_menu
     elif [[ -n $TERMUX_VERSION ]]; then
         bot_termux_menu
@@ -1650,7 +1636,7 @@ bot_install_menu() {
 
 # docker管理工具
 docker_menu() {
-    if [[ $shell_skip == true ]]; then
+    if [[ $shell_test == true ]]; then
         echo
     elif [[ -n $TERMUX_VERSION ]]; then
         $habit --msgbox "termux爬一边去" 0 0
@@ -2555,13 +2541,15 @@ jm_tool() {
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
-    test_install yq
-    test_python
-    pip_install jmcomic
+    if ! command -v jmcomic >/dev/null 2>&1; then
+        test_install yq
+        test_python
+        pipx_install jmcomic
+    fi
     if [[ -n $2 ]]; then
         jm_env
         echo -e "$(info) 🔄正在查询本子📕"
-        jmv $2 -y
+        jmv $2 -y | awk '/─/{flag=1} flag'
         cw_test=$?
         if [ $cw_test -ne 0 ]; then
             echo -e "$(info) $red ❌查询失败,错误代码：$cw_test $color"
@@ -2574,7 +2562,7 @@ jm_tool() {
         jm_env
         echo -e "$(info) 🔄正在下载本子📕"
         cd $jm_dir
-        jmcomic $1 --option="$nasyt_dir/jm/config.yml"
+        jmcomic $1 --option="$nasyt_dir/jm/config.yml" | awk '/─/{flag=1} flag'
         cw_test=$?
         if [ $cw_test -ne 0 ]; then
             echo -e "$(info) $red ❌下载失败,错误代码：$cw_test $color"
@@ -3386,18 +3374,22 @@ shell_uninstall() {
 
 #更新查看
 gx_show() {
-    if [[ $new_version == $version ]]; then
-        echo -e "$green 当前版本已是最新。 $color"
-    else
-        echo -e " 当前版本 $version"
-        echo -e "$red 有新版本更新$new_version $color"
+    if [[ $(config load update) == "true" ]]; then
+        if [[ $new_version == "$version" ]]; then
+            echo -e "$green 当前版本已是最新。 $color"
+        else
+            echo -e " 当前版本 $version"
+            echo -e "$red 有新版本更新 $new_version $color"
+        fi
     fi
 }
 
 #更新链接来源
 version_update() {
-    new_version=$(curl "https://raw.giteeusercontent.com/nasyt/version/raw/master/version")
-    config add new $new_version
+    [[ -z $update ]] && config add update true
+    if [[ $(config load update) == "true" ]]; then
+        new_version=$(curl "https://raw.giteeusercontent.com/nasyt/version/raw/master/version")
+    fi
 }
 
 #更新以及安装
@@ -3406,7 +3398,6 @@ gx() {
     if [[ -n $1 ]]; then
         cp $1 /usr/bin/ >/dev/null 2>&1
         cp $1 $PREFIX/bin >/dev/null 2>&1
-        chmod +x $nasyt_dir/nasyt >/dev/null 2>&1
         chmod +x /usr/bin/nasyt >/dev/null 2>&1
         chmod +x $PREFIX/bin/nasyt >/dev/null 2>&1
         echo -e "$(info) 手动更新完成"
@@ -3418,18 +3409,14 @@ gx() {
     for url in "${urls[@]}"; do
         echo "$(info) 正在下载脚本"
         if curl --progress-bar -L -o "$HOME/nasyt" --retry 1 --retry-delay 2 --max-time $time_out "$url" >/dev/null 2>&1 ; then
+            chmod +x nasyt
             cp nasyt /usr/bin/ >/dev/null 2>&1
             cp nasyt $PREFIX/bin >/dev/null 2>&1
-            mv nasyt $nasyt_dir/nasyt >/dev/null 2>&1
             echo -e "$(info) 正在给予权限 $color"
-            chmod +x $nasyt_dir/nasyt >/dev/null 2>&1
             chmod +x /usr/bin/nasyt >/dev/null 2>&1
             chmod +x $PREFIX/bin/nasyt >/dev/null 2>&1
             if command -v nasyt >/dev/null 2>&1; then
                 echo -e "$(info)$green 脚本更新成功 $color"
-                #rm $nasyt_dir/nasyt.bak >/dev/null 2>&1
-                #rm /usr/bin/nasyt.bak >/dev/null 2>&1
-                #rm $PREFIX/bin/nasyt.bak >/dev/null 2>&1
             else
                 echo -e "$(info)$green 脚本安装失败，正在还原备份文件 $color"
                 shell_recover
@@ -3443,8 +3430,7 @@ gx() {
             source $HOME/.zshrc >/dev/null 2>&1
             exit 0
         else
-            echo "$(info)✗ 当前链接下载失败，3秒后尝试下一个链接..."
-            sleep 3
+            echo "$(info)✗ 当前链接下载失败，正在尝试下一个链接..."
         fi
     done
     echo -e "$(info) $red 所有链接均下载失败，请检查网络或链接有效性$color"
@@ -3464,11 +3450,6 @@ shell_backup_menu() {
 shell_backup() {
     echo "$(info) 正在备份脚本文件";sleep 0.5s
     cp $nasyt_dir/nasyt $nasyt_dir/version/nasyt$version.bak >/dev/null 2>&1
-    #if [[ -n $TERMUX_VERSION ]]; then
-    #    cp $PREFIX/bin/nasyt $PREFIX/bin/nasyt$version.bak >/dev/null 2>&1
-    #else
-    #    cp /usr/bin/nasyt /usr/bin/nasyt$version.bak>/dev/null 2>&1 >/dev/null 2>&1
-    #fi
     if [ $? -ne 0 ]; then
         echo -e "$(info) $red 脚本备份失败，跳过备份环节$color"
     else
@@ -3503,7 +3484,6 @@ nasyt_backup() {
         case $shell_backup_xz in
             1) shell_backup;esc;;
             2) shell_recover;esc;;
-            0) break;;
             *) break;;
         esac
     done
@@ -3536,85 +3516,93 @@ upsource() {
     esc
 }
 
-#tmux工具
+# tmux管理函数
 tmux_tool() {
-    # 获取所有tmux会话
     tmux_get() {
-        tmux_ls=$(mktemp) #tmux临时文件
-        tmux list-sessions -F "#S" 2>/dev/null > "$tmux_ls" #输出到临时文件
+        tmux_ls=$(mktemp)
+        tmux list-sessions -F "#S" 2>/dev/null > "$tmux_ls"
     }
-    # tmux菜单
+
+    tmux_clean() {
+        [[ -n "$tmux_ls" && -f "$tmux_ls" ]] && rm -f "$tmux_ls"
+    }
+
     tmux_menu() {
-        tmux_menu_xz=$($habit --clear \
+        $habit --clear \
         --title "tmux工具" \
-        --menu "请选择" 0 0 10 \
+        --menu "请选择操作" 0 0 10 \
         1 "🆕 新建会话" \
         2 "🔧 会话管理" \
         3 "❓ 使用说明" \
-        4 "🌌 美化窗口" \
-        0 "◀退出" \
-        2>&1 1>/dev/tty)
+        4 "🌌 OhMyTmux美化配置" \
+        0 "◀ 退出" \
+        2>&1 1>/dev/tty
     }
-    
-    while true
-    do
+
+    while true; do
         test_install tmux
-        tmux_menu
-        case $tmux_menu_xz in
-            1) 
-                tmux_new=$($habit --clear --title "🆕新建窗口🆕" \
-                --inputbox "请输入窗口名字:" 0 0 \
-                2>&1 1>/dev/tty)
-                if [ $? -ne 0 ]; then
-                    echo
-                else
-                    tmux new-session -d -s "$tmux_new"
-                    $habit --title "确认操作" --yesno "创建 $tmux_new 窗口成功\n\n是否连接会话" 0 0
-                    if [ $? -ne 0 ]; then
-                        echo
-                    else
-                        tmux attach-session -t $tmux_new
-                    fi
+        tmux_menu_xz=$(tmux_menu)
+        [[ -z "$tmux_menu_xz" ]] && break
+
+        case "$tmux_menu_xz" in
+            1)
+                tmux_new=$($habit --clear --title "🆕新建会话" \
+                    --inputbox "输入会话名称：" 0 0 "" \
+                    2>&1 1>/dev/tty)
+                if [[ -z "$tmux_new" ]]; then
+                    continue
+                fi
+                tmux new-session -d -s "$tmux_new"
+                $habit --title "操作确认" --yesno "成功创建会话：$tmux_new\n是否直接接入会话？" 0 0
+                if [[ $? -eq 0 ]]; then
+                    tmux attach-session -t "$tmux_new"
                 fi
                 ;;
+
             2)
-                while true
-                do
-                    tmux_get #获取会话列表
-                    # 检查tmux会话
-                    if [ ! -s "$tmux_ls" ]; then
-                        $habit --title "警告" --msgbox "没有找到可用会话\n请先创建会话!" 10 30
-                        
+                while true; do
+                    tmux_get
+                    if [[ ! -s "$tmux_ls" ]]; then
+                        $habit --title "警告" --msgbox "暂无运行中的tmux会话！\n请先创建会话" 10 35
+                        tmux_clean
+                        break
                     fi
-                    
-                    tmux_list=()
-                    tmux_number=1
+
+                    local tmux_list=()
+                    local tmux_number=1
+                    declare -A session_map
                     while IFS= read -r session; do
+                        [[ -z "$session" ]] && continue
                         tmux_list+=("$tmux_number" "$session")
+                        session_map["$tmux_number"]="$session"
                         ((tmux_number++))
                     done < "$tmux_ls"
-                    
+                    tmux_list+=("0" "◀ 返回上级")
+
                     tmux_list_xz=$($habit --clear \
-                    --title "窗口管理" \
-                    --menu "请选择一个会话:" 0 0 10 \
-                    "${tmux_list[@]}" \
-                    0 "◀返回" \
-                    2>&1 1>/dev/tty)
-                    cw_test=$?
-                    if [[ $tmux_list_xz -eq 0 ]]; then
-                        return 0
-                    elif [[ $cw_test -eq 1 ]]; then
-                        return 0
+                        --title "会话管理" \
+                        --menu "选择需要操作的会话：" 0 0 10 \
+                        "${tmux_list[@]}" \
+                        2>&1 1>/dev/tty)
+                    tmux_clean
+
+                    if [[ "$tmux_list_xz" == "0" || -z "$tmux_list_xz" ]]; then
+                        unset session_map
+                        break
                     fi
-                    tmux_name=$(echo "${menu_items[@]}" | awk -v idx="$tmux_list_xz" '{for(i=1;i<=NF;i+=2) if ($i == idx) print $(i+1)}')
-                    tmux_session_menu=$($habit --title "管理" \
-                    --menu "请选择" 0 0 10 \
-                    1 "🔗 连接到会话" \
-                    2 "🔴 结束此会话" \
+
+                    local tmux_name="${session_map[$tmux_list_xz]}"
+                    unset session_map
+
+                    tmux_session_menu=$($habit --title "[$tmux_name] 操作面板" \
+                    --menu "请选择：" 0 0 10 \
+                    1 "🔗 接入会话" \
+                    2 "🔴 彻底关闭会话" \
                     3 "📝 重命名会话" \
-                    0 "◀返回" \
+                    0 "◀ 返回列表" \
                     2>&1 1>/dev/tty)
-                    case $tmux_session_menu in
+
+                    case "$tmux_session_menu" in
                         1)
                             if [[ -n "$TMUX" ]]; then
                                 tmux switch-client -t "$tmux_name"
@@ -3624,61 +3612,74 @@ tmux_tool() {
                             esc
                             ;;
                         2)
-                            tmux kill-session -t "$session"
-                            $habit --msgbox "✅ 已结束会话" 0 0
+                            $habit --title "危险确认" --yesno "确定要销毁会话【$tmux_name】？\n会话内所有进程将会终止！" 10 40
+                            if [[ $? -eq 0 ]]; then
+                                tmux kill-session -t "$tmux_name"
+                                $habit --msgbox "✅ 会话 $tmux_name 已关闭" 0 0
+                            fi
                             ;;
                         3)
-                            tmux_new_name=$($habit --title "重命名" \
-                                --inputbox "为会话 '$tmux_name' 输入新名称:" \
+                            tmux_new_name=$($habit --title "重命名会话" \
+                                --inputbox "原会话名：$tmux_name\n输入新名称：" \
                                 0 0 "$tmux_name" \
-                                3>&1 1>&2 2>&3)
-                            if [[ $? -eq 0 ]] && [[ -n "$new_name" ]]; then
+                                2>&1 1>/dev/tty)
+                            if [[ -n "$tmux_new_name" ]]; then
                                 if tmux rename-session -t "$tmux_name" "$tmux_new_name"; then
-                                    $habit --msgbox "✅ 会话已重命名为 '$tmux_new_name'" 0 0
+                                    $habit --msgbox "✅ 重命名成功\n$tmux_name → $tmux_new_name" 0 0
                                 fi
                             fi
                             ;;
                         *)
-                            break
                             ;;
                     esac
-                    rm -f "$tmux_ls"
                 done
                 ;;
+
             3)
-                $habit --msgbox '介绍:\n  本工具由 NAS油条 制作\n\n常用快捷键:\n• Ctrl+b %   垂直分割窗格\n• Ctrl+b \"   水平分割窗格\n• Ctrl+b 方向键  切换窗格\n• Ctrl+b c   新建窗口\n• Ctrl+b n/p 切换窗口\n• Ctrl+b d   分离会话 ' 0 0
+                $habit --msgbox '【Tmux简易操作指南】
+本工具由 NAS油条 制作
+
+常用快捷键（进入会话内生效）：
+• Ctrl+b %    垂直分割窗格
+• Ctrl+b "    水平分割窗格
+• Ctrl+b 方向键 切换窗格
+• Ctrl+b c    新建窗口
+• Ctrl+b n/p  前后切换窗口
+• Ctrl+b d    脱离会话（后台运行）
+• Ctrl+b ,    重命名当前窗口
+' 0 0
                 ;;
+
             4)
+                test_install git
                 cd $HOME
-                echo -e "$(info) $blue 正在克隆oh my tmux项目 $color"
-                if [[ -d $HOME/.tmux ]]; then
-                    echo -e "$(info) $yellow 仓库已克隆，正在进入安装步骤。 $color"
+                echo -e "$info $blue 正在部署 Oh My Tmux 配置 $color"
+
+                if [[ -d "$HOME/.tmux" ]]; then
+                    echo -e "$info $yellow 仓库目录已存在，跳过克隆 $color"
                 else
                     git clone --single-branch https://gitcode.com/gh_mirrors/tm/.tmux.git
-                    cw_test=$?
-                    echo $cw_test
-                    if [ $cw_test -eq 128 ]; then
-                        echo -e "$(info) $yellow 仓库克隆失败 $color"
-                    elif [ $cw_test -ne 0 ]; then
-                        echo -e "$(info) $red 仓库克隆失败，请检查你的网络后重试。$color"
+                    local cw_test=$?
+                    if [[ $cw_test -ne 0 ]]; then
+                        echo -e "$info $red 仓库克隆失败，请检查网络！ $color"
                         esc
                         break
-                    else
-                        echo -e "$(info) $green 仓库克隆成功$color"
                     fi
+                    echo -e "$info $green 仓库克隆完成 $color"
                 fi
-                ln -s -f .tmux/.tmux.conf
-                echo -e "$(info)  正在覆盖配置文件"
-                cp .tmux/.tmux.conf.local .
-                echo -e "$(info) $green tmux美化安装完成$color"
+                ln -sf .tmux/.tmux.conf "$HOME/.tmux.conf"
+                cp -n .tmux/.tmux.conf.local "$HOME/"
+                echo -e "$info $green ✅ tmux美化配置部署完成！提示：重启tmux生效，或在会话内执行：\ntmux source ~/.tmux.conf $color"
                 esc
                 ;;
+
             *)
                 break
                 ;;
         esac
     done
 }
+
 
 # 下载视频（curl自带进度）
 download_video() {
@@ -4117,25 +4118,13 @@ sync_shanghai_time() {
 
 # 获取操作系统信息的函数
 get_os_info() {
-    br
     if [ -f /etc/os-release ]; then
         source /etc/os-release
-        echo -e "操作系统: $green $PRETTY_NAME $color"
-        echo "ID: $ID"
-        echo "版本: $VERSION_ID"
-        echo "软件包管理方式: $deb_sys"
-    elif command -v termux-info >/dev/null 2>&1; then
+    elif [[ -n $PREFIX ]]; then
         set PRETTY_NAME="Termux终端"
-        echo -e "操作系统: $green Android (Termux) $color"
-        echo "当前系统: $sys"
-        if command -v neofetch >/dev/null 2>&1; then
-            neofetch -l
-        fi
     else
         echo "-_-无法获取操作系统信息。"
     fi
-    br
-
 }
 
 sfs_tool() {
@@ -4262,21 +4251,21 @@ find_tool() {
     fi
 }
 
-skip_menu() {
+update_menu() {
     while true
     do
-        skip_menu_xz=$($habit --clear --title "跳过检测与提示部分" \
-        --menu "当前设置:$(config load shell_skip)\n跳过检测与提示部分" 0 0 10 \
+        update_menu_xz=$($habit --clear --title "启动自动检测更新" \
+        --menu "当前设置:$(config load update)\n跳过脚本更新检测设置" 0 0 10 \
         1 "开启" \
         2 "关闭" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
-        case $skip_menu_xz in
+        case $update_menu_xz in
             1)
-                config add shell_skip true
+                config add update true
                 ;;
             2)
-                config add shell_skip false
+                config add update false
                 ;;
             *)
                 break
@@ -4285,6 +4274,28 @@ skip_menu() {
     done
 }
 
+test_menu() {
+    while true
+    do
+        test_menu_xz=$($habit --clear --title "脚本测试模式" \
+        --menu "当前设置:$(config load shell_test)\n供开发者使用\n脚本测试模式" 0 0 10 \
+        1 "开启" \
+        2 "关闭" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+        case $test_menu_xz in
+            1)
+                config add shell_test true
+                ;;
+            2)
+                config add shell_test false
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+}
 # --------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------
 
@@ -4300,27 +4311,22 @@ introduce() {
     #check_pkg_install # 检查包管理器。
     #check_script_folder # 检查脚本文件夹。
     test_eatmydata # 检查eatmydata是否安装。
-    check_Script_Install # 检查本脚本是否安装。
 }
 
 # 开始
 index_main() {
     introduce # 检查
-    if [[ $shell_skip == true ]]; then
+    if [[ $shell_test == true ]]; then
         echo "已跳过"
     else
         menu_jc # 菜单发布页
         get_os_info # 获取操作系统
-        ad_gg #支持
+        # ad_gg #支持
         habit_xz #选择使用习惯。
-        br
-        source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置以防免责声明无法加载
-        disclaimer # 免责声明
-        read -p "回车键启动脚本,Ctrl+C退出" 
+        source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
+        eula # 免责声明
     fi
     source $nasyt_dir/config.txt >/dev/null # hyw加载脚本配置
-    # source $HOME/.bashrc >/dev/null 2>&1 # 加载用户启动文件
-    clear
     while true
     do
         clear
@@ -5483,68 +5489,13 @@ index_main() {
                             done
                             ;;
                         5)
-                            while true
-                            do
-                                server_install_menu
-                                case $server_install_xz in
-                                    1)
-                                        sfs_online
-                                        ;;
-                                    2)
-                                        if [ -e $nasyt_dir/phira/phira_linux_server_amd64 ]; then
-                                            echo "$(info) 正在给予文件权限"
-                                            chmod 777 $nasyt_dir/phira >/dev/null 2>&1
-                                            if [ $? -ne 0 ]; then
-                                                echo -e "$(info)$red 给予权限失败 $color"
-                                                exit
-                                            fi
-                                            echo -e "$(info)$green phira已安装,正在启动 $color"
-                                            phira
-                                            esc
-                                        else
-                                            $habit --title "确认操作" --yesno "你确定要安装phira服务端吗？" 0 0
-                                            if [ $? -ne 0 ]; then
-                                                break
-                                            fi
-                                            test_install curl #curl安装检测
-                                            echo "$(info) 正在下载服务端文件(48.35MB)"
-                                            echo -e "$pink 感谢 创欧云(coyjs.cn) 提供直链支持 $color"
-                                            echo -e "$green 请耐心等待 $color"
-                                            mkdir -p "$nasyt_dir/phira_server"
-                                            curl --progress-bar -L -o "$nasyt_dir/phira_server/phira_linux_server_amd64" "http://api-lxtu.hydun.com/phira-mp-server-Linux_AMD64"
-                                            if [ $? -ne 0 ]; then
-                                                echo -e "$red 文件下载失败 $color"
-                                                echo "[x] 请检查你的网络后重试"
-                                                exit
-                                            else
-                                                echo -e "$(info)$green 文件下载成功 $color"
-                                                echo "$(info) 正在给予权限"
-                                                chmod 777 $nasyt_dir/phira_server/*
-                                                if [ $? -ne 0 ]; then
-                                                    echo -e "$(info) $red 给予失败 $color"
-                                                    exit
-                                                fi
-                                                echo "$(info) 正在制作启动脚本"
-                                                echo "cd $nasyt_dir/phira_server; chmod 777 phira_linux_server_amd64; ./phira_linux_server_amd64" > $nasyt_dir/phira
-                                                chmod 777 $nasyt_dir/*
-                                                echo -e "$(info)$green 输入phira即可启动服务端 $color"
-                                                echo -e "$(info) 推荐搭配tmux工具使用"
-                                                exit
-                                            fi
-                                        fi
-                                        ;;
-                                    3)
-                                        tmux_tool
-                                        esc
-                                        ;;
-                                    0)
-                                        break
-                                        ;;
-                                    *)
-                                        break
-                                        ;;
-                                esac
-                            done
+                            if command -v nserver >/dev/null 2>&1; then
+                                nserver
+                            else
+                                echo -e "$(info) 正在拉取安装更新脚本"
+                                bash -c "$(curl -L https://raw.gitcode.com/nasyt/nserver/raw/main/install.sh)"
+                                nserver
+                            fi
                             ;;
                         6)
                             while true
@@ -6620,7 +6571,10 @@ index_main() {
                         esc
                         ;;
                     13)
-                        skip_menu
+                        update_menu
+                        ;;
+                    14)
+                        test_menu
                         ;;
                     *)  break;;
                 esac
@@ -6657,7 +6611,11 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         skip|--skip)
-            skip_menu
+            update_menu
+            exit
+            ;;
+        test|--test)
+            test_menu
             exit
             ;;
         sh|--sh|z|zsh|-z|--z|--zsh)
@@ -6669,11 +6627,12 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         log|-log|--log)
+            set -x
             > $nasyt_dir/shell.log
             exec > >(tee -a "$nasyt_dir/shell.log") 2>&1
             echo -e "$(info) 日志保存在：$nasyt_dir/shell.log"
             ;;
-        debug)
+        de|debug|--debug)
             "$2"
             exit
             ;;
@@ -6714,7 +6673,9 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         c|aria2c|-c|--aria2c)
-            test_install aria2 || test_install aria2c
+            if ! command -v aria2c >/dev/null 2>&1; then
+                test_install aria2 || test_install aria2c
+            fi
             echo -e "$(info) 正在下载文件"
             aria2c "$2" -m 2 -s 16 -x 16 -c
             cw_test=$?
@@ -6829,7 +6790,7 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         k|skip|-k|--skip)
-            shell_skip=1
+            config add shell_test true
             ;;
         s|ssh|-s|--ssh)
             ssh_tool
@@ -6888,6 +6849,7 @@ if [ $# -ne 0 ]; then
                 echo "  jv    jmcomic本子查询"
                 echo "  sec     Secluded管理"
                 echo "  turn     疏散文件生成"
+                echo "  test    开发者测试模式"
                 echo "  debug    函数调试测试"
                 echo "  config 用于管理配置文件"
                 echo "  yml    用于管理yml文件"
