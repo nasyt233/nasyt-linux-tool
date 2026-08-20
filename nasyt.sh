@@ -2547,21 +2547,21 @@ jm_tool() {
         2>&1 1>/dev/tty)
     }
     jm_search() {
-        local query="$1"
-        python3 -c "
-    from jmcomic import *
-    client = JmOption.default().new_jm_client()
-    page = client.search_site(search_query='$query', page=1)
-    print(f'结果总数: {page.total}, 分页大小: {page.page_size}，页数: {page.page_count}')
-    for album_id, title in page:
-        print(f'[{album_id}]: {title}')
-    try:
-        album = page.single_album
-        print('标签:', album.tags)
-    except Exception:
-        pass
-    " | sed -n '/结果总数:/,$p'
-    }
+    local query="$1"
+    python3 -c "
+from jmcomic import *;
+client = JmOption.default().new_jm_client();
+page = client.search_site(search_query='$query', page=1);
+print(f'结果总数: {page.total}, 分页大小: {page.page_size}，页数: {page.page_count}');
+for album_id, title in page:
+    print(f'[{album_id}]: {title}');
+try:
+    album = page.single_album;
+    print('标签:', album.tags);
+except Exception:
+    pass
+" | sed -n '/结果总数:/,$p'
+}
 
     if ! command -v jmcomic >/dev/null 2>&1; then
         test_install yq
