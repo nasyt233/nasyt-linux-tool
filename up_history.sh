@@ -3,6 +3,16 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年8月20日更新2.4.4.4版"
+    echo "修复 -f文件搜索通配无法使用"
+    echo "修复 TRSS docker启动问题"
+    echo "更新 astrbot快捷启动方式"
+    echo "更新 jmcomic标签搜索功能"
+    echo "更新 jmcomic正则表达匹配"
+    echo "更新 jmcomic下载进度条"
+    echo "修复 部分已知bug"
+    br
+    read
     echo "2026年8月1日更新2.4.4.3版"
     echo "修复 aria2多线程下载工具"
     echo "重写 Tmux后台管理工具"

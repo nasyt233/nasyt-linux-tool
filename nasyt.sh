@@ -10,8 +10,8 @@
 # dust
 
 cd $HOME
-time_date="2026/8/1"
-version="2.4.4.3"
+time_date="2026/8/20"
+version="2.4.4.4"
 nasyt_dir="$HOME/.nasyt"
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 
@@ -875,7 +875,11 @@ pip_install() {
        echo -e "$(info) $green ◉ $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在使用pip安装$*"
-        pip install --break-system-packages $*
+        if [[ -n $PREFIX ]]; then
+            pip install $*
+        else
+            pip install --break-system-packages $*
+        fi
         if [ $? -ne 0 ]; then
             echo -e "$(info) $red pip安装$*失败$color"
         else
@@ -887,13 +891,13 @@ pip_install() {
 pipx_install() {
     eval PATH=$PATH:$HOME/.local/bin >/dev/null 2>&1    
     test_python;test_install pip
-    pip install pipx
+    pip install pipx --break-system-packages
     echo -e "$(info) 正在搜索本地pip库"
     if pip show "$*" > /dev/null 2>&1; then
         echo -e "$(info) $green  $*已安装,跳过安装$color"
     else
         echo -e "$(info) 正在安装 $* 中"
-        pipx install $* --force --break-system-packages
+        pipx install $*
         if [ $? -ne 0 ]; then
             echo -e "$(info) $red $*安装失败$color"
         else
@@ -2525,6 +2529,7 @@ jm_tool() {
         1 "📄 查询本子" \
         2 "🔽 下载本子" \
         3 "💻 查看本子" \
+        4 "🔍 标签搜索" \
         7 "⏫ 更新工具" \
         8 "🛠 下载设置" \
         9 "❌ 卸载工具" \
@@ -2541,38 +2546,72 @@ jm_tool() {
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
+    jm_search() {
+        local query="$1"
+        python3 -c "
+    from jmcomic import *
+    client = JmOption.default().new_jm_client()
+    page = client.search_site(search_query='$query', page=1)
+    print(f'结果总数: {page.total}, 分页大小: {page.page_size}，页数: {page.page_count}')
+    for album_id, title in page:
+        print(f'[{album_id}]: {title}')
+    try:
+        album = page.single_album
+        print('标签:', album.tags)
+    except Exception:
+        pass
+    " | sed -n '/结果总数:/,$p'
+    }
+
     if ! command -v jmcomic >/dev/null 2>&1; then
         test_install yq
         test_python
-        pipx_install jmcomic
+        pip_install jmcomic
+        pip_install rich
     fi
-    if [[ -n $2 ]]; then
-        jm_env
-        echo -e "$(info) 🔄正在查询本子📕"
-        jmv $2 -y | awk '/─/{flag=1} flag'
-        cw_test=$?
-        if [ $cw_test -ne 0 ]; then
-            echo -e "$(info) $red ❌查询失败,错误代码：$cw_test $color"
-            exit $cw_test
-        else
-            echo -e "$(info) $green ✅查询成功$color"
-            exit 0
-        fi
-    elif [[ -n $1 ]]; then
-        jm_env
-        echo -e "$(info) 🔄正在下载本子📕"
-        cd $jm_dir
-        jmcomic $1 --option="$nasyt_dir/jm/config.yml" | awk '/─/{flag=1} flag'
-        cw_test=$?
-        if [ $cw_test -ne 0 ]; then
-            echo -e "$(info) $red ❌下载失败,错误代码：$cw_test $color"
-            exit $cw_test
-        else
-            echo -e "$(info) $green ✅下载成功$color"
-            echo -e "$(info) 位于$nasyt_dir/jm目录"
-            exit 0
-        fi
-    fi
+    case $1 in
+        jv)
+            jm_env
+            echo -e "$(info) 🔄正在查询本子📕$2"
+            jmv "$2" -y | awk '/─/{flag=1} flag'
+            cw_test=$?
+            if [ $cw_test -ne 0 ]; then
+                echo -e "$(info) $red ❌查询失败,错误代码：$cw_test $color"
+                exit $cw_test
+            else
+                echo -e "$(info) $green ✅查询成功$color"
+                exit 0
+            fi
+            ;;
+        js)
+            jm_env
+            echo -e "$(info) 正在查询 $2 标签"
+            jm_search $2
+            cw_test=$?
+            if [ $cw_test -ne 0 ]; then
+                echo -e "$(info) $red ❌查询失败,错误代码：$cw_test $color"
+                exit $cw_test
+            else
+                echo -e "$(info) $green ✅查询成功$color"
+                exit 0
+            fi
+            ;;
+        *)
+            jm_env
+            echo -e "$(info) 🔄正在下载本子📕$2"
+            cd $jm_dir
+            jmcomic $1 --option="$nasyt_dir/jm/config.yml"
+            cw_test=$?
+            if [ $cw_test -ne 0 ]; then
+                echo -e "$(info) $red ❌下载失败,错误代码：$cw_test $color"
+                exit $cw_test
+            else
+                echo -e "$(info) $green ✅下载成功$color"
+                echo -e "$(info) 位于$nasyt_dir/jm目录"
+                exit 0
+            fi
+            ;;
+    esac
     while true
     do
         jm_env
@@ -2608,8 +2647,22 @@ jm_tool() {
                 fi
                 esc
                 ;;
+            3)
+                bash -c "$(curl -L https://raw.gitcode.com/nasyt/nwebp/raw/main/install.sh)"
+                nwebp $nasyt_dir/jm 7891
+                echo -e "$(info) 网页服务已开发至7891端口"
+                echo -e "$(info) 访问 0.0.0.0:7891 查看"
+                esc
+                ;;
+            4)
+                jm_tag=$($habit --clear --title "标签搜索" \
+                --inputbox "请输入标签关键词" 0 0 \
+                2>&1 1>/dev/tty)
+                jm_search $jm_tag
+                esc
+                ;;
             7)
-                pip install jmcomic --upgrade
+                pip_install jmcomic --upgrade 
                 ;;
             8)
                 while true
@@ -3165,7 +3218,7 @@ TRSS() {
     br
     echo "1) 安装TRSS机器人docker版(Linux推荐)"
     echo "2) 安装tmoe_proot/chroot容器(Termux推荐)"
-    echo "d) docker打开TRSS机器人(前提1)"
+    echo "3) docker打开TRSS机器人(前提1)"
     echo "0) ◀返回"
     br
 }
@@ -4245,7 +4298,7 @@ sfs_online() {
 #文件搜索工具
 find_tool() {
     if [[ -d $1 ]]; then
-        find $1 -name "$2" 2>/dev/null
+        find $1 -name \"$2\" 2>/dev/null
     else
         echo -e "$(info) $red 不存在这个文件夹$color"
     fi
@@ -6606,6 +6659,12 @@ language_jc #脚本语言设置
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+        ast|astrbot)
+            cd $nasyt_dir/AstrBot
+            tmux new -d -s astrbot "source venv/bin/activate;python3 main.py"
+            echo -e "$(info) 已启动"
+            exit 0
+            ;;
         color|--color)
             color_menu
             exit
@@ -6617,6 +6676,14 @@ if [ $# -ne 0 ]; then
         test|--test)
             test_menu
             exit
+            ;;
+        ps|--ps)
+            ps a | grep $2
+            exit 0
+            ;;
+        stop|kill)
+            ps -a | grep $2 | awk '{print $1}'
+            exit 0
             ;;
         sh|--sh|z|zsh|-z|--z|--zsh)
             shell_tool
@@ -6665,7 +6732,11 @@ if [ $# -ne 0 ]; then
             exit
             ;;
         jv|-jv|--jv)
-            jm_tool info $2
+            jm_tool jv $2
+            exit
+            ;;
+        js|-js|--js)
+            jm_tool js $2 $3
             exit
             ;;
         y|bilibili|-y|--bili)
@@ -6839,14 +6910,16 @@ if [ $# -ne 0 ]; then
                 echo "  -z, --zsh    shell管理工具"
                 echo
                 echo "其他参数:"
-                echo "  cpolar内网穿透管理工具"
-                echo "  color 文字提示颜色设置"
+                echo "  astrbot  快捷启动方式"
+                echo "  cpolar   内网穿透工具"
+                echo "  color    文字颜色设置"
                 echo "  skip     跳过检测设置"
+                echo "  stop  停止后台运行命令"
                 echo "  sh     shell管理工具"
                 echo "  sfs      SFS管理工具"
                 echo "  lang     脚本语言设置"
-                echo "  log   日志输出模式运行"
-                echo "  jv    jmcomic本子查询"
+                echo "  log      日志输出模式"
+                echo "  jv        jm本子查询"
                 echo "  sec     Secluded管理"
                 echo "  turn     疏散文件生成"
                 echo "  test    开发者测试模式"
