@@ -3,6 +3,20 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
+    echo "2026年9月1日更新2.4.4.5版"
+    echo "更新 nwebp轻量阅读器安装"
+    echo "更新 尝试openwrt系统支持"
+    echo "更新 bash zsh的脚本代码补全"
+    echo "更新 fish的脚本代码补全"
+    echo "更新 starship官方安装方式"
+    echo "修复 astrbot快捷启动"
+    echo "修复 jmcomic本子查看"
+    echo "更新 jm标签搜索终端参数"
+    echo "优化 Sec和bili-tui的安装"
+    echo "优化 jm本子下载提示"
+    echo "优化 dow资源下载函数"
+    br
+    read
     echo "2026年8月20日更新2.4.4.4版"
     echo "修复 -f文件搜索通配无法使用"
     echo "修复 TRSS docker启动问题"

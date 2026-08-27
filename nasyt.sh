@@ -10,8 +10,8 @@
 # dust
 
 cd $HOME
-time_date="2026/8/20"
-version="2.4.4.4"
+time_date="2026/8/27"
+version="2.4.4.5"
 nasyt_dir="$HOME/.nasyt"
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 
@@ -151,6 +151,16 @@ check_pkg_install() {
         yes_tg="-y"
         deb_size="$(qlist -I | wc -l)" >/dev/null 2>&1
         
+    elif command -v opkg >/dev/null 2>&1; then
+        sys="(openwrt系统)"
+        pkg_install="opkg install"
+        pkg_remove="opkg remove"
+        pkg_update="opkg update"
+        sudo_setup="sudo"
+        deb_sys="opkg"
+        yes_tg="-y"
+        
+    
     elif [[ "$(uname -s)" == "Darwin" ]]; then
         brew_install #brew安装检测
         sys="(MacOS 系统)"
@@ -160,7 +170,7 @@ check_pkg_install() {
         yes_tg="-y"
         deb_size="$(brew list | wc -l)" >/dev/null 2>&1
         read -p "抱歉，目前没有完全适配MacOS系统"
-        
+     
     else
         echo -e "$(info) >_<未检测到支持的系统。"
     fi
@@ -228,7 +238,8 @@ all_variable() {
       "https://ghfast.top/https://raw.githubusercontent.com/nasyt233/nasyt-linux-tool/refs/heads/master/nasyt.sh"
       "https://nasyt2.class2.icu/shell/nasyt.sh"
     )
-    
+    # fish代码补全
+    nasyt_tab >/dev/null 2>&1
 }
 
 
@@ -937,10 +948,10 @@ dow() {
         aria2c -c -m 2 -s 16 -x 16 "$1" -d "$2"
         cw_test=$?
     elif command -v wget >/dev/null 2>&1; then
-        wget -O "$2" "$1"
+        wget -P "$2" "$1"
         cw_test=$?
     elif command -v curl >/dev/null 2>&1; then
-        curl -o "$2" "$1"
+        curl -o "$2/$(basename $1)" "$1"
         cw_test=$?
     else
         echo -e "$(info) $red 系统没有可用的下载器$color"
@@ -952,15 +963,62 @@ dow() {
     else
         echo -e "$(info) $red 下载失败 Download failed$color"
         echo -e "$(info) $red 错误代码 Error Code：$cw_test$color"
+        esc
     fi
 }
 
 lsp() {
-dialog;whiptail
+    dialog;whiptail
 }
-#--------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------
 
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+nasyt_tab() {
+    if command -v fish >/dev/null 2>&1; then
+        echo "complete -c nasyt -s a -l acg -d "acg图片输出"
+complete -c nasyt -s b -l backup -d "备份恢复脚本"
+complete -c nasyt -s c -l aria2c -d "多线程下载"
+complete -c nasyt -s d -l docker -d "docker管理"
+complete -c nasyt -s e -l edge_tts -d "文字转语音"
+complete -c nasyt -s f -l find -d "文件搜索工具"
+complete -c nasyt -s h -l help -d "输出命令帮助"
+complete -c nasyt -s j -l jmcomic -d "JM本子下载"
+complete -c nasyt -s k -l skip -d "跳过检测设置"
+complete -c nasyt -s l -l lolcat -d "彩色输出模式"
+complete -c nasyt -s m -l mirror -d "快捷换软件源"
+complete -c nasyt -s n -l nlist -d "生成网页目录结构"
+complete -c nasyt -s p -l proot -d "proot容器管理"
+complete -c nasyt -s r -l remove -d "卸载本脚本工具"
+complete -c nasyt -s s -l ssh -d "ssh管理工具"
+complete -c nasyt -s t -l tmux -d "tmux后台管理"
+complete -c nasyt -s u -l update -d "更新脚本至最新"
+complete -c nasyt -s v -l version -d "输出脚本版本"
+complete -c nasyt -s x -l dowx -d "下载twitter视频"
+complete -c nasyt -s y -l bili -d "B站YT视频下载"
+complete -c nasyt -s z -l zsh -d "shell管理工具"
+# 无短参数的独立参数
+complete -c nasyt -l astrbot -d "快捷启动方式"
+complete -c nasyt -l cpolar -d "内网穿透工具"
+complete -c nasyt -l color -d "文字颜色设置"
+complete -c nasyt -l stop -d "停止后台运行命令"
+complete -c nasyt -l sh -d "shell管理工具"
+complete -c nasyt -l sfs -d "SFS管理工具"
+complete -c nasyt -l lang -d "脚本语言设置"
+complete -c nasyt -l log -d "日志输出模式"
+complete -c nasyt -l js -d "jm标签搜索"
+complete -c nasyt -l jv -d "jm本子查询"
+complete -c nasyt -l sec -d "Secluded管理"
+complete -c nasyt -l turn -d "疏散文件生成"
+complete -c nasyt -l test -d "开发者测试模式"
+complete -c nasyt -l debug -d "函数调试测试"
+complete -c nasyt -l config -d "用于管理配置文件"
+complete -c nasyt -l yml -d "用于管理yml文件"
+complete -c nasyt -l ps -d "进程查询"
+" > $HOME/.config/fish/completions/nasyt.fish
+    fi
+
+}
 
 
 #gg
@@ -2277,10 +2335,16 @@ shell_tool() {
                     starship_menu
                     case $starship_menu_xz in
                         1)
-                            test_install starship && $habit --msgbox "安装完成" 0 0
+                            test_install starship
+                            if [[ $? -ne 0 ]]; then
+                                echo -e "$(info) $yellow 检测到系统没有这个软件包，正在使用官方安装脚本$color"
+                                curl -sS https://starship.rs/install.sh | sh
+                            fi
+                            $habit --msgbox "starship安装完成" 0 0
                             ;;
                         2)
                             shell_index_menu
+                            cd $HOME
                             case $shell_index_xz in
                                 bash)
                                     echo 'eval "$(starship init bash)"' >> .bashrc;;
@@ -2393,6 +2457,7 @@ other_tool_menu() {
     4 "cloudreve云盘系统" \
     5 "nasfq番茄小说下载器" \
     6 "bilibili-TUI版" \
+    7 "nwebp轻量漫画阅读器" \
     0 "◀返回" \
     2>&1 1>/dev/tty)
 }
@@ -2576,7 +2641,7 @@ except Exception:
             jmv "$2" -y | awk '/─/{flag=1} flag'
             cw_test=$?
             if [ $cw_test -ne 0 ]; then
-                echo -e "$(info) $red ❌查询失败,错误代码：$cw_test $color"
+                echo -e "$(info) $red ❌$2查询失败,错误代码：$cw_test $color"
                 exit $cw_test
             else
                 echo -e "$(info) $green ✅查询成功$color"
@@ -2598,15 +2663,15 @@ except Exception:
             ;;
         *)
             jm_env
-            echo -e "$(info) 🔄正在下载本子📕$2"
+            echo -e "$(info) 🔄正在下载本子📕$1"
             cd $jm_dir
             jmcomic $1 --option="$nasyt_dir/jm/config.yml"
             cw_test=$?
             if [ $cw_test -ne 0 ]; then
-                echo -e "$(info) $red ❌下载失败,错误代码：$cw_test $color"
+                echo -e "$(info) $red ❌$1下载失败,错误代码：$cw_test $color"
                 exit $cw_test
             else
-                echo -e "$(info) $green ✅下载成功$color"
+                echo -e "$(info) $green ✅$1下载成功$color"
                 echo -e "$(info) 位于$nasyt_dir/jm目录"
                 exit 0
             fi
@@ -2648,8 +2713,11 @@ except Exception:
                 esc
                 ;;
             3)
-                bash -c "$(curl -L https://raw.gitcode.com/nasyt/nwebp/raw/main/install.sh)"
-                nwebp $nasyt_dir/jm 7891
+                if ! command -v nwebp >/dev/null 2>&1; then
+                    echo -e "$(info) 本子阅读器未安装，正在安装"
+                    bash -c "$(curl -L https://raw.gitcode.com/nasyt/nwebp/raw/main/install.sh)"
+                fi
+                nwebp $nasyt_dir/jm 7891 &
                 echo -e "$(info) 网页服务已开发至7891端口"
                 echo -e "$(info) 访问 0.0.0.0:7891 查看"
                 esc
@@ -2662,7 +2730,9 @@ except Exception:
                 esc
                 ;;
             7)
-                pip_install jmcomic --upgrade 
+                echo -e "$(info) 正在更新jmcomic版本"
+                pip_install jmcomic --upgrade
+                esc
                 ;;
             8)
                 while true
@@ -3846,10 +3916,10 @@ ifneofetch() {
                 if [ $? -ne 0 ]; then
                     if [[ -z $PREFIX ]]; then
                         github_speed_tool
-                        dow "$github_speed/https://github.com/fastfetch-cli/fastfetch/releases/download/stable/fastfetch-linux-amd64.tar.gz"
+                        dow "$github_speed/https://github.com/fastfetch-cli/fastfetch/releases/download/stable/fastfetch-linux-amd64.tar.gz" .
                         tar -xzvf fastfetch-linux-amd64.tar.gz -C / --strip-components=1
                         if [ $? -ne 0 ]; then
-                            $habit --msgbox "安装失败" 0 0
+                            $habit --msgbox "fastfetch安装失败" 0 0
                         else
                             $habit --msgbox "fastfetch安装完成" 0 0
                         fi
@@ -4274,25 +4344,26 @@ sfs_tool() {
 }
 
 sfs_online() {
-    $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
-    echo "脚本作者:NAS油条"
-    echo "感谢:"
-    echo "SFSGamer(QQ:3818483936)"
-    echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
-    echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
-    $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
-    if [ $? -ne 0 ]; then
-        break
-        return 1
-    fi
-    echo -e "$(info) 正在下载服务端文件"
-    dow "https://nasyt.hoha.top/shell/sfs_server" $HOME
-    mv sfs /usr/bin >/dev/null 2>&1
-    chmod +x /usr/bin/sfs >/dev/null 2>&1
-    echo "$(info) 快捷启动命令为: sfs"
-    clear; echo "$(info) 正在运行。"; br
-    sfs; br
-    esc
+    $habit --msgbox "当前功能关闭" 0 0
+    # $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
+    # echo "脚本作者:NAS油条"
+    # echo "感谢:"
+    # echo "SFSGamer(QQ:3818483936)"
+    # echo "(๑•॒̀ ູ॒•́๑)啦啦(QQ:2738136724)"
+    # echo "github地址:https://github.com/AstroTheRabbit/Multiplayer-SFS"; br
+    # $habit --title "确认操作" --yesno "回车键开始安装。" 0 0
+    # if [ $? -ne 0 ]; then
+        # break
+        # return 1
+    # fi
+    # echo -e "$(info) 正在下载服务端文件"
+    # dow "https://nasyt.hoha.top/shell/sfs_server" $HOME
+    # mv sfs /usr/bin >/dev/null 2>&1
+    # chmod +x /usr/bin/sfs >/dev/null 2>&1
+    # echo "$(info) 快捷启动命令为: sfs"
+    # clear; echo "$(info) 正在运行。"; br
+    # sfs; br
+    # esc
 }
 
 #文件搜索工具
@@ -5760,10 +5831,7 @@ index_main() {
                                             if [[ -n $PREFIX ]]; then
                                                 test_install yazi
                                             elif command -v apt >/dev/null 2>&1; then
-                                                curl -sS https://debian.griffo.io/EA0F721D231FDD3A0A17B9AC7808B4DD62C41256.asc | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/debian.griffo.io.gpg
-                                                echo "deb https://debian.griffo.io/apt $(lsb_release -sc 2>/dev/null) main" | sudo tee /etc/apt/sources.list.d/debian.griffo.io.list
-                                                sudo apt update
-                                                test_install yazi
+                                                dow 
                                             elif command -v dnf >/dev/null 2>&1; then
                                                 sudo dnf copr enable lihaohong/yazi
                                                 if [ $? -ne 0 ]; then
@@ -6088,8 +6156,16 @@ index_main() {
                                             if [ $? -ne 0 ]; then
                                                 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/MareDevi/bilibili-tui/releases/download/v1.0.9/bilibili-tui-installer.sh | sh
                                             else
-                                                curl --proto '=https' --tlsv1.2 -LsSf https://ghfast.top/https://github.com/MareDevi/bilibili-tui/releases/download/v1.0.9/bilibili-tui-installer.sh | sh
+                                                curl --proto '=https' --tlsv1.2 -LsSf https://gh-proxy.com/https://github.com/MareDevi/bilibili-tui/releases/download/v1.0.9/bilibili-tui-installer.sh | sh
                                             fi
+                                        fi
+                                        ;;
+                                    7)
+                                        if command -v nwebp >/dev/null 2>&1; then
+                                            $habit --msgbox "请前往 https://gitcode.com/nasyt/nwebp 查看使用方法" 0 0
+                                        else
+                                            echo -e "$(info) 正在拉取安装脚本"
+                                            bash -c "$(curl -L https://raw.gitcode.com/nasyt/nwebp/raw/main/install.sh)"
                                         fi
                                         ;;
                                     *)
@@ -6661,7 +6737,7 @@ if [ $# -ne 0 ]; then
     case $1 in
         ast|astrbot)
             cd $nasyt_dir/AstrBot
-            tmux new -d -s astrbot "source venv/bin/activate;python3 main.py"
+            tmux new -d -s astrbot "cd $nasyt_dir/AstrBot;source venv/bin/activate;python main.py"
             echo -e "$(info) 已启动"
             exit 0
             ;;
@@ -6915,10 +6991,10 @@ if [ $# -ne 0 ]; then
                 echo "  color    文字颜色设置"
                 echo "  skip     跳过检测设置"
                 echo "  stop  停止后台运行命令"
-                echo "  sh     shell管理工具"
                 echo "  sfs      SFS管理工具"
                 echo "  lang     脚本语言设置"
                 echo "  log      日志输出模式"
+                echo "  js        jm标签搜索"
                 echo "  jv        jm本子查询"
                 echo "  sec     Secluded管理"
                 echo "  turn     疏散文件生成"
