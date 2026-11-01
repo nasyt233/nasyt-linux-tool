@@ -8,10 +8,10 @@
 # 有什么技术可以进来交流
 # 群号:610699712
 # dust
-
-cd $HOME
-time_date="2026/8/27"
-version="2.4.4.5"
+# set -x
+# cd $HOME
+time_date="2026/11/1"
+version="2.4.4.6"
 nasyt_dir="$HOME/.nasyt"
 source $nasyt_dir/config.txt >/dev/null 2>&1 # 加载脚本配置
 
@@ -71,7 +71,19 @@ check_pkg_install() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release #加载变量
     fi
-    if [[ -n $TERMUX_VERSION ]]; then
+    
+    if command -v apk >/dev/null 2>&1; then
+        sys="(Alpine/PostmarketOS系统)"
+        sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
+        pkg_install="apk add"
+        pkg_remove="apk del"
+        pkg_update="apk update"
+        sudo_setup="sudo"
+        deb_sys="apk"
+        yes_tg=""
+        deb_size="$(apk info | wc -l)" >/dev/null 2>&1
+    
+    elif [[ -n $TERMUX_VERSION ]]; then
         sys="(Termux 终端)"
         PRETTY_NAME="Termux"
         # sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list >/dev/null
@@ -130,17 +142,6 @@ check_pkg_install() {
         deb_sys="zypper"
         yes_tg="-y"
         deb_size="$(zypper se -i | wc -l)" >/dev/null 2>&1
-        
-    elif command -v apk >/dev/null 2>&1; then
-        sys="(Alpine/PostmarketOS系统)"
-        sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
-        pkg_install="apk add"
-        pkg_remove="apk del"
-        pkg_update="apk update"
-        sudo_setup="sudo"
-        deb_sys="apk"
-        yes_tg=""
-        deb_size="$(apk info | wc -l)" >/dev/null 2>&1
         
     elif command -v emerge >/dev/null 2>&1; then
         sys="(gentoo/funtoo 系统)"
@@ -1477,6 +1478,7 @@ app_install() {
         3 "📄 office:办公/PPT/流程图 (wps,LibreOffice)" \
         4 "🛠 system:软件管理/系统管理 (flatpak,bleachbit)" \
         5 "💻 code:文件编辑/代码开发 (vscode,Pychrom,Zed)" \
+        6 "🌐 Internet:互联网/浏览器 (chromium,w3m)" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
@@ -1548,6 +1550,17 @@ app_install() {
         8 "DataGrip" \
         9 "RustRover" \
         10 "全部安装" \
+        0 "◀返回" \
+        2>&1 1>/dev/tty)
+    }
+    
+    internet_menu() {
+        internet_menu_xz=$($habit --clear --title "internet" \
+        --menu "请选择要安装的程序" 0 0 10 \
+        1 "w3m      终端浏览器" \
+        2 "browsh   终端浏览器(支持JavaScript)" \
+        3 "elinks   终端浏览器" \
+        4 "chromium 浏览器" \
         0 "◀返回" \
         2>&1 1>/dev/tty)
     }
@@ -1820,6 +1833,18 @@ docker_menu() {
                 ;;
             5)
                 $habit --msgbox "开发中" 0 0
+                ;;
+            6)
+                systemctl restart docker.service
+                $habit --msgbox "docker服务已重启" 0 0
+                ;;
+            8)
+                systemctl start docker.service
+                $habit --msgbox "docker服务已启动" 0 0
+                ;;
+            9)
+                systemctl stop docker.service
+                $habit --msgbox "docker服务已停止" 0 0
                 ;;
             114514)
                 while true
@@ -2409,7 +2434,7 @@ shell_tool() {
                     $habit --msgbox "$shell_index_menu 未安装请先安装。" 0 0
                     break
                 else
-                    chsh -s $(which $shell_index_xz)
+                    chsh -s $(command -v $shell_index_xz)
                     $habit --msgbox "设置完成，重连终端生效" 0 0
                 fi
                 ;;
@@ -2518,6 +2543,7 @@ nvim_menu() {
     --menu "整合插件均需要访问github,确保你能访问\n推荐安装LazyVim整合插件\n请选择:" 0 0 10 \
     Lazy "整合插件" \
     EternityShen "整合插件" \
+    nasyt "整合插件" \
     1 "启动nvim" \
     2 "备份nvim" \
     3 "恢复nvim" \
@@ -3878,7 +3904,7 @@ show_server_config() {
     free -h
     br
     echo "硬盘信息:"
-    df -hl
+    [[ -n $PREFIX ]] && df -h || df -hl
     br
     esc
 }
@@ -3924,9 +3950,8 @@ ifneofetch() {
                             $habit --msgbox "fastfetch安装完成" 0 0
                         fi
                     fi
-                else
-                    fastfetch
                 fi
+                fastfetch
                 esc
                 ;;
             3)
@@ -3957,8 +3982,10 @@ ifneofetch() {
 # 一键修改密码
 change_password() {
     username=$(whoami)
+    echo -e "$(info) 请在下面输入新密码"
     $sudo_setup passwd "$username"
     echo "$(info) 密码已成功修改。"
+    esc
 }
 
 
@@ -4344,7 +4371,7 @@ sfs_tool() {
 }
 
 sfs_online() {
-    $habit --msgbox "当前功能关闭" 0 0
+    $habit --msgbox "当前功能已关闭" 0 0
     # $habit --msgbox "欢迎使用SFS服务器安装脚本" 0 0
     # echo "脚本作者:NAS油条"
     # echo "感谢:"
@@ -4420,6 +4447,304 @@ test_menu() {
         esac
     done
 }
+
+img_tool() {
+    # set -x
+    if ! command -v convert >/dev/null 2>&1; then
+        test_install imagemagick
+    fi
+    img_output=$nasyt_dir/img_edit
+    mkdir -p "$img_output"
+    img_tool_tips() {
+        [[ $cw_test -ne 0 ]] && $habit --msgbox "图片操作失败，错误代码：$cw_test" 0 0 || $habit --msgbox "图片操作完成\n输出\n$img_tool_out" 0 0
+    }
+    img_tool_menu() {
+        img_tool_menu_xz=$($habit --clear --title "图片编辑工具" \
+        --menu "当前图片：\n$img_tool_file\n请选择功能：" 0 0 0 \
+        origin "查看原图" \
+        modify "已修改图" \
+        select "选择图片" \
+        resize "缩放图片" \
+        crop "裁剪图片" \
+        rotate "旋转图片" \
+        quality "图片压缩" \
+        backg "PNG透明填底色" \
+        format "格式转换" \
+        gray "转黑白灰图" \
+        blue "高斯模糊" \
+        mirror "镜像翻转" \
+        0 "退出脚本" \
+        2>&1 1>/dev/tty)
+    }
+    img_tool_main() {
+        img_tool_file="$1"
+        img_tool_name=$(basename $img_tool_file)
+        [[ -n $1 ]] && img_tool_out="$img_output/$img_tool_name)"
+        while true
+        do
+            img_tool_menu
+            case $img_tool_menu_xz in
+                origin)
+                    [[ -z $img_tool_file ]] && $habit --msgbox "请先选择图片" 0 0 || chafa $img_tool_file;esc
+                    ;;
+                modify)
+                    [[ -z $img_tool_out ]] && $habit --msgbox "请先进行图片操作" 0 0 || chafa $img_tool_out;esc
+                    ;;
+                select)
+                    file_xz $PWD img_tool_file
+                    img_tool_name=$(basename $img_tool_file)
+                    img_tool_out="$img_output/$img_tool_name"
+                    ;;
+                resize)
+                    resize=$($habit --clear --title "图片缩放" \
+                    --inputbox "缩放参数示例：\n1024x1024> 长边最大1024（推荐，小图不会强行放大模糊）\n按指定高宽自动缩放 800x 固定宽度 / x600固定高度 / \n按百分百缩放 30% 50% 80%" 0 0 80% \
+                    2>&1 1>/dev/tty);[[ -z $resize ]] && continue
+                    convert $img_tool_file -resize ${resize:-80%} $img_tool_out
+                    cw_test=$?;img_tool_tips
+                    esc
+                    ;;
+                crop)
+                    crop=$($habit --clear --title "图片裁剪" \
+                    --inputbox "裁剪格式 WxH+X+Y\n例：300x300+20+20 宽300高300，左上角起点(20,20)" 0 0 "300x300+0+0" \
+                    2>&1 1>/dev/tty);[[ -z $resize ]] && continue
+                    convert $img_tool_file -crop $crop $img_tool_out
+                    cw_test=$?;img_tool_tips
+                    ;;
+                rotate)
+                    rotate=$($habit --clear --title "图片旋转" \
+                    --menu "请选择旋转角度" 0 0 0 \
+                    90 "顺时针90°" \
+                    180 "旋转180°" \
+                    270 "逆时针90°" \
+                    1145 "自定义" \
+                    0 "◀返回" \
+                    2>&1 1>/dev/tty);[[ -z $rotate ]] && continue
+                    [[ $rotate == "1145" ]] && rotate=$($habit --clear --title "图片旋转" --inputbox "请输入角度" 0 0 2>&1 1>/dev/tty)
+                    convert $img_tool_file -rotate $rotate $img_tool_out
+                    cw_test=$?;img_tool_tips
+                    ;;
+                quality)
+                    quality=$($habit --clear --title "图片压缩" \
+                    --inputbox "画质取值 0~100，推荐75~85，数字越大越清晰体积越大" 0 0 85 \
+                    2>&1 1>/dev/tty);[[ -z $rotate ]] && continue
+                    convert $img_tool_file -quality $quality $img_tool_out
+                    cw_test=$?;img_tool_tips
+                    ;;
+                backg)
+                    backg=$($habit --clear --title "颜色填充" \
+                    --inputbox "填充底色，white白色 / black黑色 / #ffffff色值" 0 0 "white" \
+                    2>&1 1>/dev/tty);[[ -z $backg ]] && continue
+                    convert $img_tool_file -background $backg -flatten $img_tool_out
+                    cw_test=$?;img_tool_tips
+                    ;;
+                format)
+                    format=$($habit --clear --title "格式转换" \
+                    --menu "请选择目标格式" 0 0 10 \
+                    png "PNG无损" \
+                    jpg "JPG有损" \
+                    webp "WebP高压缩" \
+                    bmp "BMP位图" \
+                    0 "◀返回" \
+                    2>&1 1>/dev/tty);[[ -z $rotate ]] && continue
+                    [[ $format == "0" ]] && continue
+                    convert $img_tool_file $img_tool_out.$format
+                    cw_test=$?;img_tool_tips
+                    ;;
+                gray)
+                    convert $img_tool_file -colorspace Gray $img_tool_out
+                    cw_test=$?;img_tool_tips
+                    ;;
+                *)
+                    break
+                    ;;
+            esac
+        done
+    }
+    img_tool_main $1
+}
+
+img_tool2() {
+    IM_BIN=""
+    SRC_FILE=""
+    OUT_DIR=""
+
+    detect_im() {
+        test_install magick
+    }
+    
+    # --------------------------
+    # 【核心函数 edit_image】整合大部分图片处理能力
+    # 参数顺序：
+    # $1 输入文件
+    # $2 输出文件
+    # $3 resize 参数（""=不缩放，例：1024x1024>）
+    # $4 crop 参数（""=不裁剪，例：300x300+0+0）
+    # $5 rotate 旋转角度（""=不旋转，90/180/270）
+    # $6 quality 画质（""=保持原画质，0~100）
+    # $7 bgcolor 背景填充色（""=不填充，white / black / #RRGGBB）
+    #
+    # 使用示例：
+    # edit_image test.jpg out.jpg "1024x1024>" "" "" 80 "white"
+    # --------------------------
+    edit_image() {
+        local infile="$1"
+        local outfile="$2"
+        local resize="$3"
+        local crop="$4"
+        local rotate="$5"
+        local quality="$6"
+        local bgcolor="$7"
+    
+        local cmd=("$IM_BIN" "$infile")
+    
+        # 透明背景填充
+        if [[ -n "$bgcolor" ]]; then
+            cmd+=(-background "$bgcolor" -flatten)
+        fi
+        # 缩放
+        if [[ -n "$resize" ]]; then
+            cmd+=(-resize "$resize")
+        fi
+        # 裁剪
+        if [[ -n "$crop" ]]; then
+            cmd+=(-crop "$crop" +repage)
+        fi
+        # 旋转
+        if [[ -n "$rotate" ]]; then
+            cmd+=(-rotate "$rotate")
+        fi
+        # 画质压缩
+        if [[ -n "$quality" ]]; then
+            cmd+=(-quality "$quality")
+        fi
+    
+        cmd+=("$outfile")
+        "${cmd[@]}"
+    }
+    
+    main_menu() {
+        while true; do
+            CHOICE=$(dialog --stdout --title "🖼️ 图片编辑工具箱" --menu "当前图片：${SRC_FILE:-【未选择】}\n请选择功能：" 0 0 0 \
+            1 "选择图片文件" \
+            2 "缩放图片(resize)" \
+            3 "裁剪图片(crop)" \
+            4 "旋转图片" \
+            5 "图片压缩/设置画质" \
+            6 "PNG透明填充底色（白底常用）" \
+            7 "图片格式互转 jpg/png/webp/bmp" \
+            8 "转为黑白灰度图" \
+            9 "高斯模糊" \
+            10 "镜像翻转（左右/上下）" \
+            0 "退出脚本")
+    
+            # ESC返回空，直接退出
+            [[ -z "$CHOICE" ]] && exit 0
+    
+            case "$CHOICE" in
+                1)
+                    file_xz $HOME SRC_FILE
+                    ;;
+                2)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    RESIZE_VAL=$(dialog --stdout --inputbox "缩放参数示例：\n1024x1024> 长边最大1024（推荐，小图不会强行放大模糊）\n800x 固定宽度 / x600固定高度 / 50%缩小一半" 18 75 "1024x1024>")
+                    [[ -z "$RESIZE_VAL" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/resize_$(basename "$SRC_FILE")"
+                    edit_image "$SRC_FILE" "$OUT" "$RESIZE_VAL" "" "" "" ""
+                    dialog --msgbox "✅ 处理完成\n输出文件：$OUT" 10 65
+                    ;;
+                3)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    CROP_VAL=$(dialog --stdout --inputbox "裁剪格式 WxH+X+Y\n例：300x300+20+20 宽300高300，左上角起点(20,20)" 16 70 "300x300+0+0")
+                    [[ -z "$CROP_VAL" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/crop_$(basename "$SRC_FILE")"
+                    edit_image "$SRC_FILE" "$OUT" "" "$CROP_VAL" "" "" ""
+                    dialog --msgbox "✅ 裁剪完成\n输出文件：$OUT" 10 65
+                    ;;
+                4)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    ROTATE_VAL=$(dialog --stdout --menu "选择旋转角度" 12 50 4 \
+                    90 "顺时针90°" \
+                    180 "旋转180°" \
+                    270 "顺时针270°（逆时针90°）")
+                    [[ -z "$ROTATE_VAL" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/rotate_${ROTATE_VAL}_$(basename "$SRC_FILE")"
+                    edit_image "$SRC_FILE" "$OUT" "" "" "$ROTATE_VAL" "" ""
+                    dialog --msgbox "✅ 旋转完成\n输出文件：$OUT" 10 65
+                    ;;
+                5)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    QUAL_VAL=$(dialog --stdout --inputbox "画质取值 0~100，推荐75~85，数字越大越清晰体积越大" 14 60 "80")
+                    [[ -z "$QUAL_VAL" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/quality_${QUAL_VAL}_$(basename "$SRC_FILE")"
+                    edit_image "$SRC_FILE" "$OUT" "" "" "" "$QUAL_VAL" ""
+                    dialog --msgbox "✅ 压缩完成\n输出文件：$OUT" 10 65
+                    ;;
+                6)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    BG_COLOR=$(dialog --stdout --inputbox "填充底色，white白色 / black黑色 / #ffffff色值" 14 60 "white")
+                    [[ -z "$BG_COLOR" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/flatten_$(basename "$SRC_FILE")"
+                    edit_image "$SRC_FILE" "$OUT" "" "" "" "" "$BG_COLOR"
+                    dialog --msgbox "✅ 底色填充完成\n输出文件：$OUT" 10 65
+                    ;;
+                7)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    EXT=$(dialog --stdout --menu "目标图片格式" 12 45 4 \
+                    png "PNG无损" \
+                    jpg "JPG有损" \
+                    webp "WebP高压缩" \
+                    bmp "BMP位图")
+                    [[ -z "$EXT" ]] && continue
+                    BASE=$(basename "$SRC_FILE")
+                    NAME="${BASE%.*}"
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/${NAME}_convert.${EXT}"
+                    "$IM_BIN" "$SRC_FILE" "$OUT"
+                    dialog --msgbox "✅ 格式转换完成\n输出文件：$OUT" 10 65
+                    ;;
+                8)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/gray_$(basename "$SRC_FILE")"
+                    "$IM_BIN" "$SRC_FILE" -colorspace Gray "$OUT"
+                    dialog --msgbox "✅ 灰度图完成\n输出文件：$OUT" 10 65
+                    ;;
+                9)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    BLUR_R=$(dialog --stdout --inputbox "高斯模糊参数，示例：0x3，数字越大越模糊" 14 60 "0x3")
+                    [[ -z "$BLUR_R" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/blur_$(basename "$SRC_FILE")"
+                    "$IM_BIN" "$SRC_FILE" -blur "$BLUR_R" "$OUT"
+                    dialog --msgbox "✅ 模糊完成\n输出文件：$OUT" 10 65
+                    ;;
+                10)
+                    if [[ -z "$SRC_FILE" ]]; then dialog --msgbox "❗ 请先选择图片！" 8 40; continue; fi
+                    FLIP_OPT=$(dialog --stdout --menu "镜像翻转" 12 50 3 \
+                    flop "水平镜像（左右翻转）" \
+                    flip "垂直镜像（上下翻转）")
+                    [[ -z "$FLIP_OPT" ]] && continue
+                    mkdir -p "$HOME/img_edit_out"
+                    OUT="$HOME/img_edit_out/${FLIP_OPT}_$(basename "$SRC_FILE")"
+                    "$IM_BIN" "$SRC_FILE" "-${FLIP_OPT}" "$OUT"
+                    dialog --msgbox "✅ 翻转完成\n输出文件：$OUT" 10 65
+                    ;;
+                0)
+                    exit 0
+                    ;;
+            esac
+        done
+    }
+    detect_im
+    main_menu
+}
+
+
 # --------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------
 
@@ -5679,13 +6004,21 @@ index_main() {
                                                 EternityShen)
                                                     echo -e "$(info) 正在备份原nvim配置"
                                                     mv ~/.config/nvim{,.bak} >/dev/null 2>&1
-                                                    mv ~/.local/share/nvim{,.bak} >/dev/null 2>&1
                                                     mv ~/.local/state/nvim{,.bak} >/dev/null 2>&1
                                                     mv ~/.cache/nvim{,.bak} >/dev/null 2>&1
                                                     github_speed_tool #国内外检测
                                                     test_install git #检查git安装
                                                     git_clone https://github.com/EternityShen/My_NeoVim_Configs.git ~/.config/nvim
                                                     esc
+                                                    ;;
+                                                nasyt)
+                                                    echo -e "$(info) 正在备份原nvim配置"
+                                                    mv ~/.config/nvim{,.bak} >/dev/null 2>&1
+                                                    mv ~/.local/state/nvim{,.bak} >/dev/null 2>&1
+                                                    mv ~/.cache/nvim{,.bak} >/dev/null 2>&1
+                                                    github_speed_tool #国内外检测
+                                                    test_install git #检查git安装
+                                                    git_clone https://github.com/nasyt233/nasyt-nvim.git ~/.config/nvim
                                                     ;;
                                                 1)
                                                     echo -e "$(info) 正在加载nvim配置"
@@ -6363,6 +6696,33 @@ index_main() {
                                 esac
                             done
                             ;;
+                        6)
+                            while true
+                            do
+                                internet_menu
+                                case $internet_menu_xz in
+                                    1)
+                                        test_install w3m
+                                        esc
+                                        ;;
+                                    2)
+                                        test_install browsh
+                                        esc
+                                        ;;
+                                    3)
+                                        test_install elinks
+                                        esc
+                                        ;;
+                                    4)
+                                        test_install chromium
+                                        esc
+                                        ;;
+                                    *)
+                                        break
+                                        ;;
+                                esac
+                            done
+                            ;;
                         *)
                             break
                             ;;
@@ -6735,6 +7095,26 @@ language_jc #脚本语言设置
 # 启动参数
 if [ $# -ne 0 ]; then
     case $1 in
+        i|-i|--img)
+            img_tool $2
+            exit 0
+            ;;
+        r|resize|-r|--resize)
+            if ! command -v convert >/dev/null 2>&1; then
+                test_install imagemagick
+            fi
+            if [[ -z $2 ]]; then
+                echo "使用方法"
+                echo "    nasyt r [图片] [尺寸0-100] [输出(为空则默认覆盖原图)]"
+                echo
+                exit 0
+            fi
+            echo -e "$(info) 正在压缩$2尺寸为${3:-10}%"
+            convert $2 -resize ${3:-10}% ${4:-$2}
+            cw_test=$?
+            [[ $cw_test -ne 0 ]] && echo -e "$(info) $red 图片压缩失败，错误代码：$cw_test$color" || echo -e "$(info) $green 图片压缩完成$color"
+            exit 0
+            ;;
         ast|astrbot)
             cd $nasyt_dir/AstrBot
             tmux new -d -s astrbot "cd $nasyt_dir/AstrBot;source venv/bin/activate;python main.py"
@@ -6953,57 +7333,72 @@ if [ $# -ne 0 ]; then
             nlist_tool $2 $3 $4
             exit
             ;;
-        r|remove|-r|--remove)
+        re|remove|-re|--remove)
             shell_uninstall
             exit
             ;;
         h|help|-h|-help|--help)
             echo ""
             if [[ $language == "China" ]]; then
-                echo "用法:"
-                echo -e "  ${blue}nasyt [参数] (参数)$color"
-                echo "参数:"
-                echo "  -a, --acg      acg图片输出"
-                echo "  -b, --backup   备份恢复脚本"
-                echo "  -c  --aria2c    多线程下载"
-                echo "  -d, --docker   docker管理"
-                echo "  -e, --edge_tts  文字转语音"
-                echo "  -f, --find     文件搜索工具"
-                echo "  -h, --help     输出命令帮助"
-                echo "  -j, --jmcomic   JM本子下载"
-                echo "  -k, --skip     进入菜单部分"
-                echo "  -l, --lolcat   彩色输出模式"
-                echo "  -m, --mirror   快捷换软件源"
-                echo "  -n, --nlist 生成网页目录结构"
-                echo "  -p, --proot  proot容器管理"
-                echo "  -r, --remove 卸载本脚本工具"
-                echo "  -s, --ssh      ssh管理工具"
-                echo "  -t, --tmux    tmux后台管理"
-                echo "  -u, --update 更新脚本至最新"
-                echo "  -v, --version  输出脚本版本"
-                echo "  -x, --dowx 下载twitter视频"
-                echo "  -y, --bili   B站YT视频下载"
-                echo "  -z, --zsh    shell管理工具"
+                echo -e "$grey用法:$color"
+                echo -e "  ${blue}nasyt$color ${pink}[参数]$color $green(参数)$color"
+                echo -e "$grey参数:$color"
+                echo -e "$pink  a, --acg        acg随机图片"
+                echo -e "$green             pe      输出手机端图片"
+                echo -e "$green             pc      输出电脑端图片"
+                echo -e "$pink  b, --backup     备份与恢复"
+                echo -e "$pink  c  --aria2c     多线程下载"
+                echo -e "$green             (链接)"
+                echo -e "$pink  d, --docker     docker管理"
+                echo -e "$pink  e, --edge_tts   文字转语音"
+                echo -e "$green             (文字)  (输出.mp3)"
+                echo -e "$pink  f, --find       文件搜索工具"
+                echo -e "$green             (目录)  (文件名)"
+                echo -e "$pink  h, --help       输出帮助"
+                echo -e "$pink  i, --img        图片编辑"
+                echo -e "$pink  j, --jmcomic    jm本子下载"
+                echo -e "$pink  js,             jm标签搜索"
+                echo -e "$pink  jv,             jm本子查询"
+                echo -e "$green             350234      示例"
+                echo -e "$pink  k, --skip       进入菜单部分"
+                echo -e "$pink  l, --lolcat     彩色输出模式"
+                echo -e "$green             (参数)"
+                echo -e "$pink  m, --mirror     快捷更换软件源"
+                echo -e "$pink  n, --nlist      生成网页目录结构"
+                echo -e "$green             (目录) (输出)"
+                echo -e "$pink  p, --proot      proot容器管理"
+                echo -e "$pink  r, --resize     图片尺寸修改"
+                echo -e "$green             (输入) (0-100) (输出)"
+                echo -e "$pink  re, --remove    卸载本脚本工具"
+                echo -e "$pink  s, --ssh        ssh管理工具"
+                echo -e "$pink  t, --tmux       tmux后台管理"
+                echo -e "$pink  u, --update     更新脚本至最新"
+                echo -e "$pink  v, --version    输出版本信息"
+                echo -e "$pink  x, --dowx       twitter视频解析"
+                echo -e "$green             (链接)"
+                echo -e "$pink  y, --bili       B站YT视频下载"
+                echo -e "$green             (链接)"
+                echo -e "$pink  z, --zsh        shell管理工具"
                 echo
-                echo "其他参数:"
-                echo "  astrbot  快捷启动方式"
-                echo "  cpolar   内网穿透工具"
-                echo "  color    文字颜色设置"
-                echo "  skip     跳过检测设置"
-                echo "  stop  停止后台运行命令"
-                echo "  sfs      SFS管理工具"
-                echo "  lang     脚本语言设置"
-                echo "  log      日志输出模式"
-                echo "  js        jm标签搜索"
-                echo "  jv        jm本子查询"
-                echo "  sec     Secluded管理"
-                echo "  turn     疏散文件生成"
-                echo "  test    开发者测试模式"
-                echo "  debug    函数调试测试"
-                echo "  config 用于管理配置文件"
-                echo "  yml    用于管理yml文件"
+                echo -e "$grey其他参数:$color"
+                echo -e "$pink  astrbot         快捷启动方式"
+                echo -e "$pink  cpolar          内网穿透工具"
+                echo -e "$pink  color           文字颜色设置"
+                echo -e "$pink  skip            跳过检测设置"
+                echo -e "$pink  stop            停止运行命令"
+                echo -e "$pink  sfs             SFS管理工具"
+                echo -e "$pink  lang            脚本语言设置"
+                echo -e "$green             list    查看支持列表"
+                echo -e "$pink  log             日志输出模式"
+                echo -e "$pink  sec             Secluded管理"
+                echo -e "$pink  turn            疏散文件生成"
+                echo -e "$pink  test            开发者测试模式"
+                echo -e "$pink  debug           函数调试测试"
+                echo -e "$green             (函数名)    执行函数"
+                # echo -e "$pink  config          管理配置文件"
+                # echo -e "$pink  yml             管理yml文件"
                 echo
-                echo "有关更多详细信息，请参见"
+                echo -e "$grey有关更多详细信息，请参见$color"
                 echo -e "$green https://github.com/nasyt233/nasyt-linux-tool$color"
             else
                 echo "Usage:"

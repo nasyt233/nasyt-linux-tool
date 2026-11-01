@@ -3,7 +3,21 @@ br() {
     echo -e "\e[1;34m--------------------------\e[0m"
 }
     clear
-    echo "2026年9月27日更新2.4.4.5版"
+    echo "2026年11月1日更新2.4.4.6版"
+    echo "更新 终端图片编辑工具"
+    echo "修复 proot系统检测问题"
+    echo "更新 软件安装/internet互联网软件"
+    echo "优化 脚本结构与性能"
+    echo "优化 调整脚本帮助界面"
+    echo "更新 图片尺寸修改工具"
+    echo "更新 nasyt-nvim配置安装"
+    echo "修复 nvim命令重复执行问题"
+    echo "优化 fastfetch显示逻辑"
+    echo "优化 配置显示功能"
+    echo "修复 默认终端命令设置"
+    br
+    read
+    echo "2026年8月27日更新2.4.4.5版"
     echo "更新 nwebp轻量阅读器安装"
     echo "更新 尝试openwrt系统支持"
     echo "更新 bash zsh的脚本代码补全"
